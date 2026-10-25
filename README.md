@@ -1,36 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# my-calendar
 
-## Getting Started
+월간 캘린더에서 일정을 관리하고, 선택한 날짜 범위의 일정에 대해 AI와 대화하며 확인하고, 일정 시작 전·종료 시 알림(웹 푸시, 카카오톡)을 받는 개인용 캘린더입니다. 이후 다중 사용자 서비스로 확장할 수 있도록 데이터는 사용자 단위로 분리합니다.
 
-First, run the development server:
+## 기술 스택
+
+- Next.js `16.4.3` (App Router), React `19.3.0`, TypeScript (strict)
+- Tailwind CSS v4, shadcn/ui (`base-nova`), lucide-react
+- 도입 예정: Supabase(Auth·DB), OpenAI API, Vercel 배포
+
+## 시작하기
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm run build   # 프로덕션 빌드
+npm run lint    # ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 문서
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 요구사항: [`docs/PRD.md`](docs/PRD.md)
+- 개발 계획: [`docs/ROADMAP.md`](docs/ROADMAP.md)
