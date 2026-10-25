@@ -26,16 +26,15 @@
 - **Task 002: Supabase 프로젝트·스키마·RLS 구성** ✅ - 완료
   - ✅ Supabase 프로젝트 생성과 로컬 환경변수 구성(`.env`)
   - ✅ `lib/supabase/` 서버·클라이언트 생성기(`@supabase/ssr`)
-  - ✅ 테이블 생성: `events`, `notifications`(channel, status 포함), `push_subscriptions`, `kakao_tokens`
-  - ✅ 모든 테이블에 `user_id` + RLS 정책 적용
+  - ✅ 테이블 생성: `events`, `notifications`(channel, status 포함), `push_subscriptions`, `kakao_tokens` (마이그레이션 적용 확인)
+  - ✅ 모든 테이블에 `user_id` + RLS 정책 적용 (계정 2개로 접근 분리·제약 검증 완료)
 - **Task 003: 인증 (이메일 + Google) 및 접근 제어** - 우선순위
-  - 로그인 페이지(`/login`): 이메일 가입·로그인, Google 로그인 버튼
-  - 비로그인 시 로그인 외 모든 페이지에서 `/login`으로 이동
-  - 로그아웃, 로그인 실패 오류 메시지
-  - 앱 공통 레이아웃과 메뉴(캘린더, AI 대화, 설정, 로그아웃)
-
-### Phase 2: 캘린더 핵심
-
+  - ✅ 로그인 페이지(`/[lang]/login`): 이메일 가입·로그인, Google 로그인 버튼, 시안 기반 디자인
+  - ✅ 비로그인 시 로그인·개인정보처리방침 외 모든 페이지에서 `/[lang]/login`으로 이동
+  - ✅ 로그아웃, 로그인 실패 오류 메시지
+  - ✅ 한국어/영어 언어 선택(지구본 메뉴, URL의 `[lang]`, 사전 기반)
+  - ✅ 앱 공통 레이아웃(상단 바: 로고, 이메일, 언어 선택, 로그아웃). AI 대화·설정 메뉴는 해당 페이지 Task에서 추가
+  - Google 로그인 동작 확인: Google Cloud OAuth 클라이언트 생성 후 Supabase Google provider 등록 필요 (현재 provider 비활성)
 - **Task 004: 날짜 유틸 및 공통 UI 컴포넌트** - 우선순위
   - `lib/calendar/` 순수 함수: 월 그리드 생성, 주 단위 분할, 날짜 비교(`Asia/Seoul`, `Date` 변이 금지)
   - 월 경계·윤년 케이스 수동 검증 목록 정리
