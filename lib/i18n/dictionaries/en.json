@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "title": "my-calendar",
+    "description": "A personal calendar to manage events monthly, chat with AI about them, and get reminders"
+  },
+  "home": {
+    "calendarPlaceholder": "The monthly calendar will appear here."
+  },
+  "login": {
+    "signInTitle": "Welcome back",
+    "signInDescription": "Enter your details to check your schedule",
+    "signUpTitle": "Create your account",
+    "signUpDescription": "Get started with your email and a password",
+    "emailLabel": "Email",
+    "emailPlaceholder": "name@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "signInButton": "Sign in",
+    "signUpButton": "Sign up",
+    "orSignInWith": "Or sign in with",
+    "orContinueWith": "Or continue with",
+    "googleButton": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "switchToSignUp": "Sign up",
+    "haveAccount": "Already have an account?",
+    "switchToSignIn": "Sign in",
+    "pending": "Working..."
+  },
+  "nav": {
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "languageMenuLabel": "Select language",
+    "sendEmail": "Send email",
+    "languages": {
+      "ko": "한국어",
+      "en": "English"
+    }
+  },
+  "footer": {
+    "copyright": "© 2026 my-calendar",
+    "privacy": "Privacy Policy"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "comingSoon": "Coming soon.",
+    "backToLogin": "Back to sign in"
+  },
+  "errors": {
+    "invalidCredentials": "Incorrect email or password.",
+    "emailTaken": "This email is already registered.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "generic": "Something went wrong. Please try again later.",
+    "googleFailed": "Google sign-in failed. Please try again later."
+  }
+}

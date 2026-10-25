@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "title": "my-calendar",
+    "description": "월간 캘린더에서 일정을 관리하고, AI와 대화하며 확인하고, 알림을 받는 개인용 캘린더"
+  },
+  "home": {
+    "calendarPlaceholder": "월간 캘린더가 이곳에 표시됩니다."
+  },
+  "login": {
+    "signInTitle": "다시 만나서 반가워요",
+    "signInDescription": "이메일과 비밀번호를 입력하고 내 일정을 확인해 보세요",
+    "signUpTitle": "계정 만들기",
+    "signUpDescription": "이메일과 비밀번호로 간단히 시작해 보세요",
+    "emailLabel": "이메일",
+    "emailPlaceholder": "name@example.com",
+    "passwordLabel": "비밀번호",
+    "passwordPlaceholder": "비밀번호를 입력하세요",
+    "showPassword": "보기",
+    "hidePassword": "숨기기",
+    "signInButton": "로그인",
+    "signUpButton": "회원가입",
+    "orSignInWith": "또는 다음으로 로그인",
+    "orContinueWith": "또는 다음으로 계속하기",
+    "googleButton": "Google로 계속하기",
+    "noAccount": "계정이 없나요?",
+    "switchToSignUp": "회원가입",
+    "haveAccount": "이미 계정이 있나요?",
+    "switchToSignIn": "로그인",
+    "pending": "처리 중..."
+  },
+  "nav": {
+    "signUp": "회원가입",
+    "signOut": "로그아웃",
+    "languageMenuLabel": "언어 선택",
+    "sendEmail": "메일 보내기",
+    "languages": {
+      "ko": "한국어",
+      "en": "English"
+    }
+  },
+  "footer": {
+    "copyright": "© 2026 my-calendar",
+    "privacy": "개인정보처리방침"
+  },
+  "privacy": {
+    "title": "개인정보처리방침",
+    "comingSoon": "준비 중입니다.",
+    "backToLogin": "로그인으로 돌아가기"
+  },
+  "errors": {
+    "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다.",
+    "emailTaken": "이미 가입된 이메일입니다.",
+    "passwordTooShort": "비밀번호는 6자 이상이어야 합니다.",
+    "generic": "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+    "googleFailed": "Google 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요."
+  }
+}
