@@ -3,7 +3,7 @@
 월간 캘린더, 날짜별 시간 상세, 날짜 범위 AI 대화, 시작·종료 알림(웹 푸시 + 카카오톡)을 만드는 개발 로드맵. 요구사항은 `docs/PRD.md`를 따른다.
 
 **📅 최종 업데이트**: 2026-10-25
-**📊 진행 상황**: Phase 1 대기 중 (0/13 Tasks 완료)
+**📊 진행 상황**: Phase 1 진행 중 (2/13 Tasks 완료)
 
 ## 착수 전 결정 사항
 
@@ -18,16 +18,16 @@
 
 ### Phase 1: 프로젝트 기반
 
-- **Task 001: 초기 템플릿 정리 및 프로젝트 설정** - 우선순위
-  - `create-next-app` 데모 콘텐츠와 미사용 `public/` 에셋 제거
-  - `README.md`를 캘린더 프로젝트 설명으로 교체
-  - 루트 레이아웃·전역 스타일 확인(한국어 `lang`, 폰트, `.dark` 테마 토큰)
-  - `npm run lint`, `npm run build` 통과 확인
-- **Task 002: Supabase 프로젝트·스키마·RLS 구성** - 우선순위
-  - Supabase 프로젝트 생성과 환경변수 구성(`.env.local`, Vercel)
-  - `lib/supabase/` 서버·클라이언트 생성기(`@supabase/ssr`)
-  - 테이블 생성: `events`, `notifications`(channel, status 포함), `push_subscriptions`, `kakao_tokens`
-  - 모든 테이블에 `user_id` + RLS 정책 적용
+- **Task 001: 초기 템플릿 정리 및 프로젝트 설정** ✅ - 완료
+  - ✅ `create-next-app` 데모 콘텐츠와 미사용 `public/` 에셋 제거
+  - ✅ `README.md`를 캘린더 프로젝트 설명으로 교체
+  - ✅ 루트 레이아웃·전역 스타일 확인(한국어 `lang`, 폰트, `.dark` 테마 토큰)
+  - ✅ `npm run lint`, `npm run build` 통과 확인
+- **Task 002: Supabase 프로젝트·스키마·RLS 구성** ✅ - 완료
+  - ✅ Supabase 프로젝트 생성과 로컬 환경변수 구성(`.env`)
+  - ✅ `lib/supabase/` 서버·클라이언트 생성기(`@supabase/ssr`)
+  - ✅ 테이블 생성: `events`, `notifications`(channel, status 포함), `push_subscriptions`, `kakao_tokens`
+  - ✅ 모든 테이블에 `user_id` + RLS 정책 적용
 - **Task 003: 인증 (이메일 + Google) 및 접근 제어** - 우선순위
   - 로그인 페이지(`/login`): 이메일 가입·로그인, Google 로그인 버튼
   - 비로그인 시 로그인 외 모든 페이지에서 `/login`으로 이동
@@ -89,6 +89,7 @@
   - `code-reviewer`로 전체 리뷰, 접근성·반응형 점검
   - 수동 시나리오: 월 경계·윤년, 월을 넘는 다일 일정, 한 날짜 일정 5개 이상, 비로그인 접근 차단, 타 사용자 데이터 접근 불가(RLS), AI 범위 상한 초과, 알림 중복 발송 여부
   - 11분 뒤 일정으로 웹·카카오톡 알림 end-to-end 확인
+  - Vercel 프로젝트 생성과 환경변수 등록(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, 이후 추가되는 서버 전용 키)
   - `npm run lint`, `npm run build` 통과 후 Vercel 배포
 
 ## 후속 단계 (MVP 제외)
