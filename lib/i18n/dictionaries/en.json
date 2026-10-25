@@ -36,7 +36,30 @@
     "languages": {
       "ko": "한국어",
       "en": "English"
-    }
+    },
+    "calendar": "Calendar",
+    "ai": "AI chat",
+    "settings": "Settings",
+    "comingSoon": "Coming soon",
+    "openMenu": "Open menu",
+    "mainMenu": "Main menu",
+    "menuTitle": "Menu",
+    "closeMenu": "Close menu"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "today": "Today",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "addEvent": "Add event",
+    "addEventSoon": "Adding events is coming soon",
+    "moreEvents": "{count} more…",
+    "eventCountOne": "{count} event",
+    "eventCountOther": "{count} events",
+    "allDay": "All day",
+    "loadFailed": "Couldn't load your events. Please try again later.",
+    "truncated": "Too many events; showing only some.",
+    "monthGridLabel": "Monthly calendar"
   },
   "footer": {
     "copyright": "© 2026 my-calendar",

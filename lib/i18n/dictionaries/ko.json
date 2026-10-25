@@ -36,7 +36,30 @@
     "languages": {
       "ko": "한국어",
       "en": "English"
-    }
+    },
+    "calendar": "캘린더",
+    "ai": "AI 대화",
+    "settings": "설정",
+    "comingSoon": "준비 중",
+    "openMenu": "메뉴 열기",
+    "mainMenu": "주 메뉴",
+    "menuTitle": "메뉴",
+    "closeMenu": "메뉴 닫기"
+  },
+  "calendar": {
+    "title": "캘린더",
+    "today": "오늘",
+    "previousMonth": "이전 달",
+    "nextMonth": "다음 달",
+    "addEvent": "일정 추가",
+    "addEventSoon": "일정 추가 기능은 준비 중입니다",
+    "moreEvents": "{count}개 더 보기",
+    "eventCountOne": "일정 {count}개",
+    "eventCountOther": "일정 {count}개",
+    "allDay": "종일",
+    "loadFailed": "일정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    "truncated": "일정이 너무 많아 일부만 표시됩니다.",
+    "monthGridLabel": "월간 캘린더"
   },
   "footer": {
     "copyright": "© 2026 my-calendar",

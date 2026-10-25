@@ -1,16 +1,102 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
+import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
+import { MonthGrid } from "@/components/calendar/month-grid";
+import {
+  endOfMonth,
+  formatDate,
+  getMonthGrid,
+  parseMonthParam,
+  startOfMonth,
+  todayInSeoul,
+} from "@/lib/calendar";
+import { getEventsForRange } from "@/lib/events/queries";
+import { buildMonthLayout } from "@/lib/events/month-layout";
 import { hasLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
-export default async function Home({ params }: PageProps<"/[lang]">) {
+export default function HomePage(props: PageProps<"/[lang]">) {
+  // params/searchParams/쿠키/현재 시각은 요청 시점 데이터이므로 Suspense 안에서 읽는다.
+  return (
+    <Suspense fallback={<MonthSkeleton />}>
+      <MonthContent {...props} />
+    </Suspense>
+  );
+}
+
+const PAGE_CLASS = "mx-auto flex w-full max-w-[1600px] flex-col gap-4 p-4 pb-10 sm:gap-5 sm:p-6 sm:pb-12 lg:p-8 lg:pb-12";
+
+async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
+  const { month: monthParam } = await searchParams;
   const dict = await getDictionary(lang);
 
+  // 현재 시각은 요청 시점에만 읽는다(cacheComponents).
+  await connection();
+  const today = todayInSeoul(new Date());
+
+  const parsed = parseMonthParam(
+    typeof monthParam === "string" ? monthParam : undefined,
+  );
+  const [todayYear, todayMonth] = today.split("-").map(Number);
+  const year = parsed?.year ?? todayYear;
+  const month = parsed?.month ?? todayMonth;
+
+  const grid = getMonthGrid(year, month);
+  const gridStart = grid[0][0].date;
+  const gridEnd = grid[grid.length - 1][6].date;
+  const monthFirst = formatDate({ year, month, day: 1 });
+
+  const result = await getEventsForRange(gridStart, gridEnd);
+  const weeks = buildMonthLayout(grid, result.ok ? result.events : []);
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-2 bg-background p-8 text-foreground">
-      <h1 className="text-2xl font-semibold tracking-tight">my-calendar</h1>
-      <p className="text-muted-foreground">{dict.home.calendarPlaceholder}</p>
+    <main className={PAGE_CLASS}>
+      <h1 className="text-2xl font-semibold tracking-tight sm:mb-1">
+        {dict.calendar.title}
+      </h1>
+      <CalendarToolbar
+        lang={lang}
+        year={year}
+        month={month}
+        today={today}
+        monthStart={startOfMonth(monthFirst)}
+        monthEnd={endOfMonth(monthFirst)}
+        dict={dict.calendar}
+      />
+      {!result.ok && (
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          {dict.calendar.loadFailed}
+        </p>
+      )}
+      {result.ok && result.truncated && (
+        <p role="status" className="text-xs text-muted-foreground">
+          {dict.calendar.truncated}
+        </p>
+      )}
+      <MonthGrid lang={lang} grid={grid} weeks={weeks} today={today} dict={dict.calendar} />
+    </main>
+  );
+}
+
+function MonthSkeleton() {
+  return (
+    <main aria-busy="true" className={PAGE_CLASS}>
+      <div aria-hidden="true" className="h-8 w-32 animate-pulse rounded bg-muted" />
+      <div aria-hidden="true" className="h-[4.75rem] animate-pulse rounded-xl border bg-card sm:h-[5.75rem]" />
+      <div
+        aria-hidden="true"
+        className="grid grid-cols-7 overflow-hidden rounded-xl border bg-card shadow-xs"
+      >
+        {Array.from({ length: 42 }, (_, i) => (
+          <div key={i} className="min-h-[9.5rem] border-r border-b [&:nth-child(7n)]:border-r-0" />
+        ))}
+      </div>
     </main>
   );
 }

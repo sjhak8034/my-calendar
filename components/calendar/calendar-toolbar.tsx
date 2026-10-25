@@ -1,0 +1,105 @@
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  formatMonthParam,
+  formatMonthShort,
+  formatMonthTitle,
+  formatPeriod,
+  getAdjacentMonth,
+  type CalendarDate,
+} from "@/lib/calendar";
+import { Button } from "@/components/ui/button";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/get-dictionary";
+
+type Props = {
+  lang: Locale;
+  year: number;
+  month: number;
+  today: CalendarDate;
+  monthStart: CalendarDate;
+  monthEnd: CalendarDate;
+  dict: Dictionary["calendar"];
+};
+
+// 날짜 배지(오늘), 월 제목 + 기간, 이전/오늘/다음, 일정 추가(준비 중)
+export function CalendarToolbar({
+  lang,
+  year,
+  month,
+  today,
+  monthStart,
+  monthEnd,
+  dict,
+}: Props) {
+  const prev = getAdjacentMonth(year, month, -1);
+  const next = getAdjacentMonth(year, month, 1);
+  const [, todayMonth, todayDay] = today.split("-").map(Number);
+  // 이전/오늘/다음을 하나로 묶는 분할 버튼. 바깥 모서리만 둥글게, 사이는 -ml-px로 테두리를 겹친다.
+  const segment =
+    "relative inline-flex h-9 items-center justify-center border bg-background text-sm font-medium whitespace-nowrap text-foreground shadow-xs outline-none transition-colors hover:bg-muted focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50";
+  return (
+    <div
+      data-slot="calendar-toolbar"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3 shadow-xs sm:p-4"
+    >
+      <div className="flex items-center gap-3">
+        <div
+          data-slot="date-badge"
+          className="flex w-14 flex-col items-center rounded-lg border bg-card py-1 leading-tight shadow-xs"
+        >
+          <span className="text-[11px] text-muted-foreground">
+            {formatMonthShort(todayMonth, lang)}
+          </span>
+          <span className="text-lg font-semibold leading-none">{todayDay}</span>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {formatMonthTitle(year, month, lang)}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {formatPeriod(monthStart, monthEnd, lang)}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div role="group" className="flex items-center">
+          <Link
+            href={`/${lang}?month=${formatMonthParam(prev.year, prev.month)}`}
+            aria-label={dict.previousMonth}
+            className={`${segment} w-9 rounded-l-lg`}
+          >
+            <ChevronLeft className="size-4" aria-hidden="true" />
+          </Link>
+          <Link
+            href={`/${lang}`}
+            className={`${segment} -ml-px px-4`}
+          >
+            {dict.today}
+          </Link>
+          <Link
+            href={`/${lang}?month=${formatMonthParam(next.year, next.month)}`}
+            aria-label={dict.nextMonth}
+            className={`${segment} -ml-px w-9 rounded-r-lg`}
+          >
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
+        {/* 일정 생성 UI(Task 008) 전까지 비활성 */}
+        <Button
+          type="button"
+          disabled
+          variant="ghost"
+          size="lg"
+          className="bg-foreground px-4! text-background"
+          title={dict.addEventSoon}
+          aria-label={`${dict.addEvent} (${dict.addEventSoon})`}
+        >
+          <Plus aria-hidden="true" />
+          {dict.addEvent}
+        </Button>
+      </div>
+    </div>
+  );
+}

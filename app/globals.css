@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* 일정 색은 --event-* 변수와 --color-event-* 매핑으로 정의 */
 
 @theme inline {
   --color-background: var(--background);
@@ -33,6 +34,30 @@
   --color-illust-ink: var(--illust-ink);
   --color-illust-paper: var(--illust-paper);
   --color-illust-shadow: var(--illust-shadow);
+  --color-event-gray-bg: var(--event-gray-bg);
+  --color-event-gray-border: var(--event-gray-border);
+  --color-event-gray-fg: var(--event-gray-fg);
+  --color-event-blue-bg: var(--event-blue-bg);
+  --color-event-blue-border: var(--event-blue-border);
+  --color-event-blue-fg: var(--event-blue-fg);
+  --color-event-indigo-bg: var(--event-indigo-bg);
+  --color-event-indigo-border: var(--event-indigo-border);
+  --color-event-indigo-fg: var(--event-indigo-fg);
+  --color-event-purple-bg: var(--event-purple-bg);
+  --color-event-purple-border: var(--event-purple-border);
+  --color-event-purple-fg: var(--event-purple-fg);
+  --color-event-pink-bg: var(--event-pink-bg);
+  --color-event-pink-border: var(--event-pink-border);
+  --color-event-pink-fg: var(--event-pink-fg);
+  --color-event-orange-bg: var(--event-orange-bg);
+  --color-event-orange-border: var(--event-orange-border);
+  --color-event-orange-fg: var(--event-orange-fg);
+  --color-event-yellow-bg: var(--event-yellow-bg);
+  --color-event-yellow-border: var(--event-yellow-border);
+  --color-event-yellow-fg: var(--event-yellow-fg);
+  --color-event-green-bg: var(--event-green-bg);
+  --color-event-green-border: var(--event-green-border);
+  --color-event-green-fg: var(--event-green-fg);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -101,6 +126,31 @@
   --illust-ink: oklch(0.38 0.03 60);
   --illust-paper: oklch(0.995 0.005 90);
   --illust-shadow: oklch(0.4 0.04 60 / 0.14);
+  /* 일정 팔레트: 파스텔 배경 + 같은 계열 테두리 + 진한 글자 */
+  --event-gray-bg: oklch(0.965 0.006 85);
+  --event-gray-border: oklch(0.88 0.014 85);
+  --event-gray-fg: oklch(0.42 0.026 85);
+  --event-blue-bg: oklch(0.965 0.03 255);
+  --event-blue-border: oklch(0.88 0.07 255);
+  --event-blue-fg: oklch(0.42 0.13 255);
+  --event-indigo-bg: oklch(0.965 0.03 278);
+  --event-indigo-border: oklch(0.88 0.07 278);
+  --event-indigo-fg: oklch(0.42 0.13 278);
+  --event-purple-bg: oklch(0.965 0.03 308);
+  --event-purple-border: oklch(0.88 0.07 308);
+  --event-purple-fg: oklch(0.42 0.13 308);
+  --event-pink-bg: oklch(0.965 0.03 355);
+  --event-pink-border: oklch(0.88 0.07 355);
+  --event-pink-fg: oklch(0.42 0.13 355);
+  --event-orange-bg: oklch(0.965 0.03 55);
+  --event-orange-border: oklch(0.88 0.07 55);
+  --event-orange-fg: oklch(0.42 0.13 55);
+  --event-yellow-bg: oklch(0.965 0.03 90);
+  --event-yellow-border: oklch(0.88 0.07 90);
+  --event-yellow-fg: oklch(0.44 0.09 90);
+  --event-green-bg: oklch(0.965 0.03 155);
+  --event-green-border: oklch(0.88 0.07 155);
+  --event-green-fg: oklch(0.42 0.13 155);
 }
 
 .dark {
@@ -144,6 +194,31 @@
   --illust-ink: oklch(0.82 0.02 80);
   --illust-paper: oklch(0.32 0.012 70);
   --illust-shadow: oklch(0 0 0 / 0.3);
+  /* 일정 팔레트(다크): 어두운 배경 + 밝은 글자 */
+  --event-gray-bg: oklch(0.33 0.01 85);
+  --event-gray-border: oklch(0.45 0.016 85);
+  --event-gray-fg: oklch(0.9 0.014 85);
+  --event-blue-bg: oklch(0.33 0.05 255);
+  --event-blue-border: oklch(0.45 0.08 255);
+  --event-blue-fg: oklch(0.9 0.07 255);
+  --event-indigo-bg: oklch(0.33 0.05 278);
+  --event-indigo-border: oklch(0.45 0.08 278);
+  --event-indigo-fg: oklch(0.9 0.07 278);
+  --event-purple-bg: oklch(0.33 0.05 308);
+  --event-purple-border: oklch(0.45 0.08 308);
+  --event-purple-fg: oklch(0.9 0.07 308);
+  --event-pink-bg: oklch(0.33 0.05 355);
+  --event-pink-border: oklch(0.45 0.08 355);
+  --event-pink-fg: oklch(0.9 0.07 355);
+  --event-orange-bg: oklch(0.33 0.05 55);
+  --event-orange-border: oklch(0.45 0.08 55);
+  --event-orange-fg: oklch(0.9 0.07 55);
+  --event-yellow-bg: oklch(0.33 0.05 90);
+  --event-yellow-border: oklch(0.45 0.08 90);
+  --event-yellow-fg: oklch(0.9 0.07 90);
+  --event-green-bg: oklch(0.33 0.05 155);
+  --event-green-border: oklch(0.45 0.08 155);
+  --event-green-fg: oklch(0.9 0.07 155);
 }
 
 @layer base {
