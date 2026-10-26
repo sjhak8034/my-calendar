@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,12 @@ export function LoginForm({
   const [mode, setMode] = useState<"signIn" | "signUp">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [errorSource, setErrorSource] = useState<ErrorSource>("initial");
+
+  // 로그인 직후 인트로의 손글씨 이미지를 미리 받아 브라우저 캐시에 둔다(인트로가 뜨자마자 쓰기 시작하도록).
+  // <link rel="preload">는 이 화면에서 쓰이지 않아 브라우저 경고가 나므로 이미지를 직접 불러 둔다.
+  useEffect(() => {
+    new Image().src = "/Welcome.svg";
+  }, []);
 
   const [passwordState, passwordAction, passwordPending] = useActionState(
     mode === "signIn" ? signInWithPassword : signUp,

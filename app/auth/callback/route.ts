@@ -29,7 +29,11 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const next = safeNextPath(searchParams.get("next"), origin);
-      return NextResponse.redirect(new URL(next ?? `/${lang}`, origin));
+      // 환영 페이지(빈 배경)로 보내 인트로를 보여 주고, 그 뒤에서 원래 가려던 곳(없으면 캘린더)으로 이동한다.
+      // 풀 로드라도 서버 HTML이 배경뿐이라 첫 페인트에 캘린더가 비치지 않는다.
+      const target = new URL(`/${lang}/welcome`, origin);
+      if (next) target.searchParams.set("next", next);
+      return NextResponse.redirect(target);
     }
   }
 

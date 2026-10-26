@@ -142,5 +142,9 @@
     "resizeTop": "시작 시각 조절",
     "resizeBottom": "종료 시각 조절",
     "deleteFailed": "일정을 삭제하지 못했습니다. 원래대로 되돌렸습니다."
+  },
+  "welcome": {
+    "title": "환영합니다",
+    "skip": "건너뛰기"
   }
 }

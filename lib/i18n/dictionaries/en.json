@@ -142,5 +142,9 @@
     "resizeTop": "Adjust start time",
     "resizeBottom": "Adjust end time",
     "deleteFailed": "Couldn't delete the event. It was restored."
+  },
+  "welcome": {
+    "title": "Welcome",
+    "skip": "Skip"
   }
 }

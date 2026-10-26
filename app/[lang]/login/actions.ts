@@ -59,7 +59,7 @@ export async function signInWithPassword(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: dict.errors[errorKey(error.code)], email };
 
-  redirect(`/${lang}`);
+  redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
 
 export async function signUp(
@@ -86,7 +86,7 @@ export async function signUp(
   // 세션이 없으면(이메일 확인 필요 등) 자동 로그인할 수 없다.
   if (!data.session) return { error: dict.errors.generic, email };
 
-  redirect(`/${lang}`);
+  redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
 
 export async function signInWithGoogle(
