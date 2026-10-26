@@ -1,11 +1,15 @@
+"use client";
+
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import {
+  GRID_END_HOUR,
+  GRID_START_HOUR,
   eventDateSpan,
   fillTemplate,
   formatFullDate,
   formatHourLabel,
-  formatShortDate,
   formatTime,
   formatTimeRange,
   formatWeekdayDay,
@@ -15,25 +19,29 @@ import {
   type EarlyEvent,
   type AllDayBar,
   type TimeBlock,
-  type WeekTimeline,
+  buildWeekTimeline,
 } from "@/lib/calendar";
-import { EventBlock, type EventBlockLabels } from "@/components/calendar/event-block";
+import { isTwoLine } from "@/components/calendar/block-text";
+import { DayOverlay } from "@/components/calendar/day-overlay";
+import { EventBlock } from "@/components/calendar/event-block";
+import { SlotCreate } from "@/components/calendar/slot-create";
 import { NowLine } from "@/components/calendar/now-line";
 import { ScrollToSelected } from "@/components/calendar/scroll-to-selected";
+import { useWeekEditor } from "@/components/calendar/week-editor";
+import { applyRange, type EditableEvent } from "@/lib/events/input";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
 
-export const START_HOUR = 6;
-export const END_HOUR = 24;
+const START_HOUR = GRID_START_HOUR;
+const END_HOUR = GRID_END_HOUR;
 const HOURS = END_HOUR - START_HOUR;
 const RANGE_MINUTES = HOURS * 60;
 
 type Props = {
   lang: Locale;
   weekDays: readonly CalendarDate[];
-  timeline: WeekTimeline;
-  descriptions: Record<string, string | null>; // 일정 id → 설명
+  events: readonly EditableEvent[]; // 서버에서 받은 이 주의 일정
   today: CalendarDate;
   selectedDate: CalendarDate;
   nowIso: string;
@@ -52,18 +60,28 @@ const SELECTED_BG = "data-selected:bg-muted/60";
 export function WeekGrid({
   lang,
   weekDays,
-  timeline,
-  descriptions,
+  events,
   today,
   selectedDate,
   nowIso,
   dict,
 }: Props) {
-  const labels: EventBlockLabels = {
-    eventDetails: dict.eventDetails,
-    close: dict.close,
-    noDescription: dict.noDescription,
-  };
+  // 낙관적 업데이트: 아직 서버에 반영 중인 새 위치를 덮어쓴 일정으로 배치를 계산한다.
+  const { overrides, reconcile } = useWeekEditor();
+  const { timeline, eventsById } = useMemo(() => {
+    const effective = events.map((event) => {
+      const override = overrides[event.id];
+      return override ? applyRange(event, override.range) : event;
+    });
+    const byId: Record<string, EditableEvent> = {};
+    for (const event of effective) byId[event.id] = event;
+    return { timeline: buildWeekTimeline(weekDays, effective), eventsById: byId };
+  }, [events, overrides, weekDays]);
+  // 서버 데이터가 덮어쓴 위치와 같아지면 덮어쓰기를 걷는다.
+  useEffect(() => {
+    reconcile(events);
+  }, [events, reconcile]);
+
   const hasEarly = timeline.days.some((day) => day.earlyEvents.length > 0);
   const hasAllDay = timeline.allDay.bars.length > 0;
   const headerId = (date: CalendarDate) => `week-day-${date}`;
@@ -88,6 +106,7 @@ export function WeekGrid({
       <ScrollToSelected
         selectedDate={selectedDate}
         weekStart={weekDays[0]}
+        data-slot="week-scroll"
         role="group"
         aria-label={dict.gridLabel}
         className="max-h-[max(24rem,calc(100dvh-7rem))] scroll-pt-[16.5rem] scroll-pl-[var(--time-col)] overflow-auto lg:max-h-[max(28rem,calc(100dvh-15rem))]"
@@ -175,8 +194,7 @@ export function WeekGrid({
                       key={bar.key}
                       bar={bar}
                       lang={lang}
-                      description={descriptions[bar.id] ?? null}
-                      labels={labels}
+                      event={eventsById[bar.id]}
                       allDayEvent={dict.allDayEvent}
                       ariaLabel={ariaLabel}
                     />
@@ -210,8 +228,7 @@ export function WeekGrid({
                             <EarlyChip
                               event={event}
                               lang={lang}
-                              description={descriptions[event.id] ?? null}
-                              labels={labels}
+                              source={eventsById[event.id]}
                               ariaLabel={ariaLabel}
                             />
                           </li>
@@ -254,8 +271,7 @@ export function WeekGrid({
                 isSelected={day.date === selectedDate}
                 isToday={day.date === today}
                 headerId={headerId(day.date)}
-                descriptions={descriptions}
-                labels={labels}
+                eventsById={eventsById}
                 ariaLabel={ariaLabel}
               />
             ))}
@@ -298,8 +314,7 @@ function DayColumn({
   isSelected,
   isToday,
   headerId,
-  descriptions,
-  labels,
+  eventsById,
   ariaLabel,
 }: {
   day: DayTimeline;
@@ -307,8 +322,7 @@ function DayColumn({
   isSelected: boolean;
   isToday: boolean;
   headerId: string;
-  descriptions: Record<string, string | null>;
-  labels: EventBlockLabels;
+  eventsById: Record<string, EditableEvent>;
   ariaLabel: LabelFn;
 }) {
   const blocks = [...day.blocks].sort((a, b) => a.top - b.top || a.column - b.column);
@@ -322,6 +336,9 @@ function DayColumn({
       data-today={isToday || undefined}
       className={cn("relative border-l", SELECTED_BG)}
     >
+      {/* 빈 곳을 누르면 그 시각으로 새 일정 폼을 연다(키보드는 툴바의 일정 추가 버튼) */}
+      <SlotCreate date={day.date} startHour={START_HOUR} endHour={END_HOUR} />
+      <DayOverlay date={day.date} />
       {blocks.length > 0 && (
         <ol className="m-0 list-none p-0">
           {blocks.map((block) => (
@@ -329,8 +346,7 @@ function DayColumn({
               key={block.key}
               block={block}
               lang={lang}
-              description={descriptions[block.id] ?? null}
-              labels={labels}
+              event={eventsById[block.id]}
               ariaLabel={ariaLabel}
             />
           ))}
@@ -343,14 +359,12 @@ function DayColumn({
 function TimedBlock({
   block,
   lang,
-  description,
-  labels,
+  event,
   ariaLabel,
 }: {
   block: TimeBlock;
   lang: Locale;
-  description: string | null;
-  labels: EventBlockLabels;
+  event: EditableEvent;
   ariaLabel: LabelFn;
 }) {
   const color = normalizeEventColor(block.color);
@@ -358,13 +372,13 @@ function TimedBlock({
   const top = ((block.top - START_HOUR * 60) / RANGE_MINUTES) * 100;
   const height = ((block.bottom - block.top) / RANGE_MINUTES) * 100;
   const minutes = block.bottom - block.top;
-  const twoLines = minutes >= 45;
+  const twoLines = isTwoLine(minutes);
   const clipped = block.clippedTop || block.clippedBottom;
   const timeText = twoLines && !block.clippedTop ? range : formatTime(block.startAt, lang);
   return (
     <li
       data-slot="week-event"
-      className="absolute z-10 px-[3px] py-px"
+      className="absolute z-10 px-[3px] py-px transition-[top,height,left,width] duration-150 ease-out motion-reduce:transition-none"
       style={{
         top: `${top}%`,
         height: `${height}%`,
@@ -374,16 +388,15 @@ function TimedBlock({
     >
       <EventBlock
         variant="block"
-        title={block.title}
         color={color}
-        when={range}
-        description={description}
-        labels={labels}
+        event={event}
         aria-label={ariaLabel(block.title, range, block.clippedTop, block.clippedBottom)}
         data-clipped-top={block.clippedTop || undefined}
         data-clipped-bottom={block.clippedBottom || undefined}
         className={cn(
-          twoLines ? "block py-1 leading-tight" : "flex items-center gap-1.5 py-0 leading-none",
+          twoLines
+            ? "flex flex-col justify-center py-0 leading-tight"
+            : "flex items-center gap-1.5 py-0 leading-none",
           minutes < 30 && "text-[11px]",
           clipped ? "pr-4 pl-1.5" : "px-1.5",
           block.clippedTop && "rounded-t-none border-t-0",
@@ -429,32 +442,23 @@ function TimedBlock({
 function AllDayBarItem({
   bar,
   lang,
-  description,
-  labels,
+  event,
   allDayEvent,
   ariaLabel,
 }: {
   bar: AllDayBar;
   lang: Locale;
-  description: string | null;
-  labels: EventBlockLabels;
+  event: EditableEvent;
   allDayEvent: string;
   ariaLabel: LabelFn;
 }) {
   const color = normalizeEventColor(bar.color);
   const span = eventDateSpan(bar.startAt, bar.endAt);
-  const dates =
-    span.start === span.end
-      ? formatShortDate(span.start)
-      : `${formatShortDate(span.start)} – ${formatShortDate(span.end)}`;
   return (
     <EventBlock
       variant="bar"
-      title={bar.title}
       color={color}
-      when={`${allDayEvent} · ${dates}`}
-      description={description}
-      labels={labels}
+      event={event}
       aria-label={ariaLabel(
         bar.title,
         span.start === span.end
@@ -487,39 +491,34 @@ function AllDayBarItem({
 }
 
 function EarlyChip({
-  event,
+  event: early,
   lang,
-  description,
-  labels,
+  source,
   ariaLabel,
 }: {
   event: EarlyEvent;
   lang: Locale;
-  description: string | null;
-  labels: EventBlockLabels;
+  source: EditableEvent;
   ariaLabel: LabelFn;
 }) {
-  const color = normalizeEventColor(event.color);
-  const range = formatTimeRange(event.startAt, event.endAt, lang);
+  const color = normalizeEventColor(early.color);
+  const range = formatTimeRange(early.startAt, early.endAt, lang);
   return (
     <EventBlock
       variant="chip"
-      title={event.title}
       color={color}
-      when={range}
-      description={description}
-      labels={labels}
-      aria-label={ariaLabel(event.title, range)}
+      event={source}
+      aria-label={ariaLabel(early.title, range)}
     >
       <span
         data-slot="event-title"
-        title={event.title}
+        title={early.title}
         className="block w-full min-w-0 truncate font-semibold"
       >
-        {event.title}
+        {early.title}
       </span>
       <span data-slot="event-time" className="block w-full truncate font-normal">
-        {formatTime(event.startAt, lang)}
+        {formatTime(early.startAt, lang)}
       </span>
     </EventBlock>
   );

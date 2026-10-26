@@ -4,6 +4,15 @@ export type CalendarDate = string;
 
 export const SEOUL_TIME_ZONE = "Asia/Seoul";
 
+// 현대 기준(과거 일광절약시간 구간 제외)으로 서울은 +09:00 고정 오프셋을 쓴다.
+// 읽기(toSeoulDateTime)는 Intl의 역사적 규칙을 따르므로, 1962년 이전·1987~88년 구간에서는 쓰기와 최대 1시간 어긋날 수 있다.
+export const SEOUL_OFFSET = "+09:00";
+
+// 서울 기준 날짜(YYYY-MM-DD)와 시각(HH:mm) → 저장용 timestamptz 문자열
+export function toSeoulIso(date: CalendarDate, time: string): string {
+  return `${date}T${time}:00${SEOUL_OFFSET}`;
+}
+
 // 주 시작 요일(0=일 … 6=토). 월요일 시작.
 export const WEEK_START = 1;
 

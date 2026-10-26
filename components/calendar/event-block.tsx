@@ -1,35 +1,16 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
-import { AlignLeft, CalendarClock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { COLOR_CLASS, DOT_CLASS } from "@/components/calendar/event-colors";
-import type { EventColor } from "@/lib/calendar";
+import { type ComponentProps, type KeyboardEvent, type ReactNode } from "react";
+import { COLOR_CLASS } from "@/components/calendar/event-colors";
+import { useWeekEditor } from "@/components/calendar/week-editor";
+import { toDayRange, GRID_START_HOUR, type DayRange, type EventColor } from "@/lib/calendar";
+import { fromEvent, type EditableEvent } from "@/lib/events/input";
 import { cn } from "@/lib/utils";
 
-export type EventBlockLabels = {
-  eventDetails: string;
-  close: string;
-  noDescription: string;
-};
-
-type Props = Omit<ComponentProps<"button">, "title" | "color"> & {
+type Props = Omit<ComponentProps<"button">, "color"> & {
   variant: "block" | "bar" | "chip";
-  title: string;
   color: EventColor;
-  when: string; // 대화상자에 보일 날짜·시간 문구(서버에서 포맷)
-  description: string | null;
-  labels: EventBlockLabels;
+  event: EditableEvent; // 클릭하면 사이드바에서 수정한다
   children: ReactNode;
 };
 
@@ -42,80 +23,97 @@ const VARIANT_CLASS = {
   chip: "flex w-full min-w-0 flex-col items-start rounded-md border px-1.5 py-1 text-left text-[11px] leading-tight",
 } as const;
 
-// 일정 하나를 버튼으로 그리고, 누르면 읽기 전용 상세 대화상자를 연다.
-// 닫으면 base-ui가 포커스를 이 트리거로 돌려준다.
+// 끌어 옮기거나 크기를 바꿀 수 있는 일정인지: 하루 안에 있고 06:00 이후에 시작하는 시간 일정
+function draggableRange(event: EditableEvent): DayRange | null {
+  if (event.all_day) return null;
+  const range = toDayRange(fromEvent(event));
+  return range && range.startMin >= GRID_START_HOUR * 60 ? range : null;
+}
+
+// 일정 하나를 버튼으로 그린다. 누르면 사이드바에서 수정하고,
+// 하루 안의 시간 일정(block)은 끌어서 이동하고 위·아래 가장자리를 끌어 길이를 바꾼다.
 export function EventBlock({
   variant,
-  title,
   color,
-  when,
-  description,
-  labels,
+  event,
   className,
   children,
+  onClick,
+  onPointerDown,
+  onKeyDown,
   ...buttonProps
 }: Props) {
+  const editor = useWeekEditor();
+  const range = variant === "block" ? draggableRange(event) : null;
+  // 이 일정을 끌고 있는 동안 원래 자리에는 옅은 잔상만 남긴다. 놓으면 낙관적 업데이트로 이 블록 자체가
+  // 새 위치에 그려지므로 따로 숨기거나 도착을 기다릴 필요가 없다.
+  const dragging = editor.preview?.eventId === event.id && editor.dragging;
+
+  function handleKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
+    onKeyDown?.(e);
+    if (!range || !e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+    e.preventDefault();
+    editor.nudgeEvent(event, range, e.key === "ArrowUp" ? -1 : 1, e.shiftKey);
+  }
+
   return (
-    <Dialog>
-      <DialogTrigger
-        {...buttonProps}
-        type="button"
-        data-slot="event-block"
-        data-variant={variant}
-        data-color={color}
-        className={cn(
-          "cursor-pointer outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 dark:hover:brightness-110",
-          VARIANT_CLASS[variant],
-          COLOR_CLASS[color],
-          className,
-        )}
-      >
-        {children}
-      </DialogTrigger>
-      <DialogContent
-        showCloseButton={false}
-        data-slot="event-dialog"
-        className="max-h-[calc(100dvh-2rem)] gap-0! overflow-hidden rounded-2xl! p-0! sm:max-w-md!"
-      >
-        <DialogHeader className="gap-3! p-5 pb-4">
-          <DialogTitle className="flex items-start gap-2.5 text-lg! leading-snug! font-semibold! tracking-tight [overflow-wrap:anywhere]">
-            <span
-              aria-hidden="true"
-              data-slot="event-dialog-dot"
-              data-color={color}
-              className={cn("mt-2 size-3 shrink-0 rounded-full", DOT_CLASS[color])}
-            />
-            <span className="min-w-0">{title}</span>
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {labels.eventDetails}
-          </DialogDescription>
-          <p
-            data-slot="event-dialog-when"
-            className="flex items-start gap-2 text-sm text-muted-foreground"
+    <button
+      {...buttonProps}
+      type="button"
+      data-slot="event-block"
+      data-variant={variant}
+      data-color={color}
+      data-dragging={dragging || undefined}
+      onClick={(e) => {
+        onClick?.(e);
+        // 끌기가 끝나며 생긴 click, 또는 마우스를 놓은 뒤의 중복 click은 건너뛴다.
+        if (editor.consumeClick()) return;
+        editor.openEdit(event);
+      }}
+      onPointerDown={(e) => {
+        onPointerDown?.(e);
+        // 터치는 스크롤과 겹치므로 본체 끌기는 마우스·펜만. 터치는 눌러서 사이드바로 수정한다.
+        if (range && e.pointerType !== "touch") {
+          editor.beginDrag(e, { kind: "event", event }, "move", range);
+        }
+      }}
+      onKeyDown={handleKeyDown}
+      className={cn(
+        "group cursor-pointer outline-none duration-150 motion-reduce:transition-none hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 dark:hover:brightness-110",
+        VARIANT_CLASS[variant],
+        COLOR_CLASS[color],
+        range && "cursor-grab select-none active:cursor-grabbing",
+        dragging ? "opacity-30 transition-[filter,opacity]" : "transition-[filter]",
+        className,
+      )}
+    >
+      {children}
+      {range && (
+        <>
+          <span
+            aria-hidden="true"
+            data-slot="resize-handle"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              editor.beginDrag(e, { kind: "event", event }, "start", range);
+            }}
+            className="absolute inset-x-0 top-0 z-10 h-2 cursor-ns-resize touch-none"
           >
-            <CalendarClock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span className="min-w-0">{when}</span>
-          </p>
-        </DialogHeader>
-        <div className="flex min-h-0 items-start gap-2 px-5 pb-5 text-sm">
-          <AlignLeft className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <p
-            data-slot="event-dialog-description"
-            className={cn(
-              "max-h-[40dvh] min-w-0 flex-1 overflow-y-auto leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]",
-              !description && "text-muted-foreground",
-            )}
+            <span className="pointer-events-none absolute left-1/2 top-px h-[3px] w-7 -translate-x-1/2 rounded-full bg-current opacity-0 transition-opacity group-hover:opacity-40 group-focus-visible:opacity-40 motion-reduce:transition-none" />
+          </span>
+          <span
+            aria-hidden="true"
+            data-slot="resize-handle"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              editor.beginDrag(e, { kind: "event", event }, "end", range);
+            }}
+            className="absolute inset-x-0 bottom-0 z-10 h-2 cursor-ns-resize touch-none"
           >
-            {description || labels.noDescription}
-          </p>
-        </div>
-        <DialogFooter className="mx-0! mb-0! rounded-b-2xl! px-5! py-3!">
-          <DialogClose render={<Button variant="outline" />}>
-            {labels.close}
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <span className="pointer-events-none absolute left-1/2 bottom-px h-[3px] w-7 -translate-x-1/2 rounded-full bg-current opacity-0 transition-opacity group-hover:opacity-40 group-focus-visible:opacity-40 motion-reduce:transition-none" />
+          </span>
+        </>
+      )}
+    </button>
   );
 }

@@ -1,5 +1,5 @@
 import "server-only";
-import { addDays, type CalendarDate } from "@/lib/calendar";
+import { SEOUL_OFFSET, addDays, type CalendarDate } from "@/lib/calendar";
 import { createClient } from "@/lib/supabase/server";
 
 export type CalendarEvent = {
@@ -15,9 +15,6 @@ export type CalendarEvent = {
 export type EventsResult =
   | { ok: true; events: CalendarEvent[]; truncated?: boolean }
   | { ok: false };
-
-// 현대 기준(과거 일광절약시간 구간 제외)으로 서울은 +09:00 고정 오프셋을 쓴다.
-const SEOUL_OFFSET = "+09:00";
 
 // PostgREST 기본 행 수 제한으로 조용히 잘리지 않도록 명시하는 상한.
 const MAX_EVENTS = 2000;

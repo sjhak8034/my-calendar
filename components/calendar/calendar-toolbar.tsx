@@ -9,8 +9,9 @@ import {
   type CalendarDate,
 } from "@/lib/calendar";
 import { SEGMENT_CLASS } from "@/components/calendar/toolbar-styles";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import type { Locale } from "@/lib/i18n/config";
+import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 type Props = {
@@ -23,7 +24,7 @@ type Props = {
   dict: Dictionary["calendar"];
 };
 
-// 날짜 배지(오늘), 월 제목 + 기간, 이전/오늘/다음, 일정 추가(준비 중)
+// 날짜 배지(오늘), 월 제목 + 기간, 이전/오늘/다음, 일정 추가
 export function CalendarToolbar({
   lang,
   year,
@@ -85,19 +86,17 @@ export function CalendarToolbar({
             <ChevronRight className="size-4" aria-hidden="true" />
           </Link>
         </div>
-        {/* 일정 생성 UI(Task 008) 전까지 비활성 */}
-        <Button
-          type="button"
-          disabled
-          variant="ghost"
-          size="lg"
-          className="bg-foreground px-4! text-background"
-          title={dict.addEventSoon}
-          aria-label={`${dict.addEvent} (${dict.addEventSoon})`}
+        {/* 오늘이 속한 주간 화면으로 가서 사이드바를 연 채 시작한다. */}
+        <Link
+          href={`/${lang}/day/${today}?new=1`}
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "lg" }),
+            "bg-foreground px-4! text-background",
+          )}
         >
           <Plus aria-hidden="true" />
           {dict.addEvent}
-        </Button>
+        </Link>
       </div>
     </div>
   );

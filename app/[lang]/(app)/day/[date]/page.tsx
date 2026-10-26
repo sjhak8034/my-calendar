@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { WeekEditorProvider } from "@/components/calendar/week-editor";
 import { WeekGrid } from "@/components/calendar/week-grid";
 import { WeekToolbar } from "@/components/calendar/week-toolbar";
 import {
@@ -12,6 +13,7 @@ import {
   parseDate,
   todayInSeoul,
 } from "@/lib/calendar";
+import type { EditableEvent } from "@/lib/events/input";
 import { getEventsForRange } from "@/lib/events/queries";
 import { hasLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
@@ -27,8 +29,9 @@ export default function DayPage(props: PageProps<"/[lang]/day/[date]">) {
 
 const PAGE_CLASS = "mx-auto flex w-full max-w-[1600px] flex-col gap-4 p-4 pb-10 sm:gap-5 sm:p-6 sm:pb-12 lg:p-8 lg:pb-12";
 
-async function WeekContent({ params }: PageProps<"/[lang]/day/[date]">) {
+async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[date]">) {
   const { lang, date } = await params;
+  const { new: openNew } = await searchParams;
   if (!hasLocale(lang)) notFound();
   const parts = isValidDate(date) ? parseDate(date) : null;
   if (!parts || parts.year < CALENDAR_MIN_YEAR || parts.year > CALENDAR_MAX_YEAR) notFound();
@@ -47,16 +50,22 @@ async function WeekContent({ params }: PageProps<"/[lang]/day/[date]">) {
   const result = await getEventsForRange(weekStart, weekEnd, {
     includeDescription: true,
   });
-  const events = result.ok ? result.events : [];
-  const timeline = buildWeekTimeline(weekDays, events);
-  if (timeline.skipped.length > 0) {
+  const events: EditableEvent[] = (result.ok ? result.events : []).map((event) => ({
+    ...event,
+    description: event.description ?? null,
+  }));
+  // 배치는 클라이언트에서(낙관적 업데이트를 반영해) 계산한다. 잘못된 데이터는 여기서 로그만 남긴다.
+  const { skipped } = buildWeekTimeline(weekDays, events);
+  if (skipped.length > 0) {
     // 잘못된 데이터는 화면에 노출하지 않고 서버 로그에만 남긴다.
-    console.error("[week] skipped events:", timeline.skipped.join(", "));
+    console.error("[week] skipped events:", skipped.join(", "));
   }
-  const descriptions: Record<string, string | null> = {};
-  for (const event of events) descriptions[event.id] = event.description ?? null;
 
   return (
+    <WeekEditorProvider
+      labels={dict.eventForm}
+      initialCreateDate={openNew === "1" ? date : undefined}
+    >
     <main className={PAGE_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight sm:mb-1">
         {dict.week.title}
@@ -86,14 +95,14 @@ async function WeekContent({ params }: PageProps<"/[lang]/day/[date]">) {
       <WeekGrid
         lang={lang}
         weekDays={weekDays}
-        timeline={timeline}
-        descriptions={descriptions}
+        events={events}
         today={today}
         selectedDate={date}
         nowIso={nowIso}
         dict={dict.week}
       />
     </main>
+    </WeekEditorProvider>
   );
 }
 

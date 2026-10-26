@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   CALENDAR_MAX_YEAR,
   CALENDAR_MIN_YEAR,
@@ -12,7 +12,7 @@ import {
   type CalendarDate,
 } from "@/lib/calendar";
 import { SEGMENT_CLASS } from "@/components/calendar/toolbar-styles";
-import { Button } from "@/components/ui/button";
+import { NewEventButton } from "@/components/calendar/new-event-button";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
@@ -29,7 +29,7 @@ type Props = {
 // 범위 밖으로 이동할 수 없을 때: 같은 모양, 클릭·포커스 불가
 const DISABLED_CLASS = "pointer-events-none cursor-not-allowed opacity-50";
 
-// 날짜 배지(오늘), 주 제목 + 기간, 이전 주/오늘/다음 주, 월간 보기, 일정 추가(준비 중)
+// 날짜 배지(오늘), 주 제목 + 기간, 이전 주/오늘/다음 주, 월간 보기, 일정 추가
 export function WeekToolbar({
   lang,
   selectedDate,
@@ -125,19 +125,7 @@ export function WeekToolbar({
           <CalendarDays className="size-4" aria-hidden="true" />
           {weekDict.monthView}
         </Link>
-        {/* 일정 생성 UI(Task 008) 전까지 비활성 */}
-        <Button
-          type="button"
-          disabled
-          variant="ghost"
-          size="lg"
-          className="bg-foreground px-4! text-background"
-          title={dict.addEventSoon}
-          aria-label={`${dict.addEvent} (${dict.addEventSoon})`}
-        >
-          <Plus aria-hidden="true" />
-          {dict.addEvent}
-        </Button>
+        <NewEventButton date={selectedDate} label={dict.addEvent} />
       </div>
     </div>
   );

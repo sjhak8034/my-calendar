@@ -12,7 +12,7 @@ export const COLOR_CLASS: Record<EventColor, string> = {
   green: "border-event-green-border bg-event-green-bg text-event-green-fg",
 };
 
-// 대화상자의 색 표시 점
+// 사이드바 폼의 색 선택 점
 export const DOT_CLASS: Record<EventColor, string> = {
   gray: "bg-event-gray-fg",
   blue: "bg-event-blue-fg",
