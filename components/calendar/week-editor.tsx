@@ -90,7 +90,6 @@ type WeekEditorContext = {
     mode: DragMode,
     range: DayRange,
   ) => void;
-  nudgeEvent: (event: EditableEvent, range: DayRange, steps: number, resize: boolean) => void;
   overrides: Record<string, Override>; // 일정 id → 아직 서버에 반영 중인 새 위치
   reconcile: (serverEvents: readonly EditableEvent[]) => void; // 서버 데이터와 같아진 덮어쓰기를 걷는다
   consumeClick: () => boolean; // 방금 끌기로 끝난 클릭이면 true(클릭 처리를 건너뛴다)
@@ -219,7 +218,7 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
     setFloating(null);
   }, []);
 
-  const { overrides, reconcile, commitEvent, nudgeEvent } = useEventOverrides({
+  const { overrides, reconcile, commitEvent } = useEventOverrides({
     labels,
     onSubmit: useCallback(() => setError(null), []),
     // 이 일정을 사이드바에서 열어 둔 상태라면 시각 입력도 새 값으로 맞춘다.
@@ -350,7 +349,6 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       closeSession,
       updateValues,
       beginDrag,
-      nudgeEvent,
       overrides,
       reconcile,
       consumeClick,
@@ -368,7 +366,6 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       closeSession,
       updateValues,
       beginDrag,
-      nudgeEvent,
       overrides,
       reconcile,
       consumeClick,

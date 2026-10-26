@@ -136,7 +136,6 @@
     "panelLabel": "일정 입력",
     "closePanel": "사이드바 닫기",
     "dragHint": "그리드의 블록을 끌어 요일과 시간을 옮기고, 위·아래 가장자리를 끌어 길이를 조절하세요.",
-    "keyboardHint": "일정에 포커스를 두고 Alt+↑/↓로 15분 이동, Alt+Shift+↑/↓로 길이를 조절할 수 있습니다.",
     "moveFailed": "일정을 옮기지 못했습니다. 원래 위치로 되돌렸습니다.",
     "dismiss": "알림 닫기",
     "draftTitle": "새 일정",

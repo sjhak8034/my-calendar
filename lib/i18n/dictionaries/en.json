@@ -136,7 +136,6 @@
     "panelLabel": "Event editor",
     "closePanel": "Close sidebar",
     "dragHint": "Drag the block on the grid to change the day and time, and drag its top or bottom edge to change the length.",
-    "keyboardHint": "Focus an event and press Alt+↑/↓ to move it by 15 minutes, or Alt+Shift+↑/↓ to change its length.",
     "moveFailed": "Couldn't move the event. It was put back where it was.",
     "dismiss": "Dismiss",
     "draftTitle": "New event",

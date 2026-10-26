@@ -99,18 +99,6 @@ export function resizeRangeRaw(
   return { startMin: clamp(pointerMin, bounds.min, maxStart), endMin: range.endMin };
 }
 
-// 키보드: 15분 단위로 이동(resize=false) 또는 끝 가장자리 조절(resize=true)
-export function nudgeRange(
-  range: { startMin: number; endMin: number },
-  steps: number,
-  resize: boolean,
-  bounds: Bounds,
-): { startMin: number; endMin: number } {
-  const delta = steps * SNAP_MINUTES;
-  if (resize) return resizeRange(range, "end", range.endMin + delta, bounds);
-  return moveRange(range, 0, range.startMin + delta, bounds);
-}
-
 // 시작~끝을 `09:00 – 10:30` 형태로(블록 안 시간 표시)
 export function formatClockRange(startMin: number, endMin: number): string {
   return `${formatClock(startMin)} – ${formatClock(endMin)}`;

@@ -260,60 +260,60 @@ export function EventForm({
         </Field>
 
         {formError && <FieldError>{message(formError)}</FieldError>}
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/40 px-5 py-3">
-        {confirmingDelete ? (
-          <>
-            <p role="alert" className="min-w-0 flex-1 basis-full text-sm text-destructive sm:basis-auto">
-              {labels.deleteConfirm}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                ref={cancelDeleteRef}
-                type="button"
-                variant="outline"
-                disabled={pending}
-                onClick={() => setConfirmingDelete(false)}
-              >
-                {labels.cancel}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={pending}
-                onClick={handleDelete}
-              >
-                {pending ? labels.deleting : labels.deleteConfirmYes}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            {mode === "edit" ? (
-              <Button
-                ref={deleteRef}
-                type="button"
-                variant="outline"
-                disabled={pending}
-                className="text-destructive hover:text-destructive"
-                onClick={() => setConfirmingDelete(true)}
-              >
-                {labels.delete}
-              </Button>
-            ) : (
-              <span />
-            )}
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" disabled={pending} onClick={onCancel}>
-                {labels.cancel}
-              </Button>
-              <Button type="submit" disabled={pending}>
-                {pending ? labels.saving : labels.save}
-              </Button>
-            </div>
-          </>
-        )}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          {confirmingDelete ? (
+            <>
+              <p role="alert" className="min-w-0 flex-1 basis-full text-sm text-destructive sm:basis-auto">
+                {labels.deleteConfirm}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  ref={cancelDeleteRef}
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => setConfirmingDelete(false)}
+                >
+                  {labels.cancel}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={pending}
+                  onClick={handleDelete}
+                >
+                  {pending ? labels.deleting : labels.deleteConfirmYes}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {mode === "edit" ? (
+                <Button
+                  ref={deleteRef}
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  {labels.delete}
+                </Button>
+              ) : (
+                <span />
+              )}
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" disabled={pending} onClick={onCancel}>
+                  {labels.cancel}
+                </Button>
+                <Button type="submit" disabled={pending}>
+                  {pending ? labels.saving : labels.save}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </form>
   );

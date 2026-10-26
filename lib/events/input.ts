@@ -184,7 +184,7 @@ export function applyRange<T extends { start_at: string; end_at: string }>(
   return { ...event, ...rangeToIso(range) };
 }
 
-// 시각만 바꾸는 이동·크기 조절 입력(드래그·키보드). 하루 안의 구간이다.
+// 시각만 바꾸는 이동·크기 조절 입력(드래그). 하루 안의 구간이다.
 export function parseMoveRange(value: unknown): DayRange | null {
   if (typeof value !== "object" || value === null) return null;
   const v = value as Record<string, unknown>;

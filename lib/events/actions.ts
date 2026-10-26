@@ -85,7 +85,7 @@ export async function updateEvent(
   return { ok: true };
 }
 
-// 드래그·키보드로 시간만 옮기거나 늘릴 때: 시작·종료 시각만 갱신한다(제목 등 다른 필드는 건드리지 않는다).
+// 드래그로 시간만 옮기거나 늘릴 때: 시작·종료 시각만 갱신한다(제목 등 다른 필드는 건드리지 않는다).
 export async function moveEvent(id: string, range: DayRange): Promise<ActionResult> {
   const supabase = await requireUser();
   if (!supabase) return { ok: false, code: "unauthorized" };

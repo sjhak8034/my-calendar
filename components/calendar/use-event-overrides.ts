@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import type { EventFormLabels } from "@/components/calendar/event-form";
 import {
-  GRID_BOUNDS,
   fromDayRange,
-  nudgeRange,
   toDayRange,
   type DayRange,
 } from "@/lib/calendar";
@@ -102,15 +100,5 @@ export function useEventOverrides({ labels, onSubmit, onSaved, onError }: Option
     [labels, onSubmit, onSaved, onError, dropOverride],
   );
 
-  // 키보드: 15분 단위 이동(resize=false) 또는 끝 가장자리 조절(resize=true)
-  const nudgeEvent = useCallback(
-    (event: EditableEvent, range: DayRange, steps: number, resize: boolean) => {
-      const next = { date: range.date, ...nudgeRange(range, steps, resize, GRID_BOUNDS) };
-      if (next.startMin === range.startMin && next.endMin === range.endMin) return;
-      commitEvent(event, next);
-    },
-    [commitEvent],
-  );
-
-  return { overrides, reconcile, commitEvent, nudgeEvent };
+  return { overrides, reconcile, commitEvent };
 }
