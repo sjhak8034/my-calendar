@@ -14,7 +14,7 @@ type Props = {
 
 // 요일 헤더 + 6주
 export function MonthGrid({ lang, grid, weeks, today, dict }: Props) {
-  const weekdays = getWeekdayNames(lang);
+  const weekdays = getWeekdayNames();
 
   return (
     <div

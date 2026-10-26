@@ -100,6 +100,12 @@ export function startOfWeek(date: CalendarDate): CalendarDate {
   return addDays(date, -weekdayIndex(date));
 }
 
+// date가 속한 주의 월~일 7일
+export function getWeekDays(date: CalendarDate): CalendarDate[] {
+  const start = startOfWeek(date);
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
 export function startOfMonth(date: CalendarDate): CalendarDate {
   const { year, month } = toParts(date);
   return formatDate({ year, month, day: 1 });
@@ -155,6 +161,15 @@ function parseInstant(iso: string): Date {
 // timestamptz 문자열 → 서울 기준 날짜
 export function toSeoulDate(iso: string): CalendarDate {
   return seoulParts(parseInstant(iso)).date;
+}
+
+// timestamptz 문자열 → 서울 기준 날짜와 그 날 00:00부터의 분(0~1439, 초는 버림)
+export function toSeoulDateTime(iso: string): {
+  date: CalendarDate;
+  minutes: number;
+} {
+  const p = seoulParts(parseInstant(iso));
+  return { date: p.date, minutes: p.hour * 60 + p.minute };
 }
 
 // 서울 기준 정확히 00:00:00.000인지

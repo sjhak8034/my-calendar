@@ -9,6 +9,7 @@ export type CalendarEvent = {
   end_at: string;
   all_day: boolean;
   color: string | null;
+  description?: string | null; // includeDescription 옵션을 켠 조회에만 있다.
 };
 
 export type EventsResult =
@@ -26,14 +27,18 @@ const MAX_EVENTS = 2000;
 export async function getEventsForRange(
   startDate: CalendarDate,
   endDate: CalendarDate,
+  options: { includeDescription?: boolean } = {},
 ): Promise<EventsResult> {
   const rangeStart = `${startDate}T00:00:00${SEOUL_OFFSET}`;
   const rangeEnd = `${addDays(endDate, 1)}T00:00:00${SEOUL_OFFSET}`;
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("events")
-    .select("id, title, start_at, end_at, all_day, color")
+  const query = supabase.from("events");
+  // select 문자열을 리터럴로 유지해야 반환 타입이 추론된다.
+  const { data, error } = await (options.includeDescription
+    ? query.select("id, title, start_at, end_at, all_day, color, description")
+    : query.select("id, title, start_at, end_at, all_day, color")
+  )
     .lt("start_at", rangeEnd)
     .gte("end_at", rangeStart)
     .order("start_at", { ascending: true })

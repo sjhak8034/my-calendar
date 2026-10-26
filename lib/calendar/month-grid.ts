@@ -13,8 +13,9 @@ export type MonthGrid = GridDay[][];
 
 export type YearMonth = { year: number; month: number };
 
-const MIN_YEAR = 1900;
-const MAX_YEAR = 2200;
+// 화면에서 다루는 연도 범위(월간 ?month=, 주간 /day/ 경로 공용)
+export const CALENDAR_MIN_YEAR = 1900;
+export const CALENDAR_MAX_YEAR = 2200;
 
 // 항상 6주 × 7일. 첫 칸은 그 달 1일이 속한 주의 시작일(월요일).
 export function getMonthGrid(year: number, month: number): MonthGrid {
@@ -51,7 +52,7 @@ export function parseMonthParam(value: string | undefined): YearMonth | null {
   if (!match) return null;
   const year = Number(match[1]);
   const month = Number(match[2]);
-  if (month < 1 || month > 12 || year < MIN_YEAR || year > MAX_YEAR) {
+  if (month < 1 || month > 12 || year < CALENDAR_MIN_YEAR || year > CALENDAR_MAX_YEAR) {
     return null;
   }
   return { year, month };

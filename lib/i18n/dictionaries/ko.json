@@ -76,5 +76,22 @@
     "passwordTooShort": "비밀번호는 6자 이상이어야 합니다.",
     "generic": "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
     "googleFailed": "Google 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요."
+  },
+  "week": {
+    "title": "주간 일정",
+    "gridLabel": "주간 시간표",
+    "previousWeek": "이전 주",
+    "nextWeek": "다음 주",
+    "monthView": "월간 보기",
+    "earlyEvents": "6시 이전",
+    "allDay": "종일",
+    "eventDetails": "일정 상세",
+    "close": "닫기",
+    "noDescription": "설명이 없습니다.",
+    "allDayEvent": "종일 일정",
+    "continuesFromPrevious": "이전 시간에서 이어짐",
+    "selectedDay": "선택한 날짜",
+    "eventLabel": "{title}, {time}",
+    "continuesToNext": "다음 시간으로 이어짐"
   }
 }

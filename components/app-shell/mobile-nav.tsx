@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
@@ -77,7 +77,9 @@ export function MobileNav({ lang, labels, footer }: Props) {
             </SheetClose>
           </div>
           <div className="flex-1">
-            <NavMenu lang={lang} labels={labels} onNavigate={() => setOpen(false)} />
+            <Suspense fallback={null}>
+              <NavMenu lang={lang} labels={labels} onNavigate={() => setOpen(false)} />
+            </Suspense>
           </div>
           {footer}
         </SheetContent>

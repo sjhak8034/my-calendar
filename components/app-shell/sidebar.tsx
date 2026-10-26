@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { NavMenu } from "./nav-menu";
@@ -18,7 +19,10 @@ export function Sidebar({ lang, nav }: { lang: string; nav: Dictionary["nav"] })
         <BrandLogo textClassName="text-xl leading-none" iconClassName="size-8" />
       </Link>
       <div className="flex-1">
-        <NavMenu lang={lang} labels={nav} />
+        {/* usePathname은 동적 경로([date])에서 런타임 데이터라 Suspense가 필요하다 */}
+        <Suspense fallback={null}>
+          <NavMenu lang={lang} labels={nav} />
+        </Suspense>
       </div>
       <UserCard lang={lang} nav={nav} />
     </aside>

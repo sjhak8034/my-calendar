@@ -76,5 +76,22 @@
     "passwordTooShort": "Password must be at least 6 characters.",
     "generic": "Something went wrong. Please try again later.",
     "googleFailed": "Google sign-in failed. Please try again later."
+  },
+  "week": {
+    "title": "Weekly schedule",
+    "gridLabel": "Weekly timetable",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "monthView": "Month view",
+    "earlyEvents": "Before 6 AM",
+    "allDay": "All day",
+    "eventDetails": "Event details",
+    "close": "Close",
+    "noDescription": "No description.",
+    "allDayEvent": "All-day event",
+    "continuesFromPrevious": "Continues from earlier",
+    "selectedDay": "Selected day",
+    "eventLabel": "{title}, {time}",
+    "continuesToNext": "Continues later"
   }
 }

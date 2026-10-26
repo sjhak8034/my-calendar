@@ -1,4 +1,11 @@
-import { SEOUL_TIME_ZONE, WEEK_START, addDays, type CalendarDate } from "./date";
+import {
+  SEOUL_TIME_ZONE,
+  WEEK_START,
+  addDays,
+  toSeoulDate,
+  weekdayIndex,
+  type CalendarDate,
+} from "./date";
 import type { Locale } from "@/lib/i18n/config";
 
 const INTL_LOCALE: Record<Locale, string> = { ko: "ko-KR", en: "en-US" };
@@ -34,39 +41,42 @@ function formatCalendar(
   );
 }
 
+// 화면에 보이는 날짜 문구(요일·월·제목·기간)는 언어 설정과 무관하게 영어 약어로 고정한다.
+// 시각(오전/오후)과 시간 눈금, aria-label용 전체 날짜만 locale을 따른다.
+const DATE_LOCALE: Locale = "en";
+
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
-// "2026년 10월" / "October 2026"
-export function formatMonthTitle(year: number, month: number, locale: Locale) {
-  return formatCalendar(`${year}-${pad2(month)}-01`, locale, {
+// "Oct 2026" (로케일 인자 없음: 항상 영어)
+export function formatMonthTitle(year: number, month: number) {
+  return formatCalendar(`${year}-${pad2(month)}-01`, DATE_LOCALE, {
     year: "numeric",
-    month: "long",
+    month: "short",
   });
 }
 
-// "2026. 10. 1. – 2026. 10. 31." / "Oct 1, 2026 – Oct 31, 2026"
-export function formatPeriod(
-  start: CalendarDate,
-  end: CalendarDate,
-  locale: Locale,
-) {
-  const options: Intl.DateTimeFormatOptions =
-    locale === "ko"
-      ? { year: "numeric", month: "numeric", day: "numeric" }
-      : { year: "numeric", month: "short", day: "numeric" };
-  return `${formatCalendar(start, locale, options)} – ${formatCalendar(end, locale, options)}`;
+// "Oct 1, 2026 – Oct 31, 2026" (로케일과 무관)
+export function formatPeriod(start: CalendarDate, end: CalendarDate) {
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  };
+  return `${formatCalendar(start, DATE_LOCALE, options)} – ${formatCalendar(end, DATE_LOCALE, options)}`;
 }
 
-// 배지용 월 약칭: "10월" / "Oct"
-export function formatMonthShort(month: number, locale: Locale) {
-  return formatCalendar(`2000-${pad2(month)}-01`, locale, { month: "short" });
+// 배지용 월 약칭: "Oct" (로케일과 무관)
+export function formatMonthShort(month: number) {
+  return formatCalendar(`2000-${pad2(month)}-01`, DATE_LOCALE, {
+    month: "short",
+  });
 }
 
-// WEEK_START부터 7개: 월 화 수 목 금 토 일 / Mon … Sun
-export function getWeekdayNames(locale: Locale): string[] {
+// WEEK_START부터 7개: Mon Tue Wed Thu Fri Sat Sun (로케일과 무관)
+export function getWeekdayNames(): string[] {
   // 2024-01-01은 월요일
   return Array.from({ length: 7 }, (_, i) =>
-    formatCalendar(addDays("2024-01-01", WEEK_START - 1 + i), locale, {
+    formatCalendar(addDays("2024-01-01", WEEK_START - 1 + i), DATE_LOCALE, {
       weekday: "short",
     }),
   );
@@ -82,6 +92,15 @@ export function formatFullDate(date: CalendarDate, locale: Locale) {
   });
 }
 
+// 보이는 짧은 날짜: "Wed, Oct 21" (로케일과 무관)
+export function formatShortDate(date: CalendarDate) {
+  return formatCalendar(date, DATE_LOCALE, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 // 서울 시간대 시각: "오전 9:00" / "9:00 AM"
 export function formatTime(iso: string, locale: Locale) {
   return getFormatter(locale, {
@@ -90,6 +109,63 @@ export function formatTime(iso: string, locale: Locale) {
     hour12: true,
     timeZone: SEOUL_TIME_ZONE,
   }).format(new Date(iso));
+}
+
+// 주 제목: "Oct 19 – 25, 2026" (달·연도가 바뀌면 필요한 만큼만 반복, 로케일과 무관)
+export function formatWeekTitle(start: CalendarDate, end: CalendarDate) {
+  const sameYear = start.slice(0, 4) === end.slice(0, 4);
+  const sameMonth = sameYear && start.slice(5, 7) === end.slice(5, 7);
+  const dayOnly = (date: CalendarDate) =>
+    formatCalendar(date, DATE_LOCALE, { day: "numeric" });
+  const monthDay = (date: CalendarDate) =>
+    formatCalendar(date, DATE_LOCALE, { month: "short", day: "numeric" });
+  const full = (date: CalendarDate) =>
+    formatCalendar(date, DATE_LOCALE, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+  if (!sameYear) return `${full(start)} – ${full(end)}`;
+  const year = end.slice(0, 4);
+  return `${monthDay(start)} – ${sameMonth ? dayOnly(end) : monthDay(end)}, ${year}`;
+}
+
+// 시간 눈금 라벨: "오전 9시" / "9 AM". 0과 24는 자정(오전 12시 / 12 AM).
+export function formatHourLabel(hour: number, locale: Locale) {
+  return getFormatter(locale, {
+    hour: "numeric",
+    hour12: true,
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(2000, 0, 1, ((hour % 24) + 24) % 24)));
+}
+
+// 서울 기준 시간 범위. 같은 날이면 "오전 9:00 – 오전 10:30",
+// 다른 날이면 양끝에 영어 날짜(시각만 로케일): ko "Oct 22 오후 11:00 – Oct 23 오전 2:00",
+// en "Oct 22, 11:00 PM – Oct 23, 2:00 AM"
+export function formatTimeRange(
+  startIso: string,
+  endIso: string,
+  locale: Locale,
+) {
+  const start = formatTime(startIso, locale);
+  const end = formatTime(endIso, locale);
+  if (toSeoulDate(startIso) === toSeoulDate(endIso)) {
+    return `${start} – ${end}`;
+  }
+  const monthDay = (iso: string) =>
+    getFormatter(DATE_LOCALE, {
+      month: "short",
+      day: "numeric",
+      timeZone: SEOUL_TIME_ZONE,
+    }).format(new Date(iso));
+  const join = locale === "ko" ? " " : ", ";
+  return `${monthDay(startIso)}${join}${start} – ${monthDay(endIso)}${join}${end}`;
+}
+
+// 주 헤더용: "Mon 19" (로케일과 무관)
+export function formatWeekdayDay(date: CalendarDate) {
+  return `${getWeekdayNames()[weekdayIndex(date)]} ${Number(date.slice(8, 10))}`;
 }
 
 // 사전 문자열의 {key} 자리표시자 치환

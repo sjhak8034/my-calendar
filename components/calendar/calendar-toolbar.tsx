@@ -8,6 +8,7 @@ import {
   getAdjacentMonth,
   type CalendarDate,
 } from "@/lib/calendar";
+import { SEGMENT_CLASS } from "@/components/calendar/toolbar-styles";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
@@ -35,9 +36,7 @@ export function CalendarToolbar({
   const prev = getAdjacentMonth(year, month, -1);
   const next = getAdjacentMonth(year, month, 1);
   const [, todayMonth, todayDay] = today.split("-").map(Number);
-  // 이전/오늘/다음을 하나로 묶는 분할 버튼. 바깥 모서리만 둥글게, 사이는 -ml-px로 테두리를 겹친다.
-  const segment =
-    "relative inline-flex h-9 items-center justify-center border bg-background text-sm font-medium whitespace-nowrap text-foreground shadow-xs outline-none transition-colors hover:bg-muted focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50";
+  const segment = SEGMENT_CLASS;
   return (
     <div
       data-slot="calendar-toolbar"
@@ -49,16 +48,16 @@ export function CalendarToolbar({
           className="flex w-14 flex-col items-center rounded-lg border bg-card py-1 leading-tight shadow-xs"
         >
           <span className="text-[11px] text-muted-foreground">
-            {formatMonthShort(todayMonth, lang)}
+            {formatMonthShort(todayMonth)}
           </span>
           <span className="text-lg font-semibold leading-none">{todayDay}</span>
         </div>
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
-            {formatMonthTitle(year, month, lang)}
+            {formatMonthTitle(year, month)}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {formatPeriod(monthStart, monthEnd, lang)}
+            {formatPeriod(monthStart, monthEnd)}
           </p>
         </div>
       </div>
