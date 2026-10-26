@@ -11,6 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { DeleteDropZone } from "@/components/calendar/delete-drop-zone";
 import { EditorToast } from "@/components/calendar/editor-toast";
 import { EventSidePanel } from "@/components/calendar/event-side-panel";
 import type { EventFormLabels } from "@/components/calendar/event-form";
@@ -79,6 +80,7 @@ type WeekEditorContext = {
   floating: Floating | null;
   dragging: boolean; // 포인터로 끌고 있는 중
   dragInfo: DragInfo | null;
+  deleteHover: boolean; // 끄는 블록이 삭제 영역 위에 있음
   openCreate: (date: CalendarDate, minutes?: number) => void;
   openEdit: (event: EditableEvent) => void;
   close: () => void;
@@ -91,6 +93,7 @@ type WeekEditorContext = {
     range: DayRange,
   ) => void;
   overrides: Record<string, Override>; // 일정 id → 아직 서버에 반영 중인 새 위치
+  removed: Record<string, number>; // 일정 id → 삭제를 서버에 반영 중이라 목록에서 숨긴 일정
   reconcile: (serverEvents: readonly EditableEvent[]) => void; // 서버 데이터와 같아진 덮어쓰기를 걷는다
   consumeClick: () => boolean; // 방금 끌기로 끝난 클릭이면 true(클릭 처리를 건너뛴다)
 };
@@ -120,6 +123,7 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
   const [preview, setPreview] = useState<Preview | null>(null);
   const [dragInfo, setDragInfo] = useState<DragInfo | null>(null);
   const [floating, setFloating] = useState<Floating | null>(null);
+  const [deleteHover, setDeleteHover] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sessionCounter = useRef(1);
@@ -218,7 +222,7 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
     setFloating(null);
   }, []);
 
-  const { overrides, reconcile, commitEvent } = useEventOverrides({
+  const { overrides, removed, reconcile, commitEvent, removeEvent } = useEventOverrides({
     labels,
     onSubmit: useCallback(() => setError(null), []),
     // 이 일정을 사이드바에서 열어 둔 상태라면 시각 입력도 새 값으로 맞춘다.
@@ -280,21 +284,36 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
               endMin: next.endMin,
             });
           },
-          onDrop: (finalRange) => {
+          onDeleteHover: setDeleteHover,
+          onDrop: (finalRange, overDelete) => {
             // 놓은 직후 같은 요소 위로 오는 click은 무시한다.
             suppressClick.current = true;
             later(() => {
               suppressClick.current = false;
             }, 0);
-            // 떠 있던 블록은 놓을 열의 자리로 미끄러져 들어간다(서버 응답은 기다리지 않는다).
-            setFloating((prev) => (prev ? { ...prev, settling: true } : prev));
-            // 15분 칸이 그대로면(4px 넘게 끌었다가 제자리에 놓음) 저장하지 않는다.
-            const unchanged =
-              finalRange.date === range.date &&
-              finalRange.startMin === range.startMin &&
-              finalRange.endMin === range.endMin;
-            if (target.kind === "event" && !unchanged) commitEvent(target.event, finalRange);
-            // 안착이 끝나면 임시 표시를 걷는다. 그 사이 새 드래그가 시작·종료됐다면 그대로 둔다.
+            if (overDelete) {
+              // 삭제 영역에 놓음: 저장된 일정은 삭제(열려 있던 사이드바도 닫음), 초안은 버리고 사이드바를 닫는다.
+              // 떠 있는 블록은 drag-session이 영역 중심으로 줄여 사라지게 한다.
+              setPreview(null);
+              // 놓일 열 강조가 안착 애니메이션 동안 다시 나타나지 않도록 날짜를 비운다.
+              setFloating((prev) => (prev ? { ...prev, date: "" } : prev));
+              if (target.kind === "event") {
+                removeEvent(target.event);
+                if (panelRef.current?.eventId === target.event.id) close();
+              } else {
+                close();
+              }
+            } else {
+              // 떠 있던 블록은 놓을 열의 자리로 미끄러져 들어간다(서버 응답은 기다리지 않는다).
+              setFloating((prev) => (prev ? { ...prev, settling: true } : prev));
+              // 15분 칸이 그대로면(4px 넘게 끌었다가 제자리에 놓음) 저장하지 않는다.
+              const unchanged =
+                finalRange.date === range.date &&
+                finalRange.startMin === range.startMin &&
+                finalRange.endMin === range.endMin;
+              if (target.kind === "event" && !unchanged) commitEvent(target.event, finalRange);
+            }
+            // 애니메이션이 끝나면 임시 표시를 걷는다. 그 사이 새 드래그가 시작·종료됐다면 그대로 둔다.
             const token = ++dropToken.current;
             later(() => {
               if (!stopDrag.current && dropToken.current === token) clearTransient();
@@ -315,13 +334,14 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
             else if (original) updateValues(original);
           },
           onFinish: () => {
+            setDeleteHover(false);
             setDragInfo(null);
             stopDrag.current = null;
           },
         },
       });
     },
-    [commitEvent, updateValues, labels, clearTransient, later],
+    [commitEvent, removeEvent, updateValues, close, labels, clearTransient, later],
   );
 
   // Esc로 사이드바 닫기(드래그 취소는 drag-session이 먼저 처리한다)
@@ -343,6 +363,7 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       floating,
       dragging,
       dragInfo,
+      deleteHover,
       openCreate,
       openEdit,
       close,
@@ -350,6 +371,7 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       updateValues,
       beginDrag,
       overrides,
+      removed,
       reconcile,
       consumeClick,
     }),
@@ -360,6 +382,7 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       floating,
       dragging,
       dragInfo,
+      deleteHover,
       openCreate,
       openEdit,
       close,
@@ -367,6 +390,7 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       updateValues,
       beginDrag,
       overrides,
+      removed,
       reconcile,
       consumeClick,
     ],
@@ -383,7 +407,14 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
         {children}
       </div>
       <EventSidePanel />
-      {floating && <FloatingBlock floating={floating} elRef={floatingEl} />}
+      <DeleteDropZone
+        visible={dragInfo?.mode === "move"}
+        active={deleteHover}
+        panelOpen={panel !== null}
+      />
+      {floating && (
+        <FloatingBlock floating={floating} elRef={floatingEl} deleting={deleteHover} />
+      )}
       {error && (
         <EditorToast
           message={error}

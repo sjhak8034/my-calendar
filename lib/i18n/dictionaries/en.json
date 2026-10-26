@@ -140,6 +140,7 @@
     "dismiss": "Dismiss",
     "draftTitle": "New event",
     "resizeTop": "Adjust start time",
-    "resizeBottom": "Adjust end time"
+    "resizeBottom": "Adjust end time",
+    "deleteFailed": "Couldn't delete the event. It was restored."
   }
 }

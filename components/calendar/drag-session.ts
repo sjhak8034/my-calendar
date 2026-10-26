@@ -2,6 +2,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import {
   GRID_END_HOUR,
   GRID_START_HOUR,
+  isOverRect,
   minuteFromY,
   positionAt,
   resizeOffsetPx,
@@ -21,6 +22,7 @@ export type DragTarget = { kind: "draft" } | { kind: "event"; event: EditableEve
 const CLICK_SLOP = 4; // 이 거리(px) 안의 이동은 클릭으로 본다
 const EDGE_ZONE = 40; // 스크롤 영역 가장자리 자동 스크롤 구간(px)
 const MAX_SCROLL_SPEED = 18; // 프레임당 px
+const DELETE_ZONE_MARGIN = 12; // 삭제 영역 판정을 사방으로 넓히는 여유(px)
 export const SETTLE_MS = 160; // 놓은 블록이 열 자리로 들어가는 시간
 export const SETTLE_DONE_MS = SETTLE_MS + 40; // 안착이 끝나 임시 표시를 걷어도 되는 시점
 
@@ -36,7 +38,8 @@ export type DragView = {
 export type DragCallbacks = {
   onStart: () => void; // 클릭 한계를 넘어 실제 드래그가 시작됨
   onChange: (view: DragView) => void;
-  onDrop: (range: DayRange) => void; // 이동이 있었던 드래그를 놓음
+  onDeleteHover: (over: boolean) => void; // 끄는 블록이 삭제 영역 위로 들어오거나 나감(이동 모드)
+  onDrop: (range: DayRange, overDelete: boolean) => void; // 이동이 있었던 드래그를 놓음
   onCancel: (moved: boolean) => void; // Esc 또는 pointercancel
   onFinish: () => void; // 어느 경우든 리스너 해제 직후
 };
@@ -58,11 +61,16 @@ type Session = {
   raf: number;
   dirty: boolean; // 마지막 프레임 이후 포인터가 움직였거나 스크롤됨
   applied: boolean; // 한 번이라도 provider에 반영했는지
+  overDelete: boolean; // 포인터가 삭제 영역 위에 있는지
 };
 
 // 화면 y → 그 날 00:00부터의 분(스냅 없음)
 function rawMinute(y: number, columns: ColumnRect[]): number {
   return minuteFromY(y, columns[0], GRID_START_HOUR, GRID_END_HOUR);
+}
+
+function deleteZoneEl(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('[data-slot="delete-zone"]');
 }
 
 function measureColumns(): ColumnRect[] {
@@ -110,6 +118,7 @@ export function startDragSession(params: StartDragParams): (() => void) | null {
     raf: 0,
     dirty: false,
     applied: false,
+    overDelete: false,
   };
 
   // 15분 칸·날짜가 바뀔 때만 provider에 알린다.
@@ -156,7 +165,7 @@ export function startDragSession(params: StartDragParams): (() => void) | null {
       } else if (s.lastY > rect.bottom - EDGE_ZONE) {
         speed = Math.min(1, (s.lastY - (rect.bottom - EDGE_ZONE)) / EDGE_ZONE);
       }
-      if (speed !== 0) {
+      if (speed !== 0 && !s.overDelete) {
         box.scrollTop += speed * MAX_SCROLL_SPEED;
         cache = null;
         scrolled = true;
@@ -167,6 +176,18 @@ export function startDragSession(params: StartDragParams): (() => void) | null {
       const columns = measure();
       const next = positionAt(input, s.lastX, s.lastY, columns);
       if (next) apply(next, columns);
+    }
+    if (mode === "move") {
+      const over = isOverRect(
+        s.lastX,
+        s.lastY,
+        deleteZoneEl()?.getBoundingClientRect() ?? null,
+        DELETE_ZONE_MARGIN,
+      );
+      if (over !== s.overDelete) {
+        s.overDelete = over;
+        callbacks.onDeleteHover(over);
+      }
     }
     // 스냅과 무관하게 매 프레임 포인터에 붙인다(요소가 방금 그려졌을 수도 있어 계속 시도).
     follow(measure());
@@ -247,6 +268,23 @@ export function startDragSession(params: StartDragParams): (() => void) | null {
     );
   };
 
+  // 삭제 영역에 놓는 순간: 떠 있는 블록이 영역 중심으로 이동하며 줄어들고 사라진다.
+  const collapseFloating = () => {
+    const el = getFloatingEl();
+    const zone = deleteZoneEl();
+    if (!el || !zone) return;
+    const z = zone.getBoundingClientRect();
+    const b = el.getBoundingClientRect();
+    const dx = z.left + z.width / 2 - (b.left + b.width / 2);
+    const dy = z.top + z.height / 2 - (b.top + b.height / 2);
+    const t = `${SETTLE_MS}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+    el.style.transition = `transform ${t}, opacity ${t}`;
+    el.style.setProperty("--fx", `${s.lastX - startX + dx}px`);
+    el.style.setProperty("--fy", `${s.lastY - startY + dy}px`);
+    el.style.transform = "translate(var(--fx, 0px), var(--fy, 0px)) scale(0.2)";
+    el.style.opacity = "0";
+  };
+
   const onUp = (ev?: PointerEvent) => {
     if (ev && ev.pointerId !== pointerId) return;
     const moved = s.moved;
@@ -257,10 +295,20 @@ export function startDragSession(params: StartDragParams): (() => void) | null {
       if (next) apply(next, columns);
     }
     const finalRange = s.last;
+    // 놓는 순간의 포인터 위치로 삭제 영역 여부를 한 번 더 확인한다(대기 중인 프레임을 기다리지 않음).
+    if (moved && mode === "move") {
+      s.overDelete = isOverRect(
+        s.lastX,
+        s.lastY,
+        deleteZoneEl()?.getBoundingClientRect() ?? null,
+        DELETE_ZONE_MARGIN,
+      );
+    }
     stop();
     if (!moved) return; // 클릭: 뒤따르는 click 이벤트가 사이드바를 연다.
-    if (mode === "move") settleFloating(finalRange, columns);
-    callbacks.onDrop(finalRange);
+    const overDelete = mode === "move" && s.overDelete;
+    if (mode === "move") (overDelete ? collapseFloating : () => settleFloating(finalRange, columns))();
+    callbacks.onDrop(finalRange, overDelete);
   };
 
   const onCancel = (ev?: Event) => {

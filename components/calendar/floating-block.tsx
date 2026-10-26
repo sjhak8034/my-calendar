@@ -11,9 +11,11 @@ import { cn } from "@/lib/utils";
 export function FloatingBlock({
   floating,
   elRef,
+  deleting,
 }: {
   floating: Floating;
   elRef: Ref<HTMLDivElement>;
+  deleting: boolean; // 삭제 영역 위에 있음
 }) {
   return (
     <div
@@ -27,7 +29,9 @@ export function FloatingBlock({
           ? // 내려앉으며 그림자와 링을 줄여, 곧 나타날 진짜 블록의 평평한 모양과 맞춘다.
             "shadow-none ring-0"
           : // 끄는 동안은 전환 없이 포인터를 그대로 따라간다.
-            "shadow-2xl ring-2 ring-foreground/30",
+            deleting
+            ? "opacity-60 shadow-2xl ring-2 ring-destructive"
+            : "shadow-2xl ring-2 ring-foreground/30",
       )}
       style={{
         left: floating.settling ? floating.settleLeft : floating.left0,

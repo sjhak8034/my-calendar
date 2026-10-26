@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 // 날짜 열 위에 얹는 임시 블록: 사이드바의 초안 일정, 끌고 있는 저장된 일정의 새 위치.
 export function DayOverlay({ date }: { date: CalendarDate }) {
-  const { panel, preview, floating, dragInfo, labels, beginDrag } = useWeekEditor();
+  const { panel, preview, floating, dragInfo, deleteHover, labels, beginDrag } = useWeekEditor();
   const dragging = !!dragInfo;
   const resizing =
     dragInfo && dragInfo.mode !== "move"
@@ -33,7 +33,7 @@ export function DayOverlay({ date }: { date: CalendarDate }) {
   return (
     <>
       {/* 옮기는 동안 지금 놓으면 들어갈 날짜 열을 옅게 강조 */}
-      {floating && floating.date === date && (
+      {floating && !deleteHover && floating.date === date && (
         <div
           aria-hidden="true"
           data-slot="drop-column"

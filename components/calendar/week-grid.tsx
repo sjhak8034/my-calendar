@@ -67,16 +67,18 @@ export function WeekGrid({
   dict,
 }: Props) {
   // 낙관적 업데이트: 아직 서버에 반영 중인 새 위치를 덮어쓴 일정으로 배치를 계산한다.
-  const { overrides, reconcile } = useWeekEditor();
+  const { overrides, removed, reconcile } = useWeekEditor();
   const { timeline, eventsById } = useMemo(() => {
-    const effective = events.map((event) => {
-      const override = overrides[event.id];
-      return override ? applyRange(event, override.range) : event;
-    });
+    const effective = events
+      .filter((event) => !(event.id in removed))
+      .map((event) => {
+        const override = overrides[event.id];
+        return override ? applyRange(event, override.range) : event;
+      });
     const byId: Record<string, EditableEvent> = {};
     for (const event of effective) byId[event.id] = event;
     return { timeline: buildWeekTimeline(weekDays, effective), eventsById: byId };
-  }, [events, overrides, weekDays]);
+  }, [events, overrides, removed, weekDays]);
   // 서버 데이터가 덮어쓴 위치와 같아지면 덮어쓰기를 걷는다.
   useEffect(() => {
     reconcile(events);

@@ -79,3 +79,19 @@ export function resizeOffsetPx(
   const delta = mode === "end" ? next.endMin - range.endMin : next.startMin - range.startMin;
   return (delta / GRID_MINUTES) * grid.height;
 }
+
+// 포인터가 사각형 위에 있는지(가장자리 포함). margin만큼 사방으로 넓혀 판정한다.
+export function isOverRect(
+  x: number,
+  y: number,
+  rect: { left: number; top: number; width: number; height: number } | null,
+  margin = 0,
+): boolean {
+  if (!rect) return false;
+  return (
+    x >= rect.left - margin &&
+    x <= rect.left + rect.width + margin &&
+    y >= rect.top - margin &&
+    y <= rect.top + rect.height + margin
+  );
+}
