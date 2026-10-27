@@ -46,7 +46,12 @@ export function AiWidget({ lang, labels }: { lang: Locale; labels: Labels }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   function toggle(next: boolean) {
-    if (next) setMounted(true);
+    if (next && !mounted) {
+      // 처음 열 때는 닫힌 모습으로 먼저 그린 뒤 열어야 열리는 애니메이션이 재생된다.
+      setMounted(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => setOpen(true)));
+      return;
+    }
     setOpen(next);
     if (!next) buttonRef.current?.focus();
   }
@@ -67,7 +72,14 @@ export function AiWidget({ lang, labels }: { lang: Locale; labels: Labels }) {
           open && "max-sm:hidden",
         )}
       >
-        {open ? <X className="size-6" aria-hidden="true" /> : <ToggleIcon />}
+        {/* 아이콘이 바뀔 때 살짝 돌며 나타난다(key가 달라 다시 마운트되면서 재생) */}
+        {open ? (
+          <X key="close" className="size-6 animate-in spin-in-90 duration-300" aria-hidden="true" />
+        ) : (
+          <span key="open" className="animate-in zoom-in-50 duration-300">
+            <ToggleIcon />
+          </span>
+        )}
       </button>
     </>
   );
@@ -356,7 +368,8 @@ function ChatPanel({
       id="ai-chat-panel"
       role="dialog"
       aria-label={labels.title}
-      hidden={!open}
+      aria-hidden={!open}
+      inert={!open}
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
       }}
@@ -364,6 +377,11 @@ function ChatPanel({
         "fixed z-50 flex flex-col overflow-hidden border bg-card text-card-foreground shadow-2xl",
         // 작은 화면: 전체 화면. sm 이상: 버튼 위의 팝업.
         "inset-0 sm:inset-auto sm:right-6 sm:bottom-24 sm:h-[min(36rem,calc(100dvh-7.5rem))] sm:w-[24rem] sm:rounded-2xl",
+        // 열고 닫을 때: 흐려지지 않고 버튼 쪽(오른쪽 아래)에서 작아졌다 커진다.
+        // visibility도 함께 전환해 닫는 애니메이션이 끝난 뒤에 숨겨지고 포커스도 받지 않는다.
+        // Tailwind v4의 scale-*은 transform이 아닌 scale 속성이라 전환 대상에 scale을 직접 적어야 한다.
+        "origin-bottom-right transition-[scale,visibility] duration-300 ease-out motion-reduce:transition-none",
+        open ? "visible scale-100" : "invisible scale-0",
       )}
     >
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
