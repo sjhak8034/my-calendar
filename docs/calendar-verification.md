@@ -302,6 +302,25 @@
 | 객체가 아님, null | null |
 | `isEventInput` title이 숫자, description이 null, allDay가 문자열, 필드 누락 | false |
 
+## 13. AI 대화 (`lib/ai/*`, `app/api/ai/route.ts`)
+
+팝업 채팅 + 도구 호출로 바뀐 뒤(1단계) 확인한 것. 이전 범위 선택 방식의 확인 목록은 폐기했다.
+
+| 대상 | 확인한 것 |
+| --- | --- |
+| `feedSse`·`parseChatData`·`ToolCallAssembler` | 줄 중간에서 끊긴 청크 이어 붙이기, `[DONE]`, 도구 호출 인자가 여러 조각으로 올 때 이어 붙임, 같은 `index`(0)를 쓰는 서로 다른 `id`의 호출 2개 분리, `extra_content`(thought signature) 보존, 이름 없는 조각은 마지막 호출에 이어 붙임 (임시 스크립트, 저장소에 두지 않음) |
+| `npm run lint`, `npm run build` | 통과 (2단계 `create_event` 초안 카드 추가 후에도) |
+
+**확인하지 못한 것**: 2단계 — `create_event` 인자 검증(시간 누락·종료<시작·색상 위조), 종료 시각 생략 시 1시간 뒤·자정 넘김 기본값, 초안 카드의 추가·취소·실패 재시도, 저장 후 캘린더 반영. 1단계 중 일정 검색은 사용자가 동작을 확인함. 그 외(실제 Supabase·Gemini 필요): 팝업 UI(열기·닫기·Esc·모바일 전체 화면·다른 UI와 겹침), 실제 Gemini의 도구 호출 응답 모양과 thought signature 왕복, `max_completion_tokens` 파라미터 호환, `search_events` 인자 검증(잘못된 날짜·366일 초과·키워드)과 결과, 최근 대화 복원·새 대화·전체 삭제, RLS(타 계정 접근 차단, 30일 조회 제외), `consume_ai_quota`의 한도·동시 요청 직렬화, 만료 대화 삭제 함수, 서버리스에서 중단 후 `after()` 저장.
+
+## 14. 게스트 모드 (Task 014)
+
+**확인함**: 게스트 시작 → 인트로 → 캘린더("게스트" 표시), 일정 추가, AI 3회 후 4번째 질문의 `guestLimited` 안내(429)와 DB 한도(RPC에 100/500을 요청해도 3회), RLS(본인 일정만), 로그아웃 확인 대화상자(모바일 시트 포함), 로그아웃 시 계정·일정 즉시 삭제(`delete_guest_account`: 호출 후 `user_not_found`, 일정 빈 목록, 사용자가 브라우저 로그아웃으로도 확인), anon 키로 `delete_guest_account`·`purge_inactive_guests` 호출 거부, 게스트의 `purge_*` 호출 거부.
+
+**전환(014b) REST 확인**: `PUT /auth/v1/user {email,password}`로 같은 `user.id` 유지·`is_anonymous: false`·일정 유지, 옛 토큰은 JWT claim이 낡아 AI 한도 3회가 남고(그래서 `refreshSession` 필요) 갱신한 토큰은 한도 20/100 적용, **정식 계정으로 `delete_guest_account`를 불러도 `false`이고 아무것도 지워지지 않음**.
+
+**확인하지 못한 것**: `/upgrade` 화면(이메일 전환 폼, 중복 이메일 오류, 비밀번호 6자 미만 오류), Google 연결(Manual linking 설정 필요)과 복귀, 이미 연결된 Google 계정 안내, 일반 사용자의 `/upgrade` 접근 시 홈 이동, `purge_inactive_guests`의 `auth.sessions.refreshed_at` 컬럼 동작(`select public.purge_inactive_guests(1);`), 게스트가 메뉴 시트 안 로그아웃 대화상자에서 포커스 동작.
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).

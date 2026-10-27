@@ -3,11 +3,11 @@
 월간 캘린더, 날짜별 시간 상세, 날짜 범위 AI 대화, 시작·종료 알림(웹 푸시 + 카카오톡)을 만드는 개발 로드맵. 요구사항은 `docs/PRD.md`를 따른다.
 
 **📅 최종 업데이트**: 2026-10-26
-**📊 진행 상황**: 8/13 Tasks 완료 (다음: Task 009 날짜 범위 AI 대화)
+**📊 진행 상황**: 8/13 Tasks 완료 (Task 009 AI 대화 2단계 검증 대기, Task 014 게스트 모드 014a 완료·014b 구현, UI 검증 대기)
 
 ## 착수 전 결정 사항
 
-- AI 대화 범위 상한과 사용자별 사용량 제한 수치: Task 009 전
+- AI 대화 사용량 제한(시간당 20회, 하루 100회)·메시지 200자·대화 30일 보관·쓰기 작업은 확인 버튼 필수: 확정(Task 009)
 - 종일 다일 일정의 종료일 포함 여부와 입력 폼의 종료<시작 검증 메시지: Task 008 전 (확정됨: 주 시작 월요일, 6주 고정, 한 칸 3줄, 색 팔레트 8종)
 - Vercel Cron / Supabase `pg_cron`·`pg_net` 요금제별 제한 확인: Task 010 전
 - 카카오 `talk_message` 동의 항목의 다중 사용자 제공 조건(검수 여부): Task 012 전
@@ -70,11 +70,30 @@
 
 ### Phase 3: AI 대화
 
-- **Task 009: 날짜 범위 AI 대화 (F010)** - 우선순위
-  - `/ai` 페이지: 시작일·종료일 선택, 범위 내 일정 개수 표시
-  - `app/api/ai/route.ts`: 범위 내 본인 일정 조회 후 OpenAI 스트리밍 응답
-  - 범위 상한, 사용자별 사용량 제한, 일정 내용을 지시와 구분해 전달(프롬프트 인젝션 방어)
-  - API 키는 서버 환경변수에만 보관, 대화 기록은 저장하지 않음
+- **Task 009: AI 대화 — 우하단 팝업 채팅 + 도구 호출 (F010)** - 우선순위
+  - **1단계(구현·일정 검색 동작 확인)**: 읽기 전용
+    - 앱 공통 레이아웃의 오른쪽 아래 둥근 버튼(`components/ai/ai-widget.tsx`, 아이콘은 `ToggleIcon` 한 곳만 교체)과 채팅 팝업(작은 화면은 전체 화면). `/ai` 페이지와 사이드바 메뉴 제거
+    - 이어지는 단일 대화(열면 최근 30일 이내 대화 복원) + 새 대화·기록 전체 삭제. 메시지 200자
+    - `app/api/ai/route.ts`: 로그인·Origin·입력 검증 후 `consume_ai_quota` 통과 시 Gemini(OpenAI 호환 엔드포인트) 호출, NDJSON 스트리밍. 질문 1건당 모델 호출은 도구 루프로 최대 5회(`AI_MAX_TOOL_ROUNDS`), 마지막 호출은 도구 없이 답하게 함
+    - `lib/ai/tools.ts`: `search_events(start_date, end_date, keyword?)` — 로그인 사용자의 Supabase 클라이언트로 조회(RLS), 최대 366일·50건, 인자는 서버에서 재검증. 결과는 `<` 이스케이프한 JSON, 시스템 프롬프트로 데이터와 지시를 구분(프롬프트 인젝션 방어)
+    - Gemini 3 도구 호출은 `extra_content`(thought signature)를 다음 요청에 그대로 돌려줘야 해서 `lib/ai/sse.ts`의 `ToolCallAssembler`가 보존
+  - **2단계(구현됨, 검증 대기)**: `create_event` 도구. 모델은 일정을 저장하지 못하고 검증을 통과한 초안만 만든다(`lib/ai/tools.ts`, `toPayload` 재사용, 질문당 최대 3개). 채팅창에 초안 카드(제목·시간·색)가 뜨고 사용자가 "추가" 버튼을 눌러야 기존 `createEvent` Server Action으로 저장(로그인·입력 재검증·`revalidatePath`). 카드는 대화에 저장되지 않아 새로고침하면 사라짐
+  - **3단계**: `update_event`·`delete_event` 도구(동일하게 확인 버튼 필수)
+  - 보안 방어 현황과 남은 점검(RLS 실검증, 공격 시나리오, 쓰기 도구 도입 시 규칙)은 `docs/ai-security.md`에 정리
+  - API 키는 서버 환경변수(`GEMINI_API_KEY`, 선택 `GEMINI_MODEL`)에만 보관. 질문·답변은 DB에 저장하고 마지막 대화 후 30일 보관(RLS가 만료 대화를 숨기고 삭제 함수로 정리)
+  - ⚠️ 적용 필요(순서대로): `supabase/migrations/20261026000000_ai_chat.sql` → `20261027000000_ai_chat_floating.sql`(날짜 범위 컬럼 제거)을 Supabase에 실행해야 동작. 만료 행 완전 삭제는 사용량 함수가 호출 때마다 일부를 정리하고, 일 1회 스케줄은 Task 010의 `pg_cron`에 추가
+
+### Phase 3-1: 게스트 모드
+
+- **Task 014: 게스트(익명 로그인) 모드 (F015, F016)** - 우선순위
+  - **014a(완료)**: 게스트 시작·AI 3회 제한·로그아웃 확인·로그아웃 시 즉시 삭제를 REST와 브라우저로 확인
+    - 로그인 화면의 "게스트로 시작" → `signInAsGuest` Server Action이 `auth.signInAnonymously()` 후 `/welcome`으로 이동. 게스트도 `authenticated` 역할 + `is_anonymous` claim이라 RLS·일정 CRUD·`proxy.ts`는 그대로 동작
+    - 게스트 AI는 최근 24시간 3회(시간당도 3회). `consume_ai_quota`가 JWT의 `is_anonymous`를 읽어 DB에서 한도를 3으로 clamp(RPC를 직접 불러도 우회 불가), 라우트는 같은 값을 넘기고 `guestLimited` 오류를 돌려줌
+    - 사용자 카드에 "게스트" 표시, 게스트 로그아웃은 확인 대화상자(`components/app-shell/guest-sign-out.tsx`) 후 **계정·데이터 즉시 삭제**: `signOut` Server Action이 게스트면 `delete_guest_account()` RPC(본인 익명 계정만, `auth.users.is_anonymous` 재확인, FK cascade)를 호출한 뒤 로그아웃. 실패해도 로그아웃은 진행하고 30일 정리가 안전망
+    - `purge_inactive_guests`: 가입 30일 경과 + 최근 30일 세션 갱신이 없는 익명 사용자를 삭제(FK cascade로 하위 데이터 정리). 일 1회 스케줄은 Task 010의 `pg_cron`에 추가
+  - **014b(구현됨, UI 검증 대기)**: 게스트 → 정식 계정 전환. 사용자 카드의 "계정 만들기" → `/[lang]/upgrade`(게스트만 접근, 아니면 홈으로). 이메일은 `upgradeWithEmail`(`updateUser({email, password})` 후 `refreshSession`)로 같은 `user.id`를 유지하고, Google은 `upgradeWithGoogle`(`linkIdentity`) → `/auth/callback?upgrade=1`이 인트로 없이 홈으로 보냄. 이미 다른 계정에 연결된 Google 계정(`identity_already_exists`)은 `/upgrade?error=identity` 안내. 두 액션 모두 서버에서 게스트인지 재확인. 이메일 확인이 꺼진 프로젝트라 즉시 전환됨(켜져 있으면 "확인 메일" 안내)
+  - ⚠️ 적용 필요: Supabase 대시보드에서 **Allow anonymous sign-ins** 켜기(014b에서 Google 연결은 **Manual linking**도), `supabase/migrations/20261028000000_guest_mode.sql` → `20261029000000_guest_delete.sql` 실행(앞선 AI 마이그레이션 두 개가 먼저 적용돼 있어야 함)
+  - 남는 위험: CAPTCHA 없음(Supabase 기본 익명 가입 IP 제한에 의존). 게스트당 하루 3회라 비용은 제한적이며 필요하면 Turnstile을 후속으로 추가
 
 ### Phase 4: 알림
 
@@ -83,6 +102,8 @@
   - `app/api/cron/notify/route.ts`: 공유 비밀 헤더 검증, 발송 시각이 된 알림 조회 후 발송
   - Supabase `pg_cron` + `pg_net`으로 1분마다 호출
   - 중복 발송 방지(상태 컬럼 + 원자적 갱신)
+  - `pg_cron`으로 일 1회 `select public.purge_expired_ai_chats(1000)` 실행(30일 지난 AI 대화 정리, Task 009 보완)
+  - `proxy.ts`는 `/api/*`를 로그인 필요 경로로 처리하므로, cron 엔드포인트(`/api/cron/*`)는 비밀 헤더 검증과 함께 proxy에서 예외로 연다
 - **Task 011: 웹 푸시 알림 (F012)** - 우선순위
   - `public/sw.js` 서비스 워커, VAPID 키 구성
   - 설정 페이지(`/settings`): 푸시 권한 요청, 구독 등록·해제
@@ -98,7 +119,11 @@
 - **Task 013: 품질 점검 및 배포** - 우선순위
   - `code-reviewer`로 전체 리뷰, 접근성·반응형 점검 (월간 그리드의 ARIA 구조: 일정 칩을 날짜 칸 안으로, 탭 순서 개선 포함)
   - 잘못된 날짜 경로(`/day/abc`)의 HTTP 상태를 404로 만들기(프록시에서 검증), 같은 시각에 일정이 매우 많이 겹칠 때 열 수 상한과 "+N" 묶음, 일정 상세 대화상자 데이터 중복 직렬화 줄이기
-  - 수동 시나리오: 월 경계·윤년, 월을 넘는 다일 일정, 한 날짜 일정 5개 이상, 비로그인 접근 차단, 타 사용자 데이터 접근 불가(RLS), AI 범위 상한 초과, 알림 중복 발송 여부
+  - 수동 시나리오: 월 경계·윤년, 월을 넘는 다일 일정, 한 날짜 일정 5개 이상, 비로그인 접근 차단, 타 사용자 데이터 접근 불가(RLS, AI 대화 포함), AI 범위 상한 초과·사용량 제한 도달·만료 대화 비노출, 알림 중복 발송 여부
+  - 게스트 수동 시나리오(게스트 시작·AI 4번째 질문 차단·로그아웃 확인·타 계정 데이터 비노출·30일 정리)와 개인정보처리방침의 게스트 보관 문구(30일)
+  - `docs/ai-security.md`의 미완료 점검 항목(AI 테이블 RLS 실검증, 공격 시나리오 시도, `code-reviewer` 보안 리뷰) 처리
+  - 이메일 인증과 계정 복구(공개 배포 전 필수): Supabase **Confirm email** 켜기, Resend 등 **SMTP 직접 연결**(기본 메일 서버는 발송 수 제한이 매우 작음), 회원가입 후 "확인 메일을 보냈어요" 안내(현재 `signUp`은 세션이 없으면 일반 오류), 확인 링크용 `emailRedirectTo`와 `/auth/callback` 처리, 확인 메일 재발송, 비밀번호 재설정(현재 없음). 게스트 전환(`upgradeWithEmail`)은 확인 전까지 게스트로 남으므로 대기 중 로그아웃 시 데이터가 즉시 삭제된다는 안내 보강
+  - 개인정보처리방침(`/privacy`)에 AI 대화 문구 반영: 일정 제목·설명의 Google Gemini 전송, 대화 30일 보관, 삭제 방법(Google 쪽 데이터 사용·보관 정책(무료 등급은 입력이 모델 개선에 쓰일 수 있음)은 확인 필요)
   - 11분 뒤 일정으로 웹·카카오톡 알림 end-to-end 확인
   - Vercel 프로젝트 생성과 환경변수 등록(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, 이후 추가되는 서버 전용 키)
   - `npm run lint`, `npm run build` 통과 후 Vercel 배포
