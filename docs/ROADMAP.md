@@ -3,7 +3,7 @@
 월간 캘린더, 날짜별 시간 상세, 날짜 범위 AI 대화, 시작·종료 알림(웹 푸시 + 카카오톡)을 만드는 개발 로드맵. 요구사항은 `docs/PRD.md`를 따른다.
 
 **📅 최종 업데이트**: 2026-10-26
-**📊 진행 상황**: 8/13 Tasks 완료 (Task 009 AI 대화 2단계 검증 대기, Task 014 게스트 모드 014a 완료·014b 구현, UI 검증 대기)
+**📊 진행 상황**: 8/13 Tasks 완료 (Task 009 AI 대화 1~3단계 완료·마무리 점검 대기, Task 014 게스트 모드 014a 완료·014b 구현, UI 검증 대기)
 
 ## 착수 전 결정 사항
 
@@ -77,9 +77,10 @@
     - `app/api/ai/route.ts`: 로그인·Origin·입력 검증 후 `consume_ai_quota` 통과 시 Gemini(OpenAI 호환 엔드포인트) 호출, NDJSON 스트리밍. 질문 1건당 모델 호출은 도구 루프로 최대 5회(`AI_MAX_TOOL_ROUNDS`), 마지막 호출은 도구 없이 답하게 함
     - `lib/ai/tools.ts`: `search_events(start_date, end_date, keyword?)` — 로그인 사용자의 Supabase 클라이언트로 조회(RLS), 최대 366일·50건, 인자는 서버에서 재검증. 결과는 `<` 이스케이프한 JSON, 시스템 프롬프트로 데이터와 지시를 구분(프롬프트 인젝션 방어)
     - Gemini 3 도구 호출은 `extra_content`(thought signature)를 다음 요청에 그대로 돌려줘야 해서 `lib/ai/sse.ts`의 `ToolCallAssembler`가 보존
-  - **2단계(구현됨, 검증 대기)**: `create_event` 도구. 모델은 일정을 저장하지 못하고 검증을 통과한 초안만 만든다(`lib/ai/tools.ts`, `toPayload` 재사용, 질문당 최대 3개). 채팅창에 초안 카드(제목·시간·색)가 뜨고 사용자가 "추가" 버튼을 눌러야 기존 `createEvent` Server Action으로 저장(로그인·입력 재검증·`revalidatePath`). 카드는 대화에 저장되지 않아 새로고침하면 사라짐
-  - **3단계**: `update_event`·`delete_event` 도구(동일하게 확인 버튼 필수)
+  - **2단계(구현·검증됨)**: `create_event` 도구. 모델은 일정을 저장하지 못하고 검증을 통과한 초안만 만든다(`lib/ai/tools.ts`, `toPayload` 재사용, 질문당 최대 3개). 채팅창에 초안 카드(제목·시간·색)가 뜨고 사용자가 "추가" 버튼을 눌러야 기존 `createEvent` Server Action으로 저장(로그인·입력 재검증·`revalidatePath`). 카드는 대화에 저장되지 않아 새로고침하면 사라짐
+  - **3단계(구현·검증됨)**: `update_event`·`delete_event` 도구. 대상은 `search_events`가 준 id로 지정하고 서버가 본인 일정을 다시 읽어 변경 전/후(시작만 옮기면 길이 유지)를 만든다. 수정·삭제 카드의 버튼을 눌러야 기존 `updateEvent`·`deleteEvent` Server Action이 실행. 추가·수정·삭제 카드는 질문당 합쳐 3개까지(`lib/ai/draft.ts`의 `AiDraft`)
   - 보안 방어 현황과 남은 점검(RLS 실검증, 공격 시나리오, 쓰기 도구 도입 시 규칙)은 `docs/ai-security.md`에 정리
+  - 모델 내부 추론 토큰도 출력 한도에 포함되므로 `max_completion_tokens` 2500 + `reasoning_effort: low`(1000에서는 검색 후 수정 같은 다단계 요청이 "답변이 길어 중간에 끊겼어요"로 잘림)
   - API 키는 서버 환경변수(`GEMINI_API_KEY`, 선택 `GEMINI_MODEL`)에만 보관. 질문·답변은 DB에 저장하고 마지막 대화 후 30일 보관(RLS가 만료 대화를 숨기고 삭제 함수로 정리)
   - ⚠️ 적용 필요(순서대로): `supabase/migrations/20261026000000_ai_chat.sql` → `20261027000000_ai_chat_floating.sql`(날짜 범위 컬럼 제거)을 Supabase에 실행해야 동작. 만료 행 완전 삭제는 사용량 함수가 호출 때마다 일부를 정리하고, 일 1회 스케줄은 Task 010의 `pg_cron`에 추가
 
