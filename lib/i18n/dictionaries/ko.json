@@ -156,7 +156,7 @@
     "open": "AI 대화 열기",
     "close": "AI 대화 닫기",
     "emptyTitle": "무엇을 도와드릴까요?",
-    "emptyHint": "예: 이번 주 일정 알려줘 / 내일 3시에 치과 일정 잡아줘",
+    "emptyHint": "예: 이번 주 일정 알려줘 / 내일 3시에 치과 일정 잡아줘 / 치과 일정 4시로 옮겨줘",
     "messagesLabel": "대화 내용",
     "roleUser": "나",
     "roleAssistant": "AI",
@@ -176,7 +176,7 @@
     "notices": {
       "cut": "답변이 길어 중간에 끊겼어요."
     },
-    "disclaimer": "AI 응답은 틀릴 수 있어요. 일정 추가는 카드의 '추가' 버튼을 눌러야 저장돼요. 물어본 내용에 따라 일정의 제목·설명이 Google Gemini로 전송되고, 대화는 마지막 대화 후 30일간 저장돼요.",
+    "disclaimer": "AI 응답은 틀릴 수 있어요. 일정 추가·수정·삭제는 카드의 버튼을 눌러야 실행돼요. 물어본 내용에 따라 일정의 제목·설명이 Google Gemini로 전송되고, 대화는 마지막 대화 후 30일간 저장돼요.",
     "errors": {
       "unauthorized": "로그인이 필요합니다. 다시 로그인해 주세요.",
       "forbidden": "요청을 처리할 수 없습니다. 페이지를 새로 고쳐 주세요.",
@@ -200,7 +200,17 @@
       "cancelled": "추가하지 않았어요",
       "view": "일정 보기",
       "failed": "일정을 추가하지 못했어요. 입력을 확인하고 다시 시도해 주세요.",
-      "allDay": "종일"
+      "allDay": "종일",
+      "updateTitle": "일정 수정",
+      "deleteTitle": "일정 삭제",
+      "update": "수정",
+      "delete": "삭제",
+      "before": "변경 전",
+      "after": "변경 후",
+      "updated": "일정을 수정했어요",
+      "deleted": "일정을 삭제했어요",
+      "cancelledUpdate": "수정하지 않았어요",
+      "cancelledDelete": "삭제하지 않았어요"
     },
     "drafting": "일정 초안 만드는 중…"
   },

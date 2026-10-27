@@ -27,6 +27,8 @@ type ErrorCode =
   | "upstream"
   | "failed";
 
+// 사용자가 카드에서 확인해야 실행되는 변경 도구(질문당 개수 상한을 함께 센다)
+const DRAFT_TOOLS = new Set(["create_event", "update_event", "delete_event"]);
 const BASE_HEADERS = { "cache-control": "no-store", "x-content-type-options": "nosniff" };
 const MAX_BODY_CHARS = 2000;
 
@@ -235,7 +237,7 @@ export async function POST(request: Request) {
           for (const call of calls) {
             send({ t: "tool", name: call.name });
             let content: string;
-            if (call.name === "create_event" && drafts >= AI_MAX_DRAFTS) {
+            if (DRAFT_TOOLS.has(call.name) && drafts >= AI_MAX_DRAFTS) {
               content = JSON.stringify({ error: "Too many drafts for one message." });
             } else {
               const result = await runTool(supabase, call.name, call.arguments);

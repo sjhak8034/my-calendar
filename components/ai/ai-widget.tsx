@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { deleteAllConversations, loadLatestConversation } from "@/lib/ai/actions";
 import { AI_MAX_QUESTION_CHARS } from "@/lib/ai/limits";
 import { normalizeEventColor } from "@/lib/calendar";
-import { createEvent } from "@/lib/events/actions";
+import type { AiDraft } from "@/lib/ai/draft";
+import { createEvent, deleteEvent, updateEvent } from "@/lib/events/actions";
 import type { EventInput } from "@/lib/events/input";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 type Labels = Dictionary["ai"];
 type ErrorKey = keyof Labels["errors"];
 type DraftStatus = "pending" | "saving" | "saved" | "cancelled" | "failed";
-type Draft = { key: string; input: EventInput; status: DraftStatus };
+type Draft = { key: string; draft: AiDraft; status: DraftStatus };
 type Msg = { key: string; role: "user" | "assistant"; content: string; drafts?: Draft[] };
 
 const fill = (text: string, values: Record<string, string | number>) =>
@@ -31,7 +32,7 @@ const isErrorKey = (code: unknown, labels: Labels): code is ErrorKey =>
 type StreamEvent =
   | { t: "meta"; conversationId: string }
   | { t: "tool"; name: string }
-  | { t: "draft"; draft: EventInput }
+  | { t: "draft"; draft: AiDraft }
   | { t: "delta"; v: string }
   | { t: "error"; code: string }
   | { t: "done"; finish: string };
@@ -193,9 +194,9 @@ function ChatPanel({
     [],
   );
 
-  // 일정 초안 카드를 지금 답변 말풍선에 붙인다.
-  function addDraft(input: EventInput) {
-    const draft: Draft = { key: `d${Date.now()}${Math.random().toString(36).slice(2, 6)}`, input, status: "pending" };
+  // 일정 변경안 카드를 지금 답변 말풍선에 붙인다.
+  function addDraft(change: AiDraft) {
+    const draft: Draft = { key: `d${Date.now()}${Math.random().toString(36).slice(2, 6)}`, draft: change, status: "pending" };
     setMessages((all) => {
       const next = all.slice();
       const last = next[next.length - 1];
@@ -214,11 +215,18 @@ function ChatPanel({
     );
   }
 
-  // 사용자가 버튼을 눌러야만 저장한다. 저장은 직접 추가와 같은 Server Action(로그인·입력 검증 포함)이 한다.
+  // 사용자가 버튼을 눌러야만 실행한다. 직접 편집과 같은 Server Action(로그인·입력 검증·RLS 포함)이 처리한다.
   async function confirmDraft(draft: Draft) {
     if (draft.status !== "pending" && draft.status !== "failed") return;
     setDraftStatus(draft.key, "saving");
-    const result = await createEvent(draft.input).catch(() => null);
+    const change = draft.draft;
+    const result = await (
+      change.kind === "create"
+        ? createEvent(change.input)
+        : change.kind === "update"
+          ? updateEvent(change.id, change.input)
+          : deleteEvent(change.id)
+    ).catch(() => null);
     setDraftStatus(draft.key, result?.ok ? "saved" : "failed");
   }
 
@@ -240,7 +248,7 @@ function ChatPanel({
     if (event.t === "meta") {
       setConversationId(event.conversationId);
     } else if (event.t === "tool") {
-      setWorking(event.name === "create_event" ? "draft" : "search");
+      setWorking(event.name === "search_events" ? "search" : "draft");
     } else if (event.t === "draft") {
       setWorking(null);
       addDraft(event.draft);
@@ -521,7 +529,40 @@ function ChatPanel({
   );
 }
 
-// AI가 만든 일정 초안. 사용자가 "추가"를 눌러야 저장된다.
+// 일시 표시 문구
+function dateText(input: EventInput): string {
+  if (input.allDay) {
+    return input.startDate === input.endDate ? input.startDate : `${input.startDate} ~ ${input.endDate}`;
+  }
+  return input.startDate === input.endDate
+    ? `${input.startDate} ${input.startTime} ~ ${input.endTime}`
+    : `${input.startDate} ${input.startTime} ~ ${input.endDate} ${input.endTime}`;
+}
+
+function EventSummary({ input, labels, muted }: { input: EventInput; labels: Labels; muted?: boolean }) {
+  return (
+    <div className={cn("flex items-start gap-2", muted && "text-muted-foreground")}>
+      <span
+        aria-hidden="true"
+        className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", DOT_CLASS[normalizeEventColor(input.color)])}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="font-medium break-words">{input.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {dateText(input)}
+          {input.allDay && ` · ${labels.draft.allDay}`}
+        </p>
+        {input.description && (
+          <p className="mt-1 line-clamp-3 text-xs break-words whitespace-pre-wrap text-muted-foreground">
+            {input.description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// AI가 만든 일정 변경안(추가·수정·삭제). 사용자가 버튼을 눌러야 실행된다.
 function DraftCard({
   draft,
   lang,
@@ -535,68 +576,68 @@ function DraftCard({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const { input, status } = draft;
-  const dateText = input.allDay
-    ? input.startDate === input.endDate
-      ? input.startDate
-      : `${input.startDate} ~ ${input.endDate}`
-    : input.startDate === input.endDate
-      ? `${input.startDate} ${input.startTime} ~ ${input.endTime}`
-      : `${input.startDate} ${input.startTime} ~ ${input.endDate} ${input.endTime}`;
+  const { draft: change, status } = draft;
+  const t = labels.draft;
   const busy = status === "saving";
   const open = status === "pending" || status === "failed" || busy;
+  const kind = change.kind;
+  const title = kind === "create" ? t.title : kind === "update" ? t.updateTitle : t.deleteTitle;
+  const action = kind === "create" ? t.add : kind === "update" ? t.update : t.delete;
+  const done = kind === "create" ? t.saved : kind === "update" ? t.updated : t.deleted;
+  const cancelled = kind === "create" ? t.cancelled : kind === "update" ? t.cancelledUpdate : t.cancelledDelete;
+  const viewDate = change.kind === "create" || change.kind === "update" ? change.input.startDate : null;
 
   return (
     <div className="flex w-[88%] flex-col gap-2 rounded-2xl border bg-background p-3 text-sm shadow-xs">
-      <p className="text-xs font-medium text-muted-foreground">{labels.draft.title}</p>
-      <div className="flex items-start gap-2">
-        <span
-          aria-hidden="true"
-          className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", DOT_CLASS[normalizeEventColor(input.color)])}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="font-medium break-words">{input.title}</p>
-          <p className="text-xs text-muted-foreground">
-            {dateText}
-            {input.allDay && ` · ${labels.draft.allDay}`}
-          </p>
-          {input.description && (
-            <p className="mt-1 line-clamp-3 text-xs break-words whitespace-pre-wrap text-muted-foreground">
-              {input.description}
-            </p>
-          )}
-        </div>
-      </div>
+      <p className="text-xs font-medium text-muted-foreground">{title}</p>
+      {change.kind === "create" && <EventSummary input={change.input} labels={labels} />}
+      {change.kind === "update" && (
+        <>
+          <p className="text-[11px] text-muted-foreground">{t.before}</p>
+          <EventSummary input={change.before} labels={labels} muted />
+          <p className="text-[11px] text-muted-foreground">{t.after}</p>
+          <EventSummary input={change.input} labels={labels} />
+        </>
+      )}
+      {change.kind === "delete" && <EventSummary input={change.event} labels={labels} />}
       {status === "failed" && (
         <p role="alert" className="text-xs text-destructive">
-          {labels.draft.failed}
+          {t.failed}
         </p>
       )}
       {open ? (
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" size="sm" disabled={busy} onClick={onCancel}>
-            {labels.draft.discard}
+            {t.discard}
           </Button>
-          <Button type="button" size="sm" disabled={busy} onClick={onConfirm}>
-            <Plus aria-hidden="true" />
-            {busy ? labels.draft.saving : status === "failed" ? labels.draft.retry : labels.draft.add}
+          <Button
+            type="button"
+            size="sm"
+            variant={kind === "delete" ? "destructive" : "default"}
+            disabled={busy}
+            onClick={onConfirm}
+          >
+            {kind === "create" && <Plus aria-hidden="true" />}
+            {busy ? t.saving : status === "failed" ? t.retry : action}
           </Button>
         </div>
       ) : status === "saved" ? (
         <div className="flex items-center justify-between gap-2 text-xs">
           <span className="flex items-center gap-1 text-muted-foreground">
             <Check className="size-3.5" aria-hidden="true" />
-            {labels.draft.saved}
+            {done}
           </span>
-          <Link
-            href={`/${lang}/day/${input.startDate}`}
-            className="rounded text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {labels.draft.view}
-          </Link>
+          {viewDate && (
+            <Link
+              href={`/${lang}/day/${viewDate}`}
+              className="rounded text-foreground underline underline-offset-4 outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {t.view}
+            </Link>
+          )}
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">{labels.draft.cancelled}</p>
+        <p className="text-xs text-muted-foreground">{cancelled}</p>
       )}
     </div>
   );

@@ -11,8 +11,19 @@ import {
   isValidDate,
   parseClock,
   parseDate,
+  toSeoulDateTime,
+  toSeoulIso,
 } from "@/lib/calendar";
-import { ALL_DAY_END_TIME, ALL_DAY_START_TIME, toPayload, type EventInput } from "@/lib/events/input";
+import {
+  ALL_DAY_END_TIME,
+  ALL_DAY_START_TIME,
+  fromEvent,
+  toPayload,
+  type EventInput,
+  type StoredEvent,
+} from "@/lib/events/input";
+import { isUuid } from "./input";
+import type { AiDraft } from "./draft";
 import {
   AI_SEARCH_KEYWORD_CHARS,
   AI_SEARCH_MAX_DAYS,
@@ -77,6 +88,44 @@ export const AI_TOOLS = [
           },
         },
         required: ["title", "start_date"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_event",
+      description:
+        "Prepare a CHANGE to an existing calendar event as a draft. This does NOT change anything: the user sees a before/after card and must press a button. Find the event first with search_events and pass its id. Send only the fields that change. If only the start moves, the original length is kept. Dates are Asia/Seoul.",
+      parameters: {
+        type: "object",
+        properties: {
+          event_id: { type: "string", description: "The id of the event, from search_events." },
+          title: { type: "string", description: "New title, at most 100 characters." },
+          start_date: { type: "string", description: "New start date, YYYY-MM-DD." },
+          start_time: { type: "string", description: "New start time, 24-hour HH:mm." },
+          end_date: { type: "string", description: "New end date, YYYY-MM-DD." },
+          end_time: { type: "string", description: "New end time, 24-hour HH:mm." },
+          all_day: { type: "boolean", description: "Set true or false to switch between all-day and timed." },
+          description: { type: "string", description: "New notes, at most 2000 characters. Empty string clears them." },
+          color: { type: "string", enum: [...EVENT_COLORS], description: "New color." },
+        },
+        required: ["event_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_event",
+      description:
+        "Prepare the DELETION of one existing calendar event as a draft. This does NOT delete anything: the user sees a card and must press a button. Find the event first with search_events and pass its id.",
+      parameters: {
+        type: "object",
+        properties: {
+          event_id: { type: "string", description: "The id of the event, from search_events." },
+        },
+        required: ["event_id"],
       },
     },
   },
@@ -220,7 +269,7 @@ function finishDraft(
     return { content: toolError(`Invalid event: ${JSON.stringify(parsed.errors)}`) };
   }
   return {
-    draft: input,
+    draft: { kind: "create", input },
     content: safeJson({
       status: "draft_shown_to_user",
       note: "Nothing has been saved. The user must press the Add button on the card. Do not say the event was added.",
@@ -229,7 +278,115 @@ function finishDraft(
   };
 }
 
-export type ToolResult = { content: string; draft?: EventInput };
+export type ToolResult = { content: string; draft?: AiDraft };
+
+const EVENT_COLUMNS = "id, title, start_at, end_at, all_day, color, description";
+
+// 변경·삭제 대상 일정을 읽는다. RLS가 본인 일정만 돌려주므로 남의 id를 줘도 "없음"이 된다.
+async function loadEvent(
+  supabase: SupabaseClient,
+  rawId: unknown,
+): Promise<{ stored: StoredEvent; id: string } | { error: string }> {
+  if (!isUuid(rawId)) return { error: toolError("event_id must be an id returned by search_events.") };
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_COLUMNS)
+    .eq("id", rawId)
+    .maybeSingle();
+  if (error) {
+    console.error("[ai] loadEvent failed:", error.message);
+    return { error: toolError("The calendar could not be read right now.") };
+  }
+  if (!data) return { error: toolError("Event not found.") };
+  return { stored: data as StoredEvent, id: rawId };
+}
+
+// 일정 수정안. 말하지 않은 필드는 그대로 두고, 시작만 옮기면 원래 길이를 유지한다.
+// 저장할 때(updateEvent)와 같은 toPayload로 검증하고, 실패하면 오류를 돌려줘 모델이 고치게 한다.
+async function updateEventDraft(supabase: SupabaseClient, args: unknown): Promise<ToolResult> {
+  const a = (typeof args === "object" && args !== null ? args : {}) as Record<string, unknown>;
+  const loaded = await loadEvent(supabase, a.event_id);
+  if ("error" in loaded) return { content: loaded.error };
+  const { stored, id } = loaded;
+  const before = fromEvent(stored);
+
+  for (const key of ["title", "description", "color", "start_date", "start_time", "end_date", "end_time"]) {
+    if (a[key] !== undefined && typeof a[key] !== "string") {
+      return { content: toolError(`${key} must be a string.`) };
+    }
+  }
+  if (a.all_day !== undefined && typeof a.all_day !== "boolean") {
+    return { content: toolError("all_day must be a boolean.") };
+  }
+
+  const allDay = typeof a.all_day === "boolean" ? a.all_day : before.allDay;
+  const startMoved = str(a.start_date) !== undefined || str(a.start_time) !== undefined;
+  const endGiven = str(a.end_date) !== undefined || str(a.end_time) !== undefined;
+  if (before.allDay && !allDay && !str(a.start_time)) {
+    return { content: toolError("start_time is required when changing an all-day event to a timed one.") };
+  }
+
+  const startDate = str(a.start_date) || before.startDate;
+  let startTime = allDay ? ALL_DAY_START_TIME : str(a.start_time) || before.startTime;
+  let endDate = str(a.end_date) || before.endDate;
+  let endTime = allDay ? ALL_DAY_END_TIME : str(a.end_time) || before.endTime;
+
+  if (startMoved && !endGiven) {
+    // 길이를 유지한 채 옮긴다.
+    if (allDay && isValidDate(startDate) && isValidDate(before.startDate) && isValidDate(before.endDate)) {
+      endDate = addDays(startDate, diffDays(before.startDate, before.endDate));
+    } else if (!allDay) {
+      const length = Date.parse(stored.end_at) - Date.parse(stored.start_at);
+      const start = isValidDate(startDate) ? Date.parse(toSeoulIso(startDate, startTime)) : NaN;
+      if (Number.isFinite(length) && Number.isFinite(start)) {
+        const end = toSeoulDateTime(new Date(start + length).toISOString());
+        endDate = end.date;
+        endTime = formatClock(end.minutes);
+      }
+    }
+  }
+  if (allDay) startTime = ALL_DAY_START_TIME;
+
+  const input: EventInput = {
+    title: a.title !== undefined ? str(a.title) ?? "" : before.title,
+    description: a.description !== undefined ? str(a.description) ?? "" : before.description,
+    allDay,
+    startDate,
+    startTime,
+    endDate,
+    endTime,
+    color: str(a.color) || before.color,
+  };
+  const parsed = toPayload(input);
+  if (!parsed.ok) return { content: toolError(`Invalid event: ${JSON.stringify(parsed.errors)}`) };
+  if (JSON.stringify(input) === JSON.stringify(before)) {
+    return { content: toolError("Nothing would change. Ask the user what to change.") };
+  }
+  return {
+    draft: { kind: "update", id, before, input },
+    content: safeJson({
+      status: "draft_shown_to_user",
+      note: "Nothing has been changed. The user must press the button on the card. Do not say the event was changed.",
+      before,
+      after: input,
+    }),
+  };
+}
+
+async function deleteEventDraft(supabase: SupabaseClient, args: unknown): Promise<ToolResult> {
+  const a = (typeof args === "object" && args !== null ? args : {}) as Record<string, unknown>;
+  const loaded = await loadEvent(supabase, a.event_id);
+  if ("error" in loaded) return { content: loaded.error };
+  const event = fromEvent(loaded.stored);
+  return {
+    draft: { kind: "delete", id: loaded.id, event },
+    content: safeJson({
+      status: "draft_shown_to_user",
+      note: "Nothing has been deleted. The user must press the button on the card. Do not say the event was deleted.",
+      event,
+    }),
+  };
+}
 
 // 모델이 요청한 도구를 실행한다. 알 수 없는 도구·깨진 인자도 오류 JSON으로 돌려준다.
 export async function runTool(
@@ -245,5 +402,7 @@ export async function runTool(
     return { content: toolError("Arguments must be valid JSON.") };
   }
   if (name === "create_event") return createEventDraft(args);
+  if (name === "update_event") return updateEventDraft(supabase, args);
+  if (name === "delete_event") return deleteEventDraft(supabase, args);
   return { content: await searchEvents(supabase, args) };
 }

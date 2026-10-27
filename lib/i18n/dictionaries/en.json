@@ -156,7 +156,7 @@
     "open": "Open AI chat",
     "close": "Close AI chat",
     "emptyTitle": "How can I help?",
-    "emptyHint": "e.g. What's on this week? / Add a dentist visit tomorrow at 3pm",
+    "emptyHint": "e.g. What's on this week? / Add a dentist visit tomorrow at 3pm / Move the dentist to 4pm",
     "messagesLabel": "Conversation",
     "roleUser": "Me",
     "roleAssistant": "AI",
@@ -176,7 +176,7 @@
     "notices": {
       "cut": "The answer was long and got cut off."
     },
-    "disclaimer": "AI answers can be wrong. Events are only saved when you press Add on the card. Depending on your question, event titles and descriptions are sent to Google Gemini, and chats are stored for 30 days after the last message.",
+    "disclaimer": "AI answers can be wrong. Events are only added, changed or deleted when you press the button on the card. Depending on your question, event titles and descriptions are sent to Google Gemini, and chats are stored for 30 days after the last message.",
     "errors": {
       "unauthorized": "You need to sign in. Please sign in again.",
       "forbidden": "The request could not be processed. Please refresh the page.",
@@ -200,7 +200,17 @@
       "cancelled": "Not added",
       "view": "View",
       "failed": "Could not add the event. Please check it and try again.",
-      "allDay": "All day"
+      "allDay": "All day",
+      "updateTitle": "Change event",
+      "deleteTitle": "Delete event",
+      "update": "Update",
+      "delete": "Delete",
+      "before": "Before",
+      "after": "After",
+      "updated": "Event updated",
+      "deleted": "Event deleted",
+      "cancelledUpdate": "Not changed",
+      "cancelledDelete": "Not deleted"
     },
     "drafting": "Preparing a draft…"
   },
