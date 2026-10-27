@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser as requireSessionUser } from "@/lib/supabase/require-user";
 import {
   isEventInput,
   parseMoveRange,
@@ -34,10 +34,7 @@ const UUID_PATTERN =
 // Server Action은 직접 POST로도 호출되므로 매번 로그인과 입력을 서버에서 확인한다.
 // 본인 일정만 다루는 것은 RLS가 보장한다(user_id는 auth.uid() 기본값).
 async function requireUser() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return null;
-  return supabase;
+  return (await requireSessionUser())?.supabase ?? null;
 }
 
 // TODO(Task 010): 저장·수정·삭제 시 notifications 행을 만들고 갱신·취소한다(종일 일정 제외).

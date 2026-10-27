@@ -38,6 +38,20 @@ function negotiateLocale(request: NextRequest): Locale {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // API 경로(/api/*)는 언어 접두사·로그인 화면 이동 없이 세션만 갱신하고, 비로그인은 401 JSON으로 막는다.
+  // 각 라우트도 스스로 로그인을 다시 확인한다. 외부 호출용 경로(예: cron)는 만들 때 여기서 따로 연다.
+  if (pathname.startsWith("/api/")) {
+    const { user, response } = await updateSession(request);
+    if (!user) {
+      return NextResponse.json(
+        { code: "unauthorized" },
+        { status: 401, headers: { "cache-control": "no-store" } },
+      );
+    }
+    return response;
+  }
+
   const segments = pathname.split("/");
   const rawLang = segments[1];
   const urlLang = rawLang.toLowerCase();

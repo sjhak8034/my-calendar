@@ -6,7 +6,7 @@
 
 - Next.js `16.4.3` (App Router), React `19.3.0`, TypeScript (strict)
 - Tailwind CSS v4, shadcn/ui (`base-nova`), lucide-react
-- 도입 예정: Supabase(Auth·DB), OpenAI API, Vercel 배포
+- 도입 예정: Supabase(Auth·DB), Gemini API(Google AI Studio), Vercel 배포
 
 ## 시작하기
 

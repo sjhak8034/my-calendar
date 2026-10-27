@@ -38,7 +38,6 @@
       "en": "English"
     },
     "calendar": "Calendar",
-    "ai": "AI chat",
     "settings": "Settings",
     "comingSoon": "Coming soon",
     "openMenu": "Open menu",
@@ -142,6 +141,58 @@
     "resizeTop": "Adjust start time",
     "resizeBottom": "Adjust end time",
     "deleteFailed": "Couldn't delete the event. It was restored."
+  },
+  "ai": {
+    "title": "AI chat",
+    "open": "Open AI chat",
+    "close": "Close AI chat",
+    "emptyTitle": "How can I help?",
+    "emptyHint": "e.g. What's on this week? / Add a dentist visit tomorrow at 3pm",
+    "messagesLabel": "Conversation",
+    "roleUser": "Me",
+    "roleAssistant": "AI",
+    "inputLabel": "Message",
+    "placeholder": "Type a message",
+    "counter": "{count}/{max}",
+    "send": "Send",
+    "stop": "Stop",
+    "newChat": "New chat",
+    "answering": "Answering…",
+    "searching": "Searching your events…",
+    "loading": "Loading chat…",
+    "deleteAll": "Delete history",
+    "deleteAllConfirm": "Delete all saved AI chats? This cannot be undone.",
+    "deleteAllYes": "Delete all",
+    "cancel": "Cancel",
+    "notices": {
+      "cut": "The answer was long and got cut off."
+    },
+    "disclaimer": "AI answers can be wrong. Events are only saved when you press Add on the card. Depending on your question, event titles and descriptions are sent to Google Gemini, and chats are stored for 30 days after the last message.",
+    "errors": {
+      "unauthorized": "You need to sign in. Please sign in again.",
+      "forbidden": "The request could not be processed. Please refresh the page.",
+      "invalid": "The request is not valid. Please refresh the page.",
+      "question": "Enter a message between 1 and 200 characters.",
+      "notFound": "The chat was not found. It may have been deleted or passed its retention period.",
+      "rateLimited": "You've reached the question limit (20 per hour, 100 per day). Please try again later.",
+      "notConfigured": "AI chat is not set up yet.",
+      "upstream": "Could not get an AI response. Please try again later.",
+      "failed": "Something went wrong. Please try again later.",
+      "network": "Check your network connection and try again."
+    },
+    "draft": {
+      "title": "Event draft",
+      "add": "Add",
+      "saving": "Adding…",
+      "retry": "Try again",
+      "discard": "Cancel",
+      "saved": "Added to your calendar",
+      "cancelled": "Not added",
+      "view": "View",
+      "failed": "Could not add the event. Please check it and try again.",
+      "allDay": "All day"
+    },
+    "drafting": "Preparing a draft…"
   },
   "welcome": {
     "title": "Welcome",

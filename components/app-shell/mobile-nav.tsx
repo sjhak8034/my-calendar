@@ -17,7 +17,6 @@ type Props = {
   lang: string;
   labels: {
     calendar: string;
-    ai: string;
     settings: string;
     comingSoon: string;
     mainMenu: string;

@@ -38,7 +38,6 @@
       "en": "English"
     },
     "calendar": "캘린더",
-    "ai": "AI 대화",
     "settings": "설정",
     "comingSoon": "준비 중",
     "openMenu": "메뉴 열기",
@@ -142,6 +141,58 @@
     "resizeTop": "시작 시각 조절",
     "resizeBottom": "종료 시각 조절",
     "deleteFailed": "일정을 삭제하지 못했습니다. 원래대로 되돌렸습니다."
+  },
+  "ai": {
+    "title": "AI 대화",
+    "open": "AI 대화 열기",
+    "close": "AI 대화 닫기",
+    "emptyTitle": "무엇을 도와드릴까요?",
+    "emptyHint": "예: 이번 주 일정 알려줘 / 내일 3시에 치과 일정 잡아줘",
+    "messagesLabel": "대화 내용",
+    "roleUser": "나",
+    "roleAssistant": "AI",
+    "inputLabel": "메시지",
+    "placeholder": "메시지를 입력하세요",
+    "counter": "{count}/{max}",
+    "send": "보내기",
+    "stop": "중단",
+    "newChat": "새 대화",
+    "answering": "답변 중…",
+    "searching": "일정 찾는 중…",
+    "loading": "대화 불러오는 중…",
+    "deleteAll": "기록 삭제",
+    "deleteAllConfirm": "저장된 AI 대화를 모두 삭제할까요? 되돌릴 수 없습니다.",
+    "deleteAllYes": "모두 삭제하기",
+    "cancel": "취소",
+    "notices": {
+      "cut": "답변이 길어 중간에 끊겼어요."
+    },
+    "disclaimer": "AI 응답은 틀릴 수 있어요. 일정 추가는 카드의 '추가' 버튼을 눌러야 저장돼요. 물어본 내용에 따라 일정의 제목·설명이 Google Gemini로 전송되고, 대화는 마지막 대화 후 30일간 저장돼요.",
+    "errors": {
+      "unauthorized": "로그인이 필요합니다. 다시 로그인해 주세요.",
+      "forbidden": "요청을 처리할 수 없습니다. 페이지를 새로 고쳐 주세요.",
+      "invalid": "요청이 올바르지 않습니다. 페이지를 새로 고쳐 주세요.",
+      "question": "메시지는 1자 이상 200자 이하로 입력해 주세요.",
+      "notFound": "대화를 찾을 수 없습니다. 이미 삭제되었거나 보관 기간이 지났을 수 있어요.",
+      "rateLimited": "질문 횟수 제한에 도달했어요(시간당 20회, 하루 100회). 잠시 후 다시 시도해 주세요.",
+      "notConfigured": "AI 기능이 아직 설정되지 않았습니다.",
+      "upstream": "AI 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      "failed": "처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      "network": "네트워크 연결을 확인하고 다시 시도해 주세요."
+    },
+    "draft": {
+      "title": "일정 초안",
+      "add": "추가",
+      "saving": "추가 중…",
+      "retry": "다시 시도",
+      "discard": "취소",
+      "saved": "일정에 추가했어요",
+      "cancelled": "추가하지 않았어요",
+      "view": "일정 보기",
+      "failed": "일정을 추가하지 못했어요. 입력을 확인하고 다시 시도해 주세요.",
+      "allDay": "종일"
+    },
+    "drafting": "일정 초안 만드는 중…"
   },
   "welcome": {
     "title": "환영합니다",

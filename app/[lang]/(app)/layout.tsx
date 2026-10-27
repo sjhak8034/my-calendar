@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AiWidget } from "@/components/ai/ai-widget";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { UserCard } from "@/components/app-shell/user-card";
@@ -12,7 +13,7 @@ export default async function AppLayout({
 }: LayoutProps<"/[lang]">) {
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
-  const { nav } = await getDictionary(lang);
+  const { nav, ai } = await getDictionary(lang);
 
   return (
     <div className="flex min-h-dvh flex-1 flex-col lg:flex-row">
@@ -21,7 +22,6 @@ export default async function AppLayout({
         lang={lang}
         labels={{
           calendar: nav.calendar,
-          ai: nav.ai,
           settings: nav.settings,
           comingSoon: nav.comingSoon,
           mainMenu: nav.mainMenu,
@@ -32,6 +32,7 @@ export default async function AppLayout({
         footer={<UserCard lang={lang} nav={nav} />}
       />
       <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      <AiWidget lang={lang} labels={ai} />
     </div>
   );
 }
