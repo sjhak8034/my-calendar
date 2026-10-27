@@ -11,6 +11,8 @@ export const AI_SEARCH_MAX_DAYS = 366; // search_events 한 번에 조회할 수
 export const AI_SEARCH_MAX_EVENTS = 50; // search_events 결과로 모델에 돌려주는 일정 수
 export const AI_SEARCH_KEYWORD_CHARS = 50; // search_events 키워드 최대 길이
 export const AI_DESCRIPTION_CHARS = 300; // 일정 설명 절단 길이
-export const AI_MAX_OUTPUT_TOKENS = 1000;
+// 모델의 내부 추론 토큰도 출력 한도에 포함되므로 답변 길이보다 넉넉하게 둔다(1000이면 도구 호출이 있는 요청이 중간에 끊겼다).
+export const AI_MAX_OUTPUT_TOKENS = 2500;
+export const AI_REASONING_EFFORT = "low"; // 추론을 줄여 응답 속도와 비용을 낮춘다(none은 시간 계산 정확도가 걱정돼 low)
 export const AI_RETENTION_DAYS = 30; // 마지막 대화 후 보관 기간
 export const AI_DEFAULT_MODEL = "gemini-3.8-flash"; // GEMINI_MODEL 환경변수가 없을 때

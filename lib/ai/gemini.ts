@@ -1,5 +1,5 @@
 import "server-only";
-import { AI_DEFAULT_MODEL, AI_MAX_OUTPUT_TOKENS } from "./limits";
+import { AI_DEFAULT_MODEL, AI_MAX_OUTPUT_TOKENS, AI_REASONING_EFFORT } from "./limits";
 import type { ModelMessage } from "./prompt";
 import type { AI_TOOLS } from "./tools";
 
@@ -32,6 +32,7 @@ export async function openChatStream(params: {
       messages: params.messages,
       stream: true,
       max_completion_tokens: AI_MAX_OUTPUT_TOKENS,
+      reasoning_effort: AI_REASONING_EFFORT,
       ...(params.tools ? { tools: params.tools, tool_choice: "auto" } : {}),
     }),
   });
