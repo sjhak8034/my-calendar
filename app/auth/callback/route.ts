@@ -23,18 +23,29 @@ export async function GET(request: NextRequest) {
   const langParam = searchParams.get("lang");
   const lang = hasLocale(langParam) ? langParam : defaultLocale;
   const code = searchParams.get("code");
+  // 게스트의 Google 연결(upgradeWithGoogle)에서 돌아온 요청
+  const upgrade = searchParams.get("upgrade") === "1";
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const next = safeNextPath(searchParams.get("next"), origin);
+      // 이미 로그인한 상태의 전환이라 인트로 없이 바로 보낸다.
+      if (upgrade) return NextResponse.redirect(new URL(next ?? `/${lang}`, origin));
       // 환영 페이지(빈 배경)로 보내 인트로를 보여 주고, 그 뒤에서 원래 가려던 곳(없으면 캘린더)으로 이동한다.
       // 풀 로드라도 서버 HTML이 배경뿐이라 첫 페인트에 캘린더가 비치지 않는다.
       const target = new URL(`/${lang}/welcome`, origin);
       if (next) target.searchParams.set("next", next);
       return NextResponse.redirect(target);
     }
+  }
+
+  if (upgrade) {
+    // 연결 실패(예: 이미 다른 계정에 연결된 Google 계정)는 게스트가 그대로 로그인된 상태라 전환 화면으로 되돌린다.
+    const reason =
+      searchParams.get("error_code") === "identity_already_exists" ? "identity" : "google";
+    return NextResponse.redirect(new URL(`/${lang}/upgrade?error=${reason}`, origin));
   }
 
   return NextResponse.redirect(new URL(`/${lang}/login?error=oauth`, origin));

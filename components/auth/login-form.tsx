@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  signInAsGuest,
   signInWithGoogle,
   signInWithPassword,
   signUp,
@@ -27,7 +28,7 @@ type Props = {
 const initialState: ActionState = {};
 
 // 화면에 보여 줄 오류의 출처. 가장 최근 액션(또는 초기 오류)만 표시한다.
-type ErrorSource = "initial" | "password" | "google" | "none";
+type ErrorSource = "initial" | "password" | "google" | "guest" | "none";
 
 // 시안의 둥근 입력창. cn이 충돌 클래스를 병합하지 않으므로 ! 로 기본값을 덮어쓴다.
 const inputClass = "h-12! rounded-xl! bg-card! px-4! text-sm!";
@@ -57,8 +58,13 @@ export function LoginForm({
     initialState,
   );
 
+  const [guestState, guestAction, guestPending] = useActionState(
+    signInAsGuest,
+    initialState,
+  );
+
   const isSignIn = mode === "signIn";
-  const busy = passwordPending || googlePending;
+  const busy = passwordPending || googlePending || guestPending;
   // 제출 중에는 이전 결과가 남아 보이지 않도록 숨긴다.
   const error = busy
     ? undefined
@@ -66,9 +72,11 @@ export function LoginForm({
       ? passwordState.error
       : errorSource === "google"
         ? googleState.error
-        : errorSource === "initial"
-          ? initialError
-          : undefined;
+        : errorSource === "guest"
+          ? guestState.error
+          : errorSource === "initial"
+            ? initialError
+            : undefined;
   // 입력과 관련된 오류(Google 실패 제외)만 입력에 연결한다.
   const inputError = errorSource === "password" ? error : undefined;
 
@@ -175,6 +183,23 @@ export function LoginForm({
           <GoogleIcon className="size-5" />
           {dict.googleButton}
         </Button>
+      </form>
+
+      <form
+        action={guestAction}
+        onSubmit={() => setErrorSource("guest")}
+        className="flex flex-col items-center gap-2"
+      >
+        <input type="hidden" name="lang" value={lang} />
+        <Button
+          type="submit"
+          variant="ghost"
+          className="h-12! w-full rounded-xl! text-sm! font-semibold"
+          disabled={busy}
+        >
+          {guestPending ? dict.pending : dict.guestButton}
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">{dict.guestHint}</p>
       </form>
 
       <p className="text-center text-sm">

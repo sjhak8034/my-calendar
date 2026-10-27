@@ -26,7 +26,9 @@
     "switchToSignUp": "Sign up",
     "haveAccount": "Already have an account?",
     "switchToSignIn": "Sign in",
-    "pending": "Working..."
+    "pending": "Working...",
+    "guestButton": "Continue as guest",
+    "guestHint": "Try it without signing up. Your events are kept in this browser and deleted after 30 days without a visit."
   },
   "nav": {
     "signUp": "Sign up",
@@ -43,7 +45,12 @@
     "openMenu": "Open menu",
     "mainMenu": "Main menu",
     "menuTitle": "Menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "guest": "Guest",
+    "guestSignOutTitle": "Sign out of guest mode?",
+    "guestSignOutDescription": "If you sign out, the events and AI chats you made as a guest are deleted right away and can't be recovered.",
+    "cancel": "Cancel",
+    "upgrade": "Create account"
   },
   "calendar": {
     "title": "Calendar",
@@ -73,7 +80,9 @@
     "emailTaken": "This email is already registered.",
     "passwordTooShort": "Password must be at least 6 characters.",
     "generic": "Something went wrong. Please try again later.",
-    "googleFailed": "Google sign-in failed. Please try again later."
+    "googleFailed": "Google sign-in failed. Please try again later.",
+    "guestFailed": "Could not start as a guest. Please try again later.",
+    "identityExists": "This Google account is already linked to another account. If you sign out and sign in with it, your guest data won't be moved."
   },
   "week": {
     "title": "Weekly schedule",
@@ -178,7 +187,8 @@
       "notConfigured": "AI chat is not set up yet.",
       "upstream": "Could not get an AI response. Please try again later.",
       "failed": "Something went wrong. Please try again later.",
-      "network": "Check your network connection and try again."
+      "network": "Check your network connection and try again.",
+      "guestLimited": "Guests can ask up to 3 questions a day. Please try again tomorrow."
     },
     "draft": {
       "title": "Event draft",
@@ -197,5 +207,19 @@
   "welcome": {
     "title": "Welcome",
     "skip": "Skip"
+  },
+  "upgrade": {
+    "title": "Create an account",
+    "description": "Keep the events and AI chats you've made so far. Your guest data carries over to the new account.",
+    "emailButton": "Create account with email",
+    "googleButton": "Link Google account",
+    "or": "or",
+    "pending": "Working...",
+    "checkEmail": "We sent a confirmation email. Open the link in it to finish creating your account.",
+    "back": "Back to calendar",
+    "errors": {
+      "google": "Could not link your Google account. Please try again later.",
+      "identity": "This Google account is already linked to another account. If you sign out and sign in with it, your guest data won't be moved."
+    }
   }
 }
