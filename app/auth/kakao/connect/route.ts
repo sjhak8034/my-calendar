@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
   const toSettings = (result: ConnectResult) =>
     NextResponse.redirect(new URL(`/${lang}/settings?kakao=${result}`, origin));
 
-  if (!(await requireUser())) return NextResponse.redirect(new URL(`/${lang}/login`, origin));
+  const session = await requireUser();
+  if (!session) return NextResponse.redirect(new URL(`/${lang}/login`, origin));
+  // 게스트는 계정을 만든 뒤에 연결한다(설정 화면이 계정 만들기 안내 팝업을 띄운다). 화면을 거치지 않은 직접 호출도 막는다.
+  if (session.user.is_anonymous === true) return toSettings("guest");
 
   const config = kakaoConfig();
   if (!config) return toSettings("notConfigured");

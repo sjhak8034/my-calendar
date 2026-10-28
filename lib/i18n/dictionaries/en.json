@@ -270,12 +270,19 @@
         "denied": "You need to allow sending KakaoTalk messages to get notifications. Please allow it on the consent screen.",
         "failed": "Couldn't connect KakaoTalk. Please try again in a moment.",
         "notConfigured": "KakaoTalk notifications aren't set up yet.",
-        "origin": "Open the site at its configured address and try again."
+        "origin": "Open the site at its configured address and try again.",
+        "guest": "Guests can't connect KakaoTalk. Create an account first, then connect."
       },
       "errors": {
         "failed": "Couldn't complete that. Please try again in a moment.",
         "notConnected": "KakaoTalk isn't connected.",
         "reconnect": "The connection expired. Please connect again."
+      },
+      "guest": {
+        "title": "An account is required",
+        "description": "You can't connect KakaoTalk notifications as a guest. Create an account to connect, and your events and AI chats will carry over.",
+        "upgrade": "Create account",
+        "close": "Close"
       }
     },
     "history": {

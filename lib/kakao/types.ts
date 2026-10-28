@@ -4,7 +4,7 @@
 export type KakaoStatus = "not_configured" | "disconnected" | "connected" | "reconnect_required";
 
 // 연결 OAuth가 끝나고 /[lang]/settings?kakao=... 로 돌려보낼 때 쓰는 결과 코드
-export const CONNECT_RESULTS = ["connected", "denied", "failed", "notConfigured", "origin"] as const;
+export const CONNECT_RESULTS = ["connected", "denied", "failed", "notConfigured", "origin", "guest"] as const;
 export type ConnectResult = (typeof CONNECT_RESULTS)[number];
 
 export function isConnectResult(value: unknown): value is ConnectResult {

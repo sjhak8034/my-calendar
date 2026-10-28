@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
 
   const session = await requireUser();
   if (!session) return finish(`/${lang}/login`);
+  if (session.user.is_anonymous === true) return toSettings("guest");
 
   // CSRF 방어: 연결을 시작할 때 심은 state와 카카오가 돌려준 state가 같아야 한다.
   const state = searchParams.get("state");

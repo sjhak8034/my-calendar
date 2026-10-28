@@ -45,6 +45,7 @@ async function SettingsContent({ params, searchParams }: PageProps<"/[lang]/sett
         lang={lang}
         dict={settings.kakao}
         status={kakaoStatus}
+        isGuest={session.user.is_anonymous === true}
         result={isConnectResult(kakao) ? kakao : null}
       />
       <NotificationHistory lang={lang} dict={settings.history} records={records} />

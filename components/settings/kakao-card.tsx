@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { disconnectKakao, sendKakaoTest, type KakaoActionResult } from "@/lib/kakao/actions";
 import type { ConnectResult, KakaoStatus } from "@/lib/kakao/types";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
@@ -15,17 +24,23 @@ export function KakaoCard({
   lang,
   dict,
   status,
+  isGuest,
   result,
 }: {
   lang: string;
   dict: Dictionary["settings"]["kakao"];
   status: KakaoStatus;
+  isGuest: boolean;
   result: ConnectResult | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<Busy>(null);
+  // 게스트는 카카오톡을 연결할 수 없다. 연결 버튼을 누르거나(서버가 막아 돌려보낸 경우 포함) 계정 만들기 안내를 띄운다.
+  const [guestOpen, setGuestOpen] = useState(result === "guest");
   const [banner, setBanner] = useState<{ text: string; tone: "ok" | "error" } | null>(
-    result ? { text: dict.results[result], tone: result === "connected" ? "ok" : "error" } : null,
+    result && result !== "guest"
+      ? { text: dict.results[result], tone: result === "connected" ? "ok" : "error" }
+      : null,
   );
 
   // 연결 결과를 한 번 보여 준 뒤 주소에서 ?kakao=를 지운다(새로고침해도 같은 안내가 다시 뜨지 않게).
@@ -84,11 +99,16 @@ export function KakaoCard({
         {statusText}
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        {(status === "disconnected" || status === "reconnect_required") && (
-          <a href={connectHref} className={buttonVariants({ size: "sm" })}>
-            {status === "reconnect_required" ? dict.reconnect : dict.connect}
-          </a>
-        )}
+        {(status === "disconnected" || status === "reconnect_required") &&
+          (isGuest ? (
+            <Button type="button" size="sm" onClick={() => setGuestOpen(true)}>
+              {status === "reconnect_required" ? dict.reconnect : dict.connect}
+            </Button>
+          ) : (
+            <a href={connectHref} className={buttonVariants({ size: "sm" })}>
+              {status === "reconnect_required" ? dict.reconnect : dict.connect}
+            </a>
+          ))}
         {status === "connected" && (
           <Button
             type="button"
@@ -120,6 +140,22 @@ export function KakaoCard({
           {banner.text}
         </p>
       )}
+      <Dialog open={guestOpen} onOpenChange={setGuestOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{dict.guest.title}</DialogTitle>
+            <DialogDescription>{dict.guest.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setGuestOpen(false)}>
+              {dict.guest.close}
+            </Button>
+            <Link href={`/${lang}/upgrade`} className={buttonVariants()}>
+              {dict.guest.upgrade}
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
