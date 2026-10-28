@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   cacheComponents: true,
   partialPrefetching: true,
+  // 서비스 워커는 브라우저가 캐시하면 갱신이 늦어지므로 항상 다시 확인하게 하고, 이 범위(전체 사이트)에서만 동작하도록 고정한다.
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
+  },
   turbopack: {
     rules: {
       "*.css": {

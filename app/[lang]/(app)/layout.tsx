@@ -23,7 +23,6 @@ export default async function AppLayout({
         labels={{
           calendar: nav.calendar,
           settings: nav.settings,
-          comingSoon: nav.comingSoon,
           mainMenu: nav.mainMenu,
           menuTitle: nav.menuTitle,
           openMenu: nav.openMenu,

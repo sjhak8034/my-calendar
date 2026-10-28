@@ -41,7 +41,6 @@
     },
     "calendar": "Calendar",
     "settings": "Settings",
-    "comingSoon": "Coming soon",
     "openMenu": "Open menu",
     "mainMenu": "Main menu",
     "menuTitle": "Menu",
@@ -231,5 +230,33 @@
       "google": "Could not link your Google account. Please try again later.",
       "identity": "This Google account is already linked to another account. If you sign out and sign in with it, your guest data won't be moved."
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage how you get notified.",
+    "push": {
+      "title": "Web push notifications",
+      "description": "Get notified in this browser 10 minutes before an event starts and when it ends. Turn it on separately in each browser.",
+      "checking": "Checking...",
+      "working": "Working...",
+      "on": "You're getting notifications in this browser.",
+      "off": "Off.",
+      "denied": "Notifications are blocked in this browser. Allow them in the site settings next to the address bar, then turn this on again.",
+      "unsupported": "This browser doesn't support web push. On iPhone and iPad it only works in an app added to the Home Screen.",
+      "errors": {
+        "limit": "You've reached the number of browsers this account can register. Turn it off in a browser you no longer use first.",
+        "failed": "Couldn't change the setting. Please try again in a moment.",
+        "notConfigured": "Push notifications aren't set up yet.",
+        "testNone": "No notification subscription is registered for this account. Turn the switch off and on again."
+      },
+      "test": "Send test notification",
+      "testSent": "Sent a test notification. If you don't see it, check your browser and system notification settings."
+    }
+  },
+  "notify": {
+    "startBody": "Starts in 10 minutes · {range}",
+    "endBody": "Event ended · {range}",
+    "testTitle": "Test notification",
+    "testBody": "Notifications are working in this browser."
   }
 }

@@ -10,7 +10,6 @@ type Props = {
   labels: {
     calendar: string;
     settings: string;
-    comingSoon: string;
     mainMenu: string;
   };
   // 모바일 시트에서 링크 이동 시 시트를 닫기 위한 콜백
@@ -28,6 +27,8 @@ export function NavMenu({ lang, labels, onNavigate }: Props) {
   const home = `/${lang}`;
   // 캘린더 화면: 홈과 날짜 상세
   const calendarActive = pathname === home || pathname.startsWith(`${home}/day`);
+  const settingsHref = `${home}/settings`;
+  const settingsActive = pathname === settingsHref || pathname.startsWith(`${settingsHref}/`);
 
   return (
     <nav aria-label={labels.mainMenu}>
@@ -44,16 +45,17 @@ export function NavMenu({ lang, labels, onNavigate }: Props) {
             {labels.calendar}
           </Link>
         </li>
-        {/* 페이지가 생기기 전까지는 링크가 아닌 비활성 항목 */}
         <li>
-          <span
-            aria-disabled="true"
-            className={cn(itemClass, "cursor-not-allowed text-muted-foreground/70")}
+          <Link
+            href={settingsHref}
+            onClick={onNavigate}
+            aria-current={settingsActive ? "page" : undefined}
+            data-active={settingsActive}
+            className={cn(itemClass, linkClass)}
           >
             <Settings className="size-[1.125rem]" aria-hidden="true" />
             {labels.settings}
-            <span className="ml-auto rounded-md border px-1.5 py-0.5 text-[10px] font-normal leading-none">{labels.comingSoon}</span>
-          </span>
+          </Link>
         </li>
       </ul>
     </nav>

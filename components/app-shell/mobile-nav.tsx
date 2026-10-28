@@ -18,7 +18,6 @@ type Props = {
   labels: {
     calendar: string;
     settings: string;
-    comingSoon: string;
     mainMenu: string;
     menuTitle: string;
     openMenu: string;

@@ -331,6 +331,14 @@
 
 **확인하지 못한 것**: `send_at` 값 자체(시작 10분 전·종료 정각), 종일 일정·과거 시각 제외, 시각 수정(드래그·사이드바·AI 카드) 시 기존 알림 삭제·재예약, 제목만 수정하면 알림 유지, 일정 삭제 시 cascade, 기존 일정 백필, 설정 없음 503, 병렬 호출 시 같은 알림이 한 번만 처리됨, 10분 넘게 늦은 알림 `skipped(expired)`, `sending` 5분 초과 복구, 타 사용자 알림 비노출(RLS).
 
+## 16. 웹 푸시 (Task 011)
+
+`npm run lint`, `npx tsc --noEmit` 통과.
+
+**확인함**: `lib/push/input.ts`의 `parsePushSubscription` 16건(FCM·Firefox·Windows·Apple 정상, `http`·내부 IP·`localhost`·접미사/앞붙임 호스트 속임·`@` userinfo·포트·키 길이/문자 오류·`keys` 없음·`null`·문자열 거부, 여분 필드 제거), `/sw.js`가 로그인 redirect 없이 200과 `no-cache`·`Service-Worker-Allowed` 헤더로 응답, 브라우저에서 스위치를 켜면 `push_subscriptions`에 `lang`과 함께 저장, "테스트 알림 보내기"로 OS 알림 수신(처음에는 `VAPID_SUBJECT`에 `mailto:`가 빠져 `Vapid subject is not a valid URL`로 실패해 형식을 고침), 워커를 호출해 실제 일정의 웹 푸시 알림 수신.
+
+**확인하지 못한 것**: 알림을 눌렀을 때 해당 날짜 화면이 열리는 동작, 영어 화면에서 구독한 사용자의 영문 문구, 스위치를 끄면 `push_subscriptions` 행이 삭제되는 것과 새로고침 후 상태 유지, 브라우저에서만 구독이 사라진 경우 `410`으로 행이 지워지고 `skipped(subscription_expired)`가 되는 것, 알림 권한 차단 상태의 안내 문구, 사용자당 10개 상한(`limit`), RLS 강화 마이그레이션 적용 후 PostgREST로 직접 INSERT가 거부되는 것, 다른 계정으로 같은 브라우저에서 구독했을 때 소유자가 옮겨지는 것, `403`·`5xx` 등 푸시 서비스 오류 시 `failed` 기록, 여러 브라우저에 동시 발송, iOS·Firefox·Safari.
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).

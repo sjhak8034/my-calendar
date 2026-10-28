@@ -3,7 +3,7 @@
 월간 캘린더, 날짜별 시간 상세, 날짜 범위 AI 대화, 시작·종료 알림(웹 푸시 + 카카오톡)을 만드는 개발 로드맵. 요구사항은 `docs/PRD.md`를 따른다.
 
 **📅 최종 업데이트**: 2026-10-28
-**📊 진행 상황**: 9/13 Tasks 완료 (Task 009 AI 대화 1~3단계 완료·마무리 점검 대기, Task 010 알림 워커 완료(웹 푸시·카카오톡 발송은 Task 011·012), Task 014 게스트 모드 014a 완료·014b 구현)
+**📊 진행 상황**: 10/13 Tasks 완료 (Task 009 AI 대화 1~3단계 완료·마무리 점검 대기, Task 010 알림 워커 완료, Task 011 웹 푸시 완료(카카오톡은 Task 012), Task 014 게스트 모드 014a 완료·014b 구현)
 
 ## 착수 전 결정 사항
 
@@ -102,13 +102,18 @@
   - **예약은 DB 트리거**(`events_schedule_notifications`, `20261030000000_notifications.sql`): 일정 저장 시 시작 10분 전·종료 시각 알림을 채널(`web_push`, `kakao`)별로 한 행씩 만든다. 종일 일정과 이미 지난 시각은 제외. 시작·종료·종일이 바뀌면 기존 알림(발송된 것 포함)을 지우고 새 시각으로 다시 만들어 일정을 옮기면 다시 알린다(제목·설명만 바꾸면 그대로). 삭제는 FK cascade. 앱 코드(직접 편집·드래그·AI 카드)가 어떤 경로로 저장해도 같은 규칙. 앞으로 있는 기존 일정은 마이그레이션이 백필
   - **발송 워커** `app/api/cron/notify/route.ts`(POST): `Authorization: Bearer CRON_SECRET`(타이밍 안전 비교, 16자 미만이면 503)로 인증하고 service role 클라이언트(`lib/supabase/admin.ts`)로 `claim_due_notifications`를 호출. `proxy.ts`는 `/api/cron/*`만 로그인 검사에서 제외
   - **중복 발송 방지**: `claim_due_notifications`가 `for update skip locked`로 보낼 행을 `sending`으로 원자적으로 선점해 워커가 동시에 떠도 한 알림은 한 번만 처리. 결과는 `status='sending'` 조건으로 기록. 선점 후 5분 넘게 결과가 없으면 `pending`으로 되돌리고(워커 중단 복구), 발송 시각에서 10분 넘게 늦은 알림은 보내지 않고 `skipped(expired)`
-  - **채널**: `lib/notify/dispatch.ts`의 `dispatchNotification`. 웹 푸시(Task 011)·카카오톡(Task 012) 전까지는 `skipped(channel_not_ready)`로 닫는다. 새 상태 `sending`·`skipped`를 추가
+  - **채널**: `lib/notify/dispatch.ts`의 `dispatchNotification`. 웹 푸시(Task 011)는 발송하고, 카카오톡(Task 012) 전까지는 `skipped(channel_not_ready)`로 닫는다. 새 상태 `sending`·`skipped`를 추가
   - **스케줄**: Vercel Hobby의 Cron은 하루 1회라 1분 간격이 불가 → Supabase `pg_cron` + `pg_net`이 1분마다 Vercel의 `/api/cron/notify`를 호출(`supabase/cron/schedule.sql`, 비밀값은 Vault). 같은 파일에 일 1회(03:00 KST) 정리 작업 `purge_expired_ai_chats`·`purge_inactive_guests`·`purge_old_notifications`도 등록. 배포 주소가 필요해 Task 013 배포 후 실행, 로컬은 curl로 워커를 직접 호출
   - ⚠️ 적용 필요: `supabase/migrations/20261030000000_notifications.sql` 실행, `.env`에 `SUPABASE_SERVICE_ROLE_KEY`·`CRON_SECRET` 추가(배포 시 Vercel에도 등록)
-- **Task 011: 웹 푸시 알림 (F012)** - 우선순위
-  - `public/sw.js` 서비스 워커, VAPID 키 구성
-  - 설정 페이지(`/settings`): 푸시 권한 요청, 구독 등록·해제
-  - 서버에서 웹 푸시 발송, 발송 결과 기록
+- **Task 011: 웹 푸시 알림 (F012)** ✅ - 완료(구독·테스트 알림·실제 일정 알림 브라우저 확인)
+  - **서비스 워커** `public/sw.js`: `push`에서 항상 알림을 띄우고(`userVisibleOnly`), `notificationclick`에서 같은 사이트의 열린 탭을 재사용하거나 새 탭을 연다. `next.config.ts`가 `/sw.js`에 `no-cache`를 붙인다. 오프라인 캐시는 없다
+  - **설정 페이지** `/[lang]/settings`(`components/settings/push-toggle.tsx`): 스위치로 이 브라우저의 구독을 켜고 끈다(권한 요청은 스위치를 누를 때만). 미지원·차단됨 안내, 열 때 서버에 구독 재저장(만료 정리·언어 변경 반영), VAPID 키가 바뀌면 구독을 새로 만듦, "테스트 알림 보내기" 버튼. 사이드바·모바일 메뉴의 "설정"이 실제 링크가 됨
+  - **구독 저장** `lib/push/`: `subscribePush`·`unsubscribePush`·`sendTestPush` Server Action. `endpoint`는 https이고 FCM·Mozilla·Windows·Apple 푸시 서비스 호스트만 허용(서버가 그 주소로 직접 요청하므로 SSRF 방지), 키 형식·길이 검증, 사용자당 10개 상한. 다른 계정이 쓰던 `endpoint`는 service role로 소유자를 옮김
+  - **발송** `lib/notify/web-push.ts`: 사용자의 모든 구독에 병렬 발송(TTL 10분, 요청 타임아웃 5초), 구독마다 저장된 `lang`으로 문구 생성(`notify.*` 사전). 404·410은 구독을 지움. 결과: 하나라도 성공 `sent`, 전부 실패 `failed`(`http_403` 등), 구독 없음·전부 만료 `skipped(no_subscription·subscription_expired)`, VAPID 설정 없음 `failed(push_not_configured)`. 발송 직전에 호스트 허용 목록을 다시 검사하고, 구독 주소는 로그에 남기지 않음
+  - **RLS 강화**: 사용자는 본인 구독의 조회·삭제만 가능하고 저장은 Server Action(service role)으로만 한다. 사용자가 PostgREST로 임의의 `endpoint` 행을 넣어 서버가 내부 주소로 요청하게 만드는 경로를 막음
+  - 알림을 누르면 해당 날짜의 주간 화면이 열린다. 문구: `10분 뒤 시작해요 · 시간 범위` / `일정이 끝났어요 · 시간 범위`
+  - ⚠️ 적용 필요(순서대로): `supabase/migrations/20261031000000_push_subscription_lang.sql` → `20261031000001_push_subscriptions_rls.sql`. `.env`에 `NEXT_PUBLIC_VAPID_PUBLIC_KEY`·`VAPID_PRIVATE_KEY`·`VAPID_SUBJECT`(`mailto:` 또는 `https:` 형식) 추가(배포 시 Vercel에도 등록하고 로컬과 다른 키 쌍을 새로 만든다). 로컬에서는 워커를 1분마다 호출해 줄 곳이 없어 별도 터미널에서 `curl` 반복이 필요하고, 운영은 Task 013 배포 후 `pg_cron` 스케줄
+  - 제한: iOS는 홈 화면에 설치한 앱에서만 푸시가 되는데 manifest·아이콘은 없음(Task 013). 로그아웃해도 브라우저 구독은 남아 같은 브라우저에서 다른 계정이 켜기 전까지 이전 계정 알림이 올 수 있음(Task 013 후보). 일시 오류 재시도 없음(`failed`로 기록). 테스트 버튼 호출 횟수 제한 없음
 - **Task 012: 카카오톡 알림 (F013, F014)** - 우선순위
   - 카카오 개발자 앱 등록, `talk_message` 동의 항목 설정
   - 설정 페이지에서 카카오 연결·해제(로그인과 별개)
