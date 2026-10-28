@@ -120,6 +120,7 @@
   - **만료 시 갱신** `lib/kakao/tokens.ts`: 만료 5분 전부터 리프레시 토큰으로 갱신해 다시 저장하고(새 리프레시 토큰은 응답에 있을 때만 교체), 같은 사용자의 동시 갱신은 한 번으로 합친다. 리프레시 토큰이 만료·철회(`invalid_grant`)되었거나 복호화가 안 되면 `kakao_tokens.needs_reconnect`를 켠다
   - **발송** `lib/notify/kakao.ts`: "나에게 보내기" 텍스트 템플릿(제목 + 시간 범위, "캘린더 열기" 버튼 → `SITE_URL/[lang]/day/날짜`, 200자 제한). 액세스 토큰이 거부되면 한 번 갱신해 다시 보내고, 끝내 거부되거나 동의 취소 코드(`-3`, `-402`)면 재연결 필요로 표시한다. 문구는 푸시와 같은 `lib/notify/message.ts`. 결과: 성공 `sent`, 연결 안 함 `skipped(not_connected)`, 환경변수 없음 `skipped(kakao_not_configured)`, 재연결 필요 `failed(reconnect_required)`, 일시적 갱신 실패 `failed(kakao_refresh_failed)`, 그 외 `failed(kakao_<원인>)`
   - **설정 화면**: 카카오 카드(연결 안 됨·연결됨·재연결 필요·준비 안 됨, 연결하기·다시 연결하기·테스트 메시지 보내기·연결 해제), 연결 결과 안내(한 번 보여 준 뒤 주소에서 `?kakao=`를 지움), "최근 알림 발송" 목록(대기 중이 아닌 최근 10건, 일정 제목·종류·채널·상태·시각과 사유를 사용자용 문구로 표시). 연결 해제는 카카오 `unlink`(동의 철회·토큰 폐기)를 시도하고 실패해도 우리 쪽 토큰을 지운다
+  - **게스트 제한**: 게스트는 카카오톡을 연결할 수 없다. 설정의 연결 버튼이 계정 만들기(`/[lang]/upgrade`)를 안내하는 팝업을 띄우고, `connect`·`callback` 라우트도 게스트를 거부해 `?kakao=guest`로 돌려보낸다(같은 팝업. 연결 버튼의 팝업은 확인함). 데이터를 지우는 로그인 대신 데이터를 유지하는 계정 전환으로 보낸다. 이 제한 전에 연결된 게스트의 기존 연결·발송은 그대로 둔다
   - ⚠️ 적용 필요: `supabase/migrations/20261031000002_kakao_connection.sql`(`kakao_tokens.lang`, `needs_reconnect`). 카카오 개발자 콘솔에서 앱 만들기, 카카오 로그인 활성화, Redirect URI `SITE_URL/auth/kakao/callback` 등록, 동의항목 `talk_message`(선택 동의, 동의 목적 작성) 설정(설정하지 않으면 `KOE205`). `.env`에 `KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`·`KAKAO_TOKEN_ENCRYPTION_KEY`·`SITE_URL` 추가(배포 시 Vercel에도 등록하고 운영용 Redirect URI·`SITE_URL`·새 암호화 키를 쓴다). 앱 대표 도메인에는 `localhost`를 넣을 수 없다(선택 항목)
   - 제한: 암호화 키를 바꾸면 저장된 토큰을 복호화할 수 없어 모두 재연결해야 한다. 동의 철회 API는 문서에서 확인하지 못해 연결 해제는 `unlink`를 쓴다. 메시지의 링크가 카카오에 등록한 도메인이어야 하는지는 확인하지 못했다(로컬 `localhost` 링크로는 발송됨). 텍스트 글자 수 상한 200자는 알려진 값에 맞춘 것이고 문서로 확인하지 못했다. 다른 사용자(팀원이 아닌 계정)의 동의 가능 여부는 위 "착수 전 결정 사항"에 남아 있다
 
@@ -131,7 +132,7 @@
   - 수동 시나리오: 월 경계·윤년, 월을 넘는 다일 일정, 한 날짜 일정 5개 이상, 비로그인 접근 차단, 타 사용자 데이터 접근 불가(RLS, AI 대화 포함), AI 범위 상한 초과·사용량 제한 도달·만료 대화 비노출, 알림 중복 발송 여부
   - 게스트 수동 시나리오(게스트 시작·AI 4번째 질문 차단·로그아웃 확인·타 계정 데이터 비노출·30일 정리)와 개인정보처리방침의 게스트 보관 문구(30일)
   - `docs/ai-security.md`의 미완료 점검 항목(AI 테이블 RLS 실검증, 공격 시나리오 시도, `code-reviewer` 보안 리뷰) 처리
-  - 이메일 인증과 계정 복구(공개 배포 전 필수): Supabase **Confirm email** 켜기, Resend 등 **SMTP 직접 연결**(기본 메일 서버는 발송 수 제한이 매우 작음), 회원가입 후 "확인 메일을 보냈어요" 안내(현재 `signUp`은 세션이 없으면 일반 오류), 확인 링크용 `emailRedirectTo`와 `/auth/callback` 처리, 확인 메일 재발송, 비밀번호 재설정(현재 없음). 게스트 전환(`upgradeWithEmail`)은 확인 전까지 게스트로 남으므로 대기 중 로그아웃 시 데이터가 즉시 삭제된다는 안내 보강
+  - 이메일 인증과 계정 복구(공개 배포 전 필수): **구현됨(메일 링크로 로그인되는 것은 확인)**: 회원가입 후 세션이 없으면(Confirm email이 켜진 경우) 오류 대신 "확인 메일을 보냈어요" 안내를 보여 주고, 확인 링크가 `emailRedirectTo`(`/auth/callback?lang=`)로 돌아와 로그인을 마치며, 확인 전 로그인은 `email_not_confirmed` 안내를 보여 준다(링크 방식만 지원하고 코드 입력은 없음. 인가 코드 검증용 정보가 가입을 시작한 브라우저에 있어 다른 기기·브라우저에서 열면 마무리되지 않음). **남은 것**: Resend 등 **SMTP 직접 연결**(기본 메일 서버는 발송 수 제한이 매우 작음), Supabase Redirect URLs에 운영 `/auth/callback` 등록, 확인 메일 재발송, 비밀번호 재설정(현재 없음). 게스트 전환(`upgradeWithEmail`)은 확인 전까지 게스트로 남으므로 대기 중 로그아웃 시 데이터가 즉시 삭제된다는 안내 보강
   - 개인정보처리방침(`/privacy`)에 AI 대화 문구 반영: 일정 제목·설명의 Google Gemini 전송, 대화 30일 보관, 삭제 방법(Google 쪽 데이터 사용·보관 정책(무료 등급은 입력이 모델 개선에 쓰일 수 있음)은 확인 필요)
   - 11분 뒤 일정으로 웹·카카오톡 알림 end-to-end 확인
   - Vercel 프로젝트 생성과 환경변수 등록(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, 이후 추가되는 서버 전용 키)
