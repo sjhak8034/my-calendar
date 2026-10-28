@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, MessageCircle, Plus, Send, Square, Trash2, X } from "lucide-react";
 import { DOT_CLASS } from "@/components/calendar/event-colors";
 import { Button } from "@/components/ui/button";
@@ -101,6 +102,7 @@ function ChatPanel({
   open: boolean;
   onClose: () => void;
 }) {
+  const router = useRouter();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [question, setQuestion] = useState("");
@@ -306,6 +308,11 @@ function ChatPanel({
         body: JSON.stringify({ question: text, conversationId, lang }),
         signal: controller.signal,
       });
+      if (response.status === 401) {
+        // 세션이 만료됐다. fetch는 이동하지 않으므로 직접 로그인 화면으로 보낸다.
+        router.push(`/${lang}/login`);
+        return;
+      }
       if (!response.ok || !response.body) {
         const body = await response.json().catch(() => null);
         rollback(isErrorKey(body?.code, labels) ? body.code : "failed");
