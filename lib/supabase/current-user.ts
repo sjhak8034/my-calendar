@@ -1,16 +1,14 @@
 import "server-only";
 import { cache } from "react";
 import { connection } from "next/server";
-import { createClient } from "./server";
+import { requireUser } from "./require-user";
 
-// 화면에 보여 줄 현재 사용자 정보. 사이드바·모바일 시트·푸시 복원이 같은 요청에서 여러 번 부르므로 요청당 한 번만 조회한다.
+// 화면에 보여 줄 현재 사용자 정보. 사이드바·모바일 시트·푸시 복원이 같은 요청에서 여러 번 부르므로 요청당 한 번만 만든다.
+// 로그인 확인은 requireUser와 같은 요청 안에서 공유한다.
 export const getCurrentUser = cache(async () => {
   // Supabase 세션 확인이 Date.now()를 쓰므로 요청 시점으로 미룬다(cacheComponents).
   await connection();
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = (await requireUser())?.user;
   return {
     email: user?.email ?? "",
     isGuest: user?.is_anonymous === true,
