@@ -77,8 +77,95 @@
   },
   "privacy": {
     "title": "Privacy Policy",
-    "comingSoon": "Coming soon.",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "draftNotice": "This document is a draft that has not had legal review. It must be reviewed by a professional before the service is made public.",
+    "effective": "Effective date: October 29, 2026",
+    "intro": "my-calendar (the \"Service\") processes only the personal information it needs to manage your events and send reminders. This policy explains what we process and why, how long we keep it, and how you can delete it.",
+    "contactLabel": "Privacy contact",
+    "sections": [
+      {
+        "heading": "1. Information we collect",
+        "items": [
+          "Email sign-up: your email address and password. The password is hashed by the authentication provider (Supabase); the Service can't see the original.",
+          "Google sign-in: the email address and identifier of your Google account.",
+          "Guest mode: a temporary account with no email. It is deleted as soon as you sign out.",
+          "Events: title, description, start and end time, all-day flag, and color.",
+          "AI chat: the questions you type and the AI's answers. The titles, descriptions, and times of events needed for the conversation are sent to the AI.",
+          "Web push: this browser's push subscription (endpoint and encryption keys) and your language.",
+          "KakaoTalk reminders: if you connect, the access and refresh tokens issued by Kakao, stored encrypted. We don't receive your Kakao profile or friends.",
+          "Notification history: the event title, type, channel, result, and time of reminders we sent.",
+          "Access logs: hosting and authentication providers may automatically record your IP address and device or browser details."
+        ]
+      },
+      {
+        "heading": "2. How we use it",
+        "items": [
+          "Sign-up, sign-in, identity checks, and password reset emails.",
+          "Saving and showing events, and sending reminders 10 minutes before an event starts and when it ends.",
+          "Letting you search, add, edit, and delete events through AI chat.",
+          "Preventing abuse such as automated sign-ups, and keeping the Service secure."
+        ]
+      },
+      {
+        "heading": "3. Retention",
+        "items": [
+          "Account and events: until you delete your account. \"Delete account\" in Settings removes them right away.",
+          "AI chat: 30 days after your last message. You can delete the whole history sooner from the chat window.",
+          "Notification history: deleted after 30 days.",
+          "Guest account and data: deleted when you sign out. If you never sign out, deleted after 30 days without use.",
+          "Push subscriptions: removed when you sign out, turn push off, or delete your account.",
+          "Kakao tokens: removed when you disconnect or delete your account.",
+          "Access logs kept by hosting and authentication providers follow each company's policy."
+        ]
+      },
+      {
+        "heading": "4. Service providers and overseas transfer",
+        "body": [
+          "The Service uses the companies below, and your information is stored on or sent to their servers, which may be outside Korea. We will confirm the exact server locations and add them here before the public launch."
+        ],
+        "items": [
+          "Supabase: sign-in, the database (accounts, events, AI chats, notification history), and authentication emails.",
+          "Vercel: hosting and request handling.",
+          "Google: Google sign-in and AI chat (Gemini). Your questions and event details are sent, and Google may process and retain them under its own policies.",
+          "Kakao: sending KakaoTalk \"Send to me\" reminders and disconnecting.",
+          "Cloudflare: security check on sign-up and sign-in (Turnstile), which uses browser information.",
+          "Browser push services (Google, Mozilla, Apple, Microsoft): delivering web push notifications."
+        ]
+      },
+      {
+        "heading": "5. Cookies and browser storage",
+        "items": [
+          "An authentication cookie that keeps you signed in (required).",
+          "A NEXT_LOCALE cookie that remembers your language (1 year).",
+          "A temporary cookie that protects against forgery while connecting KakaoTalk (10 minutes).",
+          "We don't use cookies for advertising or analytics."
+        ]
+      },
+      {
+        "heading": "6. Your rights",
+        "items": [
+          "You can view, edit, and delete your events in the app at any time.",
+          "You can delete your account and all your data yourself from Settings > Delete account. This can't be undone.",
+          "You can turn push off and disconnect KakaoTalk in Settings.",
+          "To request access, correction, deletion, or restriction of processing in any other way, email the privacy contact below."
+        ]
+      },
+      {
+        "heading": "7. Security measures",
+        "items": [
+          "Database access is restricted so each user can read and write only their own data.",
+          "Kakao tokens are stored encrypted, and service keys are kept only on the server.",
+          "All traffic uses HTTPS.",
+          "Sign-up and sign-in use an anti-automation check, and repeated requests such as test notifications are rate limited."
+        ]
+      },
+      {
+        "heading": "8. Changes",
+        "body": [
+          "If this policy changes, we will update this page with the new effective date."
+        ]
+      }
+    ]
   },
   "errors": {
     "invalidCredentials": "Incorrect email or password.",
@@ -350,7 +437,8 @@
       },
       "dialogDescriptionPassword": "All your data, including events and AI chats, is deleted right away and can't be recovered. To continue, enter your password.",
       "passwordLabel": "Password"
-    }
+    },
+    "privacyLink": "Privacy Policy"
   },
   "notify": {
     "startBody": "Starts in 10 minutes · {range}",

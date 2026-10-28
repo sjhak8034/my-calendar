@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -63,6 +64,12 @@ async function SettingsContent({ params, searchParams }: PageProps<"/[lang]/sett
           dict={settings.account}
         />
       )}
+      <Link
+        href={`/${lang}/privacy`}
+        className="w-fit rounded-sm text-sm text-muted-foreground underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        {settings.privacyLink}
+      </Link>
     </main>
   );
 }
