@@ -4,3 +4,8 @@ export function emailMatches(typed: unknown, accountEmail: string | null | undef
   if (typeof typed !== "string" || !accountEmail) return false;
   return typed.trim().toLowerCase() === accountEmail.trim().toLowerCase();
 }
+
+// 비밀번호로 로그인하는 계정인지(이메일 identity가 있는지). Google로만 가입한 계정은 비밀번호가 없어 이메일 입력으로 확인한다.
+export function hasPasswordLogin(user: { identities?: { provider: string }[] | null }): boolean {
+  return user.identities?.some((identity) => identity.provider === "email") === true;
+}

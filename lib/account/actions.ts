@@ -1,27 +1,38 @@
 "use server";
 
+import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { defaultLocale, hasLocale } from "@/lib/i18n/config";
 import { unlinkKakaoForUser } from "@/lib/kakao/unlink-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
-import { emailMatches } from "./confirm";
+import { emailMatches, hasPasswordLogin } from "./confirm";
 
 export type DeleteAccountResult = {
   ok: false;
-  code: "unauthorized" | "guest" | "mismatch" | "failed";
+  code: "unauthorized" | "guest" | "mismatch" | "captcha" | "rateLimited" | "failed";
 };
 
 // 계정과 모든 데이터를 영구 삭제한다. 성공하면 로그인 화면으로 이동하므로 이 함수는 돌아오지 않고,
 // 돌아왔다면 실패다. 일정·AI 대화·푸시 구독·카카오 토큰·알림 기록은 사용자(auth.users)에 걸린 FK cascade로 함께 지워진다.
-// Server Action은 직접 POST로도 호출되므로 로그인과 이메일 확인을 서버에서 다시 확인한다.
+// 확인 방법: 비밀번호로 로그인하는 계정은 비밀번호를, Google로만 가입한 계정은 이메일 입력을 받는다.
+// Server Action은 직접 POST로도 호출되므로 로그인과 확인을 서버에서 다시 한다.
 // 브라우저의 푸시 구독 해제는 브라우저에서만 할 수 있어 화면이 이 액션을 부르기 전에 한다.
-export async function deleteAccount(confirmEmail: unknown, lang: unknown): Promise<DeleteAccountResult> {
+export async function deleteAccount(
+  confirmation: unknown,
+  lang: unknown,
+  captchaToken?: unknown,
+): Promise<DeleteAccountResult> {
   const session = await requireUser();
   if (!session) return { ok: false, code: "unauthorized" };
   // 게스트는 로그아웃할 때 계정이 지워지는 기존 흐름(signOut)을 쓴다.
   if (session.user.is_anonymous === true) return { ok: false, code: "guest" };
-  if (!emailMatches(confirmEmail, session.user.email)) return { ok: false, code: "mismatch" };
+  if (hasPasswordLogin(session.user)) {
+    const checked = await verifyPassword(session.user.email, confirmation, captchaToken);
+    if (checked !== "ok") return { ok: false, code: checked };
+  } else if (!emailMatches(confirmation, session.user.email)) {
+    return { ok: false, code: "mismatch" };
+  }
 
   const admin = createAdminClient();
   if (!admin) {
@@ -45,4 +56,42 @@ export async function deleteAccount(confirmEmail: unknown, lang: unknown): Promi
     // 쿠키 정리 실패는 로그인 화면에서 세션이 무효로 처리된다.
   }
   redirect(`/${typeof lang === "string" && hasLocale(lang) ? lang : defaultLocale}/login`);
+}
+
+// 입력한 비밀번호가 맞는지 확인한다. 쿠키·세션을 건드리지 않는 별도 클라이언트로 로그인을 시도할 뿐이고(성공해도 저장하지 않는다),
+// Supabase의 CAPTCHA 보호가 켜져 있으면 로그인과 같이 토큰이 필요하다. 비밀번호는 로그에 남기지 않는다.
+async function verifyPassword(
+  email: string | undefined,
+  password: unknown,
+  captchaToken: unknown,
+): Promise<"ok" | "mismatch" | "captcha" | "rateLimited" | "failed"> {
+  if (!email || typeof password !== "string" || password.length === 0 || password.length > 256) return "mismatch";
+  const verifier = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
+  );
+  const { error } = await verifier.auth.signInWithPassword({
+    email,
+    password,
+    options: {
+      captchaToken:
+        typeof captchaToken === "string" && captchaToken.length > 0 && captchaToken.length <= 4096
+          ? captchaToken
+          : undefined,
+    },
+  });
+  if (!error) return "ok";
+  console.error("[account] password check failed:", error.code ?? "unknown", error.status ?? "");
+  switch (error.code) {
+    case "invalid_credentials":
+      return "mismatch";
+    case "captcha_failed":
+      return "captcha";
+    case "over_request_rate_limit":
+    case "over_email_send_rate_limit":
+      return "rateLimited";
+    default:
+      return "failed";
+  }
 }

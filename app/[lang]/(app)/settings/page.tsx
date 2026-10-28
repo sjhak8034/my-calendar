@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import { hasPasswordLogin } from "@/lib/account/confirm";
 import { DeleteAccountCard } from "@/components/settings/delete-account-card";
 import { KakaoCard } from "@/components/settings/kakao-card";
 import { NotificationHistory } from "@/components/settings/notification-history";
@@ -55,7 +56,12 @@ async function SettingsContent({ params, searchParams }: PageProps<"/[lang]/sett
       <NotificationHistory lang={lang} dict={settings.history} records={records} />
       {/* 게스트는 로그아웃하면 계정이 지워지므로 별도 삭제 메뉴가 없다. */}
       {session.user.is_anonymous !== true && session.user.email && (
-        <DeleteAccountCard lang={lang} email={session.user.email} dict={settings.account} />
+        <DeleteAccountCard
+          lang={lang}
+          email={session.user.email}
+          usesPassword={hasPasswordLogin(session.user)}
+          dict={settings.account}
+        />
       )}
     </main>
   );

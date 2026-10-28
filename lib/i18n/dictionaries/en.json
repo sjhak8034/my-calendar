@@ -343,8 +343,13 @@
       "errors": {
         "mismatch": "That email doesn't match.",
         "failed": "Couldn't delete your account. Please try again in a moment.",
-        "unauthorized": "You need to be signed in. Please sign in again and retry."
-      }
+        "unauthorized": "You need to be signed in. Please sign in again and retry.",
+        "mismatchPassword": "That password is incorrect.",
+        "captchaFailed": "The security check (CAPTCHA) failed. Please try again in a moment.",
+        "rateLimited": "Too many attempts. Please try again in a moment."
+      },
+      "dialogDescriptionPassword": "All your data, including events and AI chats, is deleted right away and can't be recovered. To continue, enter your password.",
+      "passwordLabel": "Password"
     }
   },
   "notify": {
