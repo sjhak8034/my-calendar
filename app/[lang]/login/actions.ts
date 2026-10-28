@@ -30,10 +30,12 @@ function readCredentials(formData: FormData) {
 // Supabase 원본 문구 대신 error.code로 사전 키를 고른다.
 function errorKey(
   code: string | undefined,
-): "invalidCredentials" | "emailTaken" | "passwordTooShort" | "generic" {
+): "invalidCredentials" | "emailNotConfirmed" | "emailTaken" | "passwordTooShort" | "generic" {
   switch (code) {
     case "invalid_credentials":
       return "invalidCredentials";
+    case "email_not_confirmed":
+      return "emailNotConfirmed";
     case "user_already_exists":
     case "email_exists":
       return "emailTaken";
@@ -90,15 +92,25 @@ export async function signUp(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return { error: dict.errors[errorKey(error.code)], email };
+  // 이메일 확인이 켜져 있으면 메일의 링크가 이 주소로 돌아와 로그인을 마친다(/auth/callback이 인가 코드를 세션으로 바꾼다).
+  const origin = await requestOrigin();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: origin ? { emailRedirectTo: `${origin}/auth/callback?lang=${lang}` } : undefined,
+  });
+  if (error) {
+    // 사용자에게는 일반 문구만 보이므로 원인(오류 코드)을 서버 로그에 남긴다. 이메일·비밀번호는 남기지 않는다.
+    console.error("[auth] signUp failed:", error.code ?? "unknown", error.status ?? "");
+    return { error: dict.errors[errorKey(error.code)], email };
+  }
 
   // 이메일 확인이 켜진 프로젝트에서는 이미 가입된 이메일이 identities 빈 배열로 응답된다.
   if (data.user?.identities?.length === 0) {
     return { error: dict.errors.emailTaken, email };
   }
-  // 세션이 없으면(이메일 확인 필요 등) 자동 로그인할 수 없다.
-  if (!data.session) return { error: dict.errors.generic, email };
+  // 세션이 없으면 이메일 확인이 켜져 있어 확인 메일을 보낸 상태다. 오류가 아니라 안내를 보여 준다.
+  if (!data.session) return { notice: dict.login.checkEmail, email };
 
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }

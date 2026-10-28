@@ -77,6 +77,8 @@ export function LoginForm({
           : errorSource === "initial"
             ? initialError
             : undefined;
+  // 가입 후 확인 메일을 보낸 경우의 안내(오류가 아니다)
+  const notice = !busy && errorSource === "password" ? passwordState.notice : undefined;
   // 입력과 관련된 오류(Google 실패 제외)만 입력에 연결한다.
   const inputError = errorSource === "password" ? error : undefined;
 
@@ -153,6 +155,11 @@ export function LoginForm({
         >
           {error}
         </p>
+        {notice && (
+          <p role="status" className="text-center text-sm text-foreground/80">
+            {notice}
+          </p>
+        )}
         <Button
           type="submit"
           disabled={busy}

@@ -28,7 +28,8 @@
     "switchToSignIn": "Sign in",
     "pending": "Working...",
     "guestButton": "Continue as guest",
-    "guestHint": "Try it without signing up. Your events are kept in this browser and deleted after 30 days without a visit."
+    "guestHint": "Try it without signing up. Your events are kept in this browser and deleted after 30 days without a visit.",
+    "checkEmail": "We sent a confirmation email. Open the link in it to finish signing up. If you don't see it, check your spam folder."
   },
   "nav": {
     "signUp": "Sign up",
@@ -81,7 +82,8 @@
     "generic": "Something went wrong. Please try again later.",
     "googleFailed": "Google sign-in failed. Please try again later.",
     "guestFailed": "Could not start as a guest. Please try again later.",
-    "identityExists": "This Google account is already linked to another account. If you sign out and sign in with it, your guest data won't be moved."
+    "identityExists": "This Google account is already linked to another account. If you sign out and sign in with it, your guest data won't be moved.",
+    "emailNotConfirmed": "Please confirm your email first. Open the link in the email we sent when you signed up."
   },
   "week": {
     "title": "Weekly schedule",
