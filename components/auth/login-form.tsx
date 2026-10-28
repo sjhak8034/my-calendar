@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   type ActionState,
 } from "@/app/[lang]/login/actions";
 import { AUTH_CARD_CLASS, AUTH_INPUT_CLASS } from "@/components/auth/auth-styles";
+import { useCaptcha } from "@/components/auth/captcha";
 import { GoogleIcon } from "@/components/auth/google-icon";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
@@ -72,6 +73,15 @@ export function LoginForm({
 
   const isSignIn = mode === "signIn";
   const busy = passwordPending || googlePending || guestPending || resendPending;
+
+  // CAPTCHA 토큰은 한 번만 쓸 수 있어서, 비밀번호·게스트·재발송 제출이 끝날 때마다 새로 받는다(Google 로그인은 쓰지 않는다).
+  const captcha = useCaptcha(lang);
+  const { enabled: captchaEnabled, reset: resetCaptcha } = captcha;
+  const wasBusy = useRef(false);
+  useEffect(() => {
+    if (wasBusy.current && !busy && captchaEnabled) resetCaptcha();
+    wasBusy.current = busy;
+  }, [busy, captchaEnabled, resetCaptcha]);
   // 제출 중에는 이전 결과가 남아 보이지 않도록 숨긴다.
   const error = busy
     ? undefined
@@ -120,6 +130,7 @@ export function LoginForm({
         className="flex flex-col gap-4"
       >
         <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="captchaToken" value={captcha.token} />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email" className="sr-only">
             {dict.emailLabel}
@@ -180,6 +191,7 @@ export function LoginForm({
         ) : (
           <p className="-mt-2 text-xs text-muted-foreground">{dict.passwordHint}</p>
         )}
+        {captcha.widget}
         {/* 비어 있을 때는 음수 마진으로 gap을 상쇄해 입력창-버튼 간격을 16px로 유지 */}
         <p
           id="form-error"
@@ -195,7 +207,7 @@ export function LoginForm({
         )}
         <Button
           type="submit"
-          disabled={busy}
+          disabled={busy || !captcha.ready}
           className="h-12! w-full rounded-xl! text-base! font-semibold"
         >
           {passwordPending
@@ -204,14 +216,21 @@ export function LoginForm({
               ? dict.signInButton
               : dict.signUpButton}
         </Button>
+        {!captcha.ready && (
+          <p role="status" className="text-center text-xs text-muted-foreground">
+            {dict.captchaChecking}
+          </p>
+        )}
       </form>
 
       {showResend && (
         <form action={resendAction} onSubmit={() => setErrorSource("resend")} className="-mt-2 text-center">
           <input type="hidden" name="lang" value={lang} />
           <input type="hidden" name="email" value={passwordState.email ?? ""} />
+          <input type="hidden" name="captchaToken" value={captcha.token} />
           <button
             type="submit"
+            disabled={!captcha.ready}
             className="rounded-sm text-sm font-semibold underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {dict.resendConfirmation}
@@ -244,11 +263,12 @@ export function LoginForm({
         className="flex flex-col items-center gap-2"
       >
         <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="captchaToken" value={captcha.token} />
         <Button
           type="submit"
           variant="ghost"
           className="h-12! w-full rounded-xl! text-sm! font-semibold"
-          disabled={busy}
+          disabled={busy || !captcha.ready}
         >
           {guestPending ? dict.pending : dict.guestButton}
         </Button>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestPasswordReset, type ActionState } from "@/app/[lang]/login/actions";
 import { AUTH_CARD_CLASS, AUTH_INPUT_CLASS } from "@/components/auth/auth-styles";
+import { useCaptcha } from "@/components/auth/captcha";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 const initialState: ActionState = {};
@@ -24,6 +25,14 @@ export function ForgotPasswordForm({
   initialError?: string;
 }) {
   const [state, action, pending] = useActionState(requestPasswordReset, initialState);
+  // 토큰은 한 번만 쓸 수 있어서, 제출이 끝날 때마다 새로 받는다.
+  const captcha = useCaptcha(lang);
+  const { enabled: captchaEnabled, reset: resetCaptcha } = captcha;
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (wasPending.current && !pending && captchaEnabled) resetCaptcha();
+    wasPending.current = pending;
+  }, [pending, captchaEnabled, resetCaptcha]);
   // 제출 중에는 이전 결과가 남아 보이지 않게 숨기고, 한 번이라도 제출했으면 초기 안내는 더 보이지 않는다.
   const submitted = state.error !== undefined || state.notice !== undefined;
   const error = pending ? undefined : submitted ? state.error : initialError;
@@ -39,6 +48,7 @@ export function ForgotPasswordForm({
       </div>
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="captchaToken" value={captcha.token} />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email" className="sr-only">
             {login.emailLabel}
@@ -55,6 +65,7 @@ export function ForgotPasswordForm({
             className={AUTH_INPUT_CLASS}
           />
         </div>
+        {captcha.widget}
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
@@ -65,9 +76,18 @@ export function ForgotPasswordForm({
             {notice}
           </p>
         )}
-        <Button type="submit" disabled={pending} className="h-12! w-full rounded-xl! text-base! font-semibold">
+        <Button
+          type="submit"
+          disabled={pending || !captcha.ready}
+          className="h-12! w-full rounded-xl! text-base! font-semibold"
+        >
           {pending ? login.pending : dict.button}
         </Button>
+        {!captcha.ready && (
+          <p role="status" className="text-center text-xs text-muted-foreground">
+            {login.captchaChecking}
+          </p>
+        )}
       </form>
       <p className="text-center text-sm">
         <Link

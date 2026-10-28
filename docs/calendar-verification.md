@@ -387,7 +387,17 @@
 
 **확인함**(개발 서버, 비로그인): `/api/ai`가 인증 없이·남의 Origin으로·GET으로 호출해도 401, 없는 `/api/*` 경로 401, `/api/cron/notify`가 비밀 없음·틀린 비밀·`Basic` 형식에서 401이고 GET은 405, 보호 화면 7곳(`/ko`, `/ko/settings`, `/ko/day/…`, `/ko/upgrade`, `/ko/reset-password`, `/auth/kakao/connect`, `/auth/kakao/callback`)이 로그인으로 이동, `/auth/callback`의 `safeNextPath`를 소스에서 그대로 뽑아 `//evil.com`·`/\evil.com`·탭/개행 삽입·`/..//evil.com`·`https://evil.com`·`javascript:`·`/%09/evil.com`·빈 값 등 우회 시도 11건이 모두 거부되고 정상 경로는 통과, 서비스 워커의 알림 클릭 URL 처리가 같은 사이트만 허용(외부 주소·`//`·`javascript:`·`data:`·하위 도메인 속임·빈 값은 사이트 첫 화면으로), 푸시 endpoint 허용 목록 16건(2단계 이전 검증), `code-reviewer` 보안 리뷰(높은 위험의 RLS·권한·열린 리다이렉트·비밀 노출 문제 없음, 지적 사항은 `docs/ROADMAP.md` Task 013 참고).
 
-**확인하지 못한 것**: 마이그레이션 `20261031000003_hardening.sql` 자체(로컬에 Postgres가 없어 SQL을 실행해 보지 못함 — 적용 후 정책 제거, 제약 오류, 일정 추가·수정이 정상인지, 일정 10,000개 상한 확인), 테스트 발송 빈도 제한(1분 3회 초과 시 안내와 1분 뒤 해제), 게스트의 카카오 테스트 거부, AI의 주제 이탈 거절이 실제로 동작하는지와 프롬프트 인젝션 시나리오("이전 지시 무시", "시스템 프롬프트 알려줘", 일정 설명에 지시문), `/api/ai`의 로그인 후 Origin·크기 검사, 로그인 상태의 RLS 교차 접근(계정 2개로 서로의 events·ai·push·kakao 행 조회·수정·삭제), anon 키로 RPC·테이블 직접 호출 거부, 일반 계정의 `delete_guest_account` 거부, 카카오 state 위조, 로그아웃 후 푸시, 약한 비밀번호 거부.
+**확인함(2026-10-29, 사용자가 익명 키로 직접 조회)**: `events`·`notifications`·`push_subscriptions`·`kakao_tokens`는 `[]`(HTTP 200, 데이터가 있는데도 RLS가 행을 숨김), `ai_conversations`·`ai_messages`·`ai_requests`·`action_requests`는 `42501` 권한 없음. `action_requests`가 "권한 없음"으로 응답해 `20261031000003_hardening.sql`의 테이블 생성이 적용된 것으로 보임(SQL 전체가 오류 없이 끝났는지는 확인하지 못함). 익명 역할의 권한 자체는 앞의 4개 테이블에 아직 남아 있어(RLS가 막음) 회수는 선택 사항으로 제안됨.
+
+**확인하지 못한 것**: 마이그레이션 `20261031000003_hardening.sql` 전체(로컬에 Postgres가 없어 SQL을 실행해 보지 못함 — 적용 후 정책 제거, 제약 오류, 일정 추가·수정이 정상인지, 일정 10,000개 상한 확인), 테스트 발송 빈도 제한(1분 3회 초과 시 안내와 1분 뒤 해제), 게스트의 카카오 테스트 거부, AI의 주제 이탈 거절이 실제로 동작하는지와 프롬프트 인젝션 시나리오("이전 지시 무시", "시스템 프롬프트 알려줘", 일정 설명에 지시문), `/api/ai`의 로그인 후 Origin·크기 검사, 로그인 상태의 RLS 교차 접근(계정 2개로 서로의 events·ai·push·kakao 행 조회·수정·삭제), anon 키로 RPC(`consume_ai_quota`, `rate_limit_hit`, `claim_due_notifications` 등) 직접 호출 거부, 일반 계정의 `delete_guest_account` 거부, 카카오 state 위조, 로그아웃 후 푸시, 약한 비밀번호 거부.
+
+## 23. CAPTCHA(Turnstile) (Task 013)
+
+`npm run lint`, `npx tsc --noEmit`, `npm run build` 통과.
+
+**확인함**(서버가 보내는 HTML 기준): 사이트 키가 없는 환경(현재 개발 서버)에서는 로그인 화면의 버튼이 모두 활성이고 위젯을 띄우지 않음, Cloudflare 시험용 사이트 키(`1x00000000000000000000AA`)를 환경변수로 넣은 별도 빌드(포트 3100)에서는 이메일 로그인·게스트 버튼이 토큰이 올 때까지 비활성이고 Google 버튼은 활성, `captchaToken` hidden 입력이 폼에 들어감, 사이트 키(공개 값)만 클라이언트 번들에 포함되고 시험용 비밀 키 문자열은 번들에 없음.
+
+**확인하지 못한 것**: 브라우저에서 Turnstile 위젯이 실제로 로드되고 토큰이 채워져 버튼이 켜지는 것(이 환경에는 브라우저가 없음), Supabase 대시보드에서 CAPTCHA를 켠 상태의 가입·로그인·게스트 시작·비밀번호 찾기·확인 메일 재발송 성공, 토큰이 없거나 틀릴 때 `captcha_failed` 안내 문구, 제출이 끝난 뒤 위젯이 새 토큰을 받아 연속 제출이 되는 것, 위젯을 불러오지 못할 때(광고 차단기 등) 버튼이 계속 꺼져 있는 상태의 안내, Cloudflare 시험용 항상 실패 키(`2x00000000000000000000AB`)로 거부되는 것, 한국어·영어 위젯 언어, 보안 헤더(`X-Frame-Options` 등)와 Cloudflare iframe의 동작, 모바일 화면.
 
 ## 실행 방법
 

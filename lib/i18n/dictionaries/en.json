@@ -33,7 +33,8 @@
     "forgotPassword": "Forgot your password?",
     "passwordHint": "At least 8 characters, with both letters and numbers.",
     "resendConfirmation": "Resend confirmation email",
-    "resendSent": "We sent the confirmation email again. Please check your inbox and spam folder."
+    "resendSent": "We sent the confirmation email again. Please check your inbox and spam folder.",
+    "captchaChecking": "Running a security check. If it takes a while, please refresh the page."
   },
   "nav": {
     "signUp": "Sign up",
@@ -91,7 +92,8 @@
     "passwordWeak": "Your password must be at least 8 characters and include both letters and numbers.",
     "passwordSame": "You can't reuse your previous password. Please enter a different one.",
     "passwordMismatch": "The two passwords don't match.",
-    "rateLimited": "Too many requests. Please try again in a moment."
+    "rateLimited": "Too many requests. Please try again in a moment.",
+    "captchaFailed": "The security check (CAPTCHA) failed. Please refresh the page and try again."
   },
   "week": {
     "title": "Weekly schedule",

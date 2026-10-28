@@ -27,6 +27,13 @@ function readCredentials(formData: FormData) {
   };
 }
 
+// CAPTCHA(Turnstile) 토큰. Supabase Auth의 CAPTCHA 보호가 켜져 있으면 가입·로그인·게스트·재설정 메일·확인 메일 재발송에 필요하고,
+// 꺼져 있으면 무시된다. 비어 있으면 undefined로 두어 Supabase가 "토큰 없음"으로 판단하게 한다.
+function readCaptchaToken(formData: FormData): string | undefined {
+  const value = formData.get("captchaToken");
+  return typeof value === "string" && value.length > 0 && value.length <= 4096 ? value : undefined;
+}
+
 // Supabase 원본 문구 대신 error.code로 사전 키를 고른다.
 function errorKey(
   code: string | undefined,
@@ -37,6 +44,7 @@ function errorKey(
   | "passwordWeak"
   | "passwordSame"
   | "rateLimited"
+  | "captchaFailed"
   | "generic" {
   switch (code) {
     case "invalid_credentials":
@@ -53,6 +61,8 @@ function errorKey(
     case "over_email_send_rate_limit":
     case "over_request_rate_limit":
       return "rateLimited";
+    case "captcha_failed":
+      return "captchaFailed";
     default:
       return "generic";
   }
@@ -89,7 +99,11 @@ export async function signInWithPassword(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken: readCaptchaToken(formData) },
+  });
   if (error) {
     return {
       error: dict.errors[errorKey(error.code)],
@@ -119,7 +133,10 @@ export async function signUp(
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: origin ? { emailRedirectTo: `${origin}/auth/callback?lang=${lang}` } : undefined,
+    options: {
+      ...(origin ? { emailRedirectTo: `${origin}/auth/callback?lang=${lang}` } : {}),
+      captchaToken: readCaptchaToken(formData),
+    },
   });
   if (error) {
     // 사용자에게는 일반 문구만 보이므로 원인(오류 코드)을 서버 로그에 남긴다. 이메일·비밀번호는 남기지 않는다.
@@ -166,11 +183,13 @@ export async function signInAsGuest(
   const dict = await getDictionary(lang);
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInAnonymously();
+  const { data, error } = await supabase.auth.signInAnonymously({
+    options: { captchaToken: readCaptchaToken(formData) },
+  });
   if (error || !data.session) {
     // 원인(예: anonymous_provider_disabled)은 화면에 보이지 않으므로 코드와 상태만 서버 로그에 남긴다.
     console.error("[auth] guest sign-in failed:", error?.code ?? "no_session", error?.status ?? "");
-    return { error: dict.errors.guestFailed };
+    return { error: error?.code === "captcha_failed" ? dict.errors.captchaFailed : dict.errors.guestFailed };
   }
 
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
@@ -256,10 +275,15 @@ export async function requestPasswordReset(
   const redirectTo = origin
     ? `${origin}/auth/callback?${new URLSearchParams({ lang, next: `/${lang}/reset-password`, recovery: "1" })}`
     : undefined;
-  const { error } = await supabase.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined);
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    ...(redirectTo ? { redirectTo } : {}),
+    captchaToken: readCaptchaToken(formData),
+  });
   if (error) {
     console.error("[auth] resetPasswordForEmail failed:", error.code ?? "unknown", error.status ?? "");
     if (errorKey(error.code) === "rateLimited") return { error: dict.errors.rateLimited, email };
+    // 보안 확인을 통과하지 못한 요청은 메일이 가지 않았으므로 성공 안내를 보이면 안 된다.
+    if (errorKey(error.code) === "captchaFailed") return { error: dict.errors.captchaFailed, email };
   }
   return { notice: dict.forgotPassword.sent, email };
 }
@@ -279,12 +303,18 @@ export async function resendConfirmation(
   const { error } = await supabase.auth.resend({
     type: "signup",
     email,
-    options: origin ? { emailRedirectTo: `${origin}/auth/callback?lang=${lang}` } : undefined,
+    options: {
+      ...(origin ? { emailRedirectTo: `${origin}/auth/callback?lang=${lang}` } : {}),
+      captchaToken: readCaptchaToken(formData),
+    },
   });
   if (error) {
     console.error("[auth] resend confirmation failed:", error.code ?? "unknown", error.status ?? "");
     if (errorKey(error.code) === "rateLimited") {
       return { error: dict.errors.rateLimited, email, needsConfirmation: true };
+    }
+    if (errorKey(error.code) === "captchaFailed") {
+      return { error: dict.errors.captchaFailed, email, needsConfirmation: true };
     }
   }
   return { notice: dict.login.resendSent, email, needsConfirmation: true };
