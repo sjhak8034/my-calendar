@@ -251,12 +251,70 @@
       },
       "test": "Send test notification",
       "testSent": "Sent a test notification. If you don't see it, check your browser and system notification settings."
+    },
+    "kakao": {
+      "title": "KakaoTalk notifications",
+      "description": "Get notified in your KakaoTalk \"Chat with myself\" 10 minutes before an event starts and when it ends.",
+      "disconnected": "Not connected.",
+      "connected": "Connected to KakaoTalk.",
+      "reconnectNeeded": "The connection expired or consent was withdrawn, so notifications can't be sent. Please connect again.",
+      "notConfigured": "KakaoTalk notifications aren't set up yet.",
+      "working": "Working...",
+      "connect": "Connect KakaoTalk",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "test": "Send test message",
+      "testSent": "Sent a test message. Check your KakaoTalk \"Chat with myself\".",
+      "results": {
+        "connected": "KakaoTalk is connected.",
+        "denied": "You need to allow sending KakaoTalk messages to get notifications. Please allow it on the consent screen.",
+        "failed": "Couldn't connect KakaoTalk. Please try again in a moment.",
+        "notConfigured": "KakaoTalk notifications aren't set up yet.",
+        "origin": "Open the site at its configured address and try again."
+      },
+      "errors": {
+        "failed": "Couldn't complete that. Please try again in a moment.",
+        "notConnected": "KakaoTalk isn't connected.",
+        "reconnect": "The connection expired. Please connect again."
+      }
+    },
+    "history": {
+      "title": "Recent notifications",
+      "empty": "No notifications have been sent yet.",
+      "untitled": "(Untitled)",
+      "kind": {
+        "start": "10 min before start",
+        "end": "End"
+      },
+      "channel": {
+        "web_push": "Web push",
+        "kakao": "KakaoTalk"
+      },
+      "status": {
+        "sent": "Sent",
+        "failed": "Failed",
+        "skipped": "Skipped",
+        "sending": "Sending"
+      },
+      "reasonOther": "Unknown error",
+      "reasons": {
+        "channel_not_ready": "This channel wasn't supported yet",
+        "no_subscription": "No browser on this account has web push turned on",
+        "subscription_expired": "The push subscription expired. Turn it on again",
+        "push_not_configured": "Push notifications aren't set up yet",
+        "not_connected": "KakaoTalk isn't connected",
+        "kakao_not_configured": "KakaoTalk notifications aren't set up yet",
+        "reconnect_required": "Please reconnect KakaoTalk",
+        "kakao_refresh_failed": "Couldn't refresh the KakaoTalk connection",
+        "expired": "Too late after the scheduled time, so it wasn't sent"
+      }
     }
   },
   "notify": {
     "startBody": "Starts in 10 minutes · {range}",
     "endBody": "Event ended · {range}",
     "testTitle": "Test notification",
-    "testBody": "Notifications are working in this browser."
+    "testBody": "Notifications are working in this browser.",
+    "openCalendar": "Open calendar"
   }
 }

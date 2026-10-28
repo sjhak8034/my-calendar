@@ -3,14 +3,14 @@
 월간 캘린더, 날짜별 시간 상세, 날짜 범위 AI 대화, 시작·종료 알림(웹 푸시 + 카카오톡)을 만드는 개발 로드맵. 요구사항은 `docs/PRD.md`를 따른다.
 
 **📅 최종 업데이트**: 2026-10-28
-**📊 진행 상황**: 10/13 Tasks 완료 (Task 009 AI 대화 1~3단계 완료·마무리 점검 대기, Task 010 알림 워커 완료, Task 011 웹 푸시 완료(카카오톡은 Task 012), Task 014 게스트 모드 014a 완료·014b 구현)
+**📊 진행 상황**: 11/13 Tasks 완료 (Task 009 AI 대화 1~3단계 완료·마무리 점검 대기, Task 010 알림 워커 완료, Task 011 웹 푸시 완료, Task 012 카카오톡 알림 완료, Task 014 게스트 모드 014a 완료·014b 구현)
 
 ## 착수 전 결정 사항
 
 - AI 대화 사용량 제한(시간당 20회, 하루 100회)·메시지 200자·대화 30일 보관·쓰기 작업은 확인 버튼 필수: 확정(Task 009)
 - 종일 다일 일정의 종료일 포함 여부와 입력 폼의 종료<시작 검증 메시지: Task 008 전 (확정됨: 주 시작 월요일, 6주 고정, 한 칸 3줄, 색 팔레트 8종)
 - Vercel Cron / Supabase `pg_cron`·`pg_net` 요금제별 제한 확인: Task 010 전 (확인됨: Vercel Hobby는 Cron 하루 1회라 `pg_cron`으로 호출, `pg_net` 기본 타임아웃 5초라 10초 지정. Supabase 플랜별 `pg_cron` 사용 가능 여부는 대시보드에서 확장 활성화 시 확인)
-- 카카오 `talk_message` 동의 항목의 다중 사용자 제공 조건(검수 여부): Task 012 전
+- 카카오 `talk_message` 동의 항목의 다중 사용자 제공 조건(검수 여부): Task 012 전 (미확인: 공식 문서에서 "나에게 보내기"의 심사 요건을 찾지 못함. 앱 소유자 계정으로는 심사 없이 동의·발송되는 것을 확인했고, 다른 사용자는 Task 013 배포 전에 콘솔의 동의항목 화면과 문의로 확인)
 - Next.js 16의 인증 확인 위치는 `node_modules/next/dist/docs/` 확인 후 결정: Task 003 전
 
 ## 개발 단계
@@ -114,11 +114,14 @@
   - 알림을 누르면 해당 날짜의 주간 화면이 열린다. 문구: `10분 뒤 시작해요 · 시간 범위` / `일정이 끝났어요 · 시간 범위`
   - ⚠️ 적용 필요(순서대로): `supabase/migrations/20261031000000_push_subscription_lang.sql` → `20261031000001_push_subscriptions_rls.sql`. `.env`에 `NEXT_PUBLIC_VAPID_PUBLIC_KEY`·`VAPID_PRIVATE_KEY`·`VAPID_SUBJECT`(`mailto:` 또는 `https:` 형식) 추가(배포 시 Vercel에도 등록하고 로컬과 다른 키 쌍을 새로 만든다). 로컬에서는 워커를 1분마다 호출해 줄 곳이 없어 별도 터미널에서 `curl` 반복이 필요하고, 운영은 Task 013 배포 후 `pg_cron` 스케줄
   - 제한: iOS는 홈 화면에 설치한 앱에서만 푸시가 되는데 manifest·아이콘은 없음(Task 013). 로그아웃해도 브라우저 구독은 남아 같은 브라우저에서 다른 계정이 켜기 전까지 이전 계정 알림이 올 수 있음(Task 013 후보). 일시 오류 재시도 없음(`failed`로 기록). 테스트 버튼 호출 횟수 제한 없음
-- **Task 012: 카카오톡 알림 (F013, F014)** - 우선순위
-  - 카카오 개발자 앱 등록, `talk_message` 동의 항목 설정
-  - 설정 페이지에서 카카오 연결·해제(로그인과 별개)
-  - 토큰 암호화 저장, 만료 시 갱신 후 발송, 갱신 실패 시 재연결 안내
-  - 설정 페이지에 채널별 최근 발송 상태 목록 표시
+- **Task 012: 카카오톡 알림 (F013, F014)** ✅ - 완료(앱 소유자 계정으로 연결·발송·설정 화면 확인)
+  - **연결(로그인과 별개)** `app/auth/kakao/connect`·`callback`: Supabase 카카오 로그인을 쓰지 않고 직접 만든 OAuth. 로그인 확인 → 무작위 `state`를 httpOnly 쿠키(10분, `/auth/kakao` 한정)에 저장 → `scope=talk_message`로 카카오 동의 화면 → 돌아와 `state`를 시간이 일정한 비교로 검증하고 코드를 토큰으로 교환. 응답의 동의 항목에 `talk_message`가 있어야 저장하고, 결과는 `/[lang]/settings?kakao=결과`로 알린다(`connected`·`denied`·`failed`·`notConfigured`·`origin`). `proxy.ts` matcher가 `/auth/*`를 제외하므로 라우트가 스스로 로그인을 확인한다. `SITE_URL`과 다른 주소로 시작하면 state 쿠키가 없어 실패하므로 `origin`으로 돌려보낸다
+  - **토큰 암호화 저장** `lib/kakao/crypto.ts`: AES-256-GCM, 저장 형식 `iv.tag.암호문`(base64url), 사용자 id를 AAD로 묶어 다른 행으로 옮기면 복호화되지 않는다. 키는 `KAKAO_TOKEN_ENCRYPTION_KEY`(32바이트 base64). 토큰은 평문으로 DB·로그·화면에 두지 않는다
+  - **만료 시 갱신** `lib/kakao/tokens.ts`: 만료 5분 전부터 리프레시 토큰으로 갱신해 다시 저장하고(새 리프레시 토큰은 응답에 있을 때만 교체), 같은 사용자의 동시 갱신은 한 번으로 합친다. 리프레시 토큰이 만료·철회(`invalid_grant`)되었거나 복호화가 안 되면 `kakao_tokens.needs_reconnect`를 켠다
+  - **발송** `lib/notify/kakao.ts`: "나에게 보내기" 텍스트 템플릿(제목 + 시간 범위, "캘린더 열기" 버튼 → `SITE_URL/[lang]/day/날짜`, 200자 제한). 액세스 토큰이 거부되면 한 번 갱신해 다시 보내고, 끝내 거부되거나 동의 취소 코드(`-3`, `-402`)면 재연결 필요로 표시한다. 문구는 푸시와 같은 `lib/notify/message.ts`. 결과: 성공 `sent`, 연결 안 함 `skipped(not_connected)`, 환경변수 없음 `skipped(kakao_not_configured)`, 재연결 필요 `failed(reconnect_required)`, 일시적 갱신 실패 `failed(kakao_refresh_failed)`, 그 외 `failed(kakao_<원인>)`
+  - **설정 화면**: 카카오 카드(연결 안 됨·연결됨·재연결 필요·준비 안 됨, 연결하기·다시 연결하기·테스트 메시지 보내기·연결 해제), 연결 결과 안내(한 번 보여 준 뒤 주소에서 `?kakao=`를 지움), "최근 알림 발송" 목록(대기 중이 아닌 최근 10건, 일정 제목·종류·채널·상태·시각과 사유를 사용자용 문구로 표시). 연결 해제는 카카오 `unlink`(동의 철회·토큰 폐기)를 시도하고 실패해도 우리 쪽 토큰을 지운다
+  - ⚠️ 적용 필요: `supabase/migrations/20261031000002_kakao_connection.sql`(`kakao_tokens.lang`, `needs_reconnect`). 카카오 개발자 콘솔에서 앱 만들기, 카카오 로그인 활성화, Redirect URI `SITE_URL/auth/kakao/callback` 등록, 동의항목 `talk_message`(선택 동의, 동의 목적 작성) 설정(설정하지 않으면 `KOE205`). `.env`에 `KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`·`KAKAO_TOKEN_ENCRYPTION_KEY`·`SITE_URL` 추가(배포 시 Vercel에도 등록하고 운영용 Redirect URI·`SITE_URL`·새 암호화 키를 쓴다). 앱 대표 도메인에는 `localhost`를 넣을 수 없다(선택 항목)
+  - 제한: 암호화 키를 바꾸면 저장된 토큰을 복호화할 수 없어 모두 재연결해야 한다. 동의 철회 API는 문서에서 확인하지 못해 연결 해제는 `unlink`를 쓴다. 메시지의 링크가 카카오에 등록한 도메인이어야 하는지는 확인하지 못했다(로컬 `localhost` 링크로는 발송됨). 텍스트 글자 수 상한 200자는 알려진 값에 맞춘 것이고 문서로 확인하지 못했다. 다른 사용자(팀원이 아닌 계정)의 동의 가능 여부는 위 "착수 전 결정 사항"에 남아 있다
 
 ### Phase 5: 마무리
 

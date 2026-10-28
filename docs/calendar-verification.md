@@ -339,6 +339,14 @@
 
 **확인하지 못한 것**: 알림을 눌렀을 때 해당 날짜 화면이 열리는 동작, 영어 화면에서 구독한 사용자의 영문 문구, 스위치를 끄면 `push_subscriptions` 행이 삭제되는 것과 새로고침 후 상태 유지, 브라우저에서만 구독이 사라진 경우 `410`으로 행이 지워지고 `skipped(subscription_expired)`가 되는 것, 알림 권한 차단 상태의 안내 문구, 사용자당 10개 상한(`limit`), RLS 강화 마이그레이션 적용 후 PostgREST로 직접 INSERT가 거부되는 것, 다른 계정으로 같은 브라우저에서 구독했을 때 소유자가 옮겨지는 것, `403`·`5xx` 등 푸시 서비스 오류 시 `failed` 기록, 여러 브라우저에 동시 발송, iOS·Firefox·Safari.
 
+## 17. 카카오톡 알림 (Task 012)
+
+`npm run lint`, `npx tsc --noEmit`, `npm run build` 통과.
+
+**확인함**: `lib/kakao/crypto.ts` 암호화 8건(왕복, 평문 비노출, 매번 다른 IV, 다른 사용자(AAD)·다른 키·암호문 변조·태그 변조·형식 오류 거부), `lib/kakao/client.ts`를 가짜 `fetch`로 검증(인가 URL의 `scope`·`state`·`redirect_uri`, 코드 교환·갱신 요청 필드와 `client_secret`, `invalid_grant`는 재연결 필요, 5xx·네트워크·형식 오류, 메시지 발송의 401·403·429·400·503 매핑과 카카오 오류 코드, `result_code != 0`, 연결 끊기), `lib/kakao/oauth.ts`의 state 헬퍼(무작위 43자, 쿠키 왕복, 잘못된 쿠키·알 수 없는 언어, 길이가 다른 값 거부), 비로그인으로 `connect`·`callback` 호출 시 로그인 화면으로 이동. 앱 소유자 계정으로 실제 연결(`kakao_tokens`에 `iv.tag.암호문` 형식으로 저장, 만료는 약 6시간·리프레시는 약 60일, `lang=ko`, `needs_reconnect=false`), 워커 호출 시 카카오톡 "나와의 채팅"에 일정 알림 수신, 설정 화면(카카오 카드·최근 발송 목록) 표시. 처음에는 `talk_message` 동의항목을 설정하지 않아 카카오 인가 화면에서 `KOE205`가 났다.
+
+**확인하지 못한 것**: "캘린더 열기" 버튼의 링크 동작, 테스트 메시지 버튼, 연결 해제 후 다시 연결과 `?kakao=` 안내가 한 번만 뜨는 것, 영어 화면 문구, 액세스 토큰 만료 후 실제 갱신(`expires_at`을 과거로 바꿔 발송), 리프레시 토큰이 철회된 경우의 `needs_reconnect`와 재연결 안내·`failed(reconnect_required)`, 동의 철회 코드(`-3`·`-402`) 응답, 동의 화면에서 취소했을 때의 `denied`, `state` 불일치 거부, `SITE_URL`과 다른 주소(`127.0.0.1`)로 시작했을 때의 `origin`, 다른 사용자의 토큰 비노출, 한 사용자의 알림이 한 번에 여러 건일 때 갱신 합치기, 앱 소유자가 아닌 계정의 동의 가능 여부(검수). 워커를 처음 호출했을 때 "0byte 파일"이 왔다는 보고가 있었으나 같은 시험을 다시 했을 때는 재현되지 않았고 원인은 확인하지 못했다.
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).

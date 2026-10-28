@@ -1,11 +1,10 @@
 import "server-only";
 import webpush from "web-push";
-import { fillTemplate, formatTimeRange, toSeoulDate } from "@/lib/calendar";
 import { defaultLocale, hasLocale, type Locale } from "@/lib/i18n/config";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { parsePushSubscription } from "@/lib/push/input";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { DispatchResult, DueNotification } from "./dispatch";
+import { notificationMessage } from "./message";
 
 // 서비스 워커(public/sw.js)가 받는 페이로드
 export type PushPayload = { title: string; body: string; url: string; tag: string };
@@ -99,20 +98,9 @@ export async function sendPushToUser(
   };
 }
 
-async function notificationPayload(n: DueNotification, lang: Locale): Promise<PushPayload> {
-  const { notify } = await getDictionary(lang);
-  const range = formatTimeRange(n.start_at, n.end_at, lang);
-  return {
-    title: n.title,
-    body: fillTemplate(n.kind === "start" ? notify.startBody : notify.endBody, { range }),
-    url: `/${lang}/day/${toSeoulDate(n.start_at)}`,
-    tag: n.id,
-  };
-}
-
 // 워커가 선점한 web_push 알림 한 건을 보낸다.
 export async function dispatchWebPush(n: DueNotification): Promise<DispatchResult> {
-  const summary = await sendPushToUser(n.user_id, (lang) => notificationPayload(n, lang));
+  const summary = await sendPushToUser(n.user_id, (lang) => notificationMessage(n, lang));
   if (!summary) return { status: "failed", error: "push_not_configured" };
   if (summary.sent > 0) return { status: "sent" };
   if (summary.failed > 0) return { status: "failed", error: summary.error ?? "push_failed" };

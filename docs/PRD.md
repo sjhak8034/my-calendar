@@ -69,12 +69,12 @@
 
 ## 6. 데이터 모델
 - Event: id, user_id, title, start_at, end_at, all_day, description, color
-- Notification: id, user_id, event_id, kind(시작 전/종료), channel(웹 푸시/카카오), send_at, sent_at, status(대기/발송/실패)
+- Notification: id, user_id, event_id, kind(시작 전/종료), channel(웹 푸시/카카오), send_at, sent_at, status(대기/발송 중/발송됨/실패/건너뜀), error(사유 코드)
 - AiConversation: id, user_id, start_date, end_date, title(첫 질문), created_at, updated_at(마지막 대화 시각, 보관 30일의 기준)
 - AiMessage: id, conversation_id, user_id, role(user/assistant), content, created_at
 - AiRequest: id, user_id, created_at (사용량 제한용 기록. 정책 없이 서버 함수로만 접근)
-- PushSubscription: id, user_id, endpoint, keys
-- KakaoConnection: user_id, access_token, refresh_token, expires_at (토큰은 암호화하여 저장)
+- PushSubscription: id, user_id, endpoint, keys, lang(알림 문구 언어)
+- KakaoConnection: user_id, access_token, refresh_token, expires_at, refresh_expires_at, lang(알림 문구 언어), needs_reconnect(재연결 필요 표시) (토큰은 암호화하여 저장)
 - 사용자 계정은 Supabase Auth가 관리한다.
 - 모든 테이블에 행 수준 보안(RLS)을 적용해 본인 데이터만 접근하게 한다(AiRequest는 정책 없이 서버 함수로만 접근). AI 대화는 마지막 대화 후 30일이 지나면 조회에서 제외되고 삭제 함수로 정리된다.
 
