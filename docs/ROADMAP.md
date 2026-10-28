@@ -41,7 +41,7 @@
   - ✅ shadcn 컴포넌트 추가: dialog, textarea, switch, sheet
 - **Task 005: 월간 캘린더 보기 (F004)** ✅ - 완료
   - ✅ 앱 셸: 좌측 사이드바(로고, 메뉴, 사용자 카드), 모바일은 상단 바 + 메뉴 시트
-  - ✅ 월 그리드(6주 × 7일), 요일 헤더, 날짜 배지·월 제목 툴바, 이전/다음/오늘 이동, `?month=YYYY-MM`
+  - ✅ 월 그리드(6주 × 7일), 요일 헤더, 날짜 배지·월 제목 툴바, 이전/다음/오늘 이동, `?month=YYYY-MM`(없거나 잘못된 값은 오늘 달로 redirect해 주소 통일)
   - ✅ 날짜 칸 링크 `/[lang]/day/YYYY-MM-DD` (대상 페이지는 Task 007에서 생성)
   - ✅ 접근성(`role="grid"`, `aria-current="date"`, `<time>`, 날짜 링크 aria-label)과 모바일 반응형. ARIA 격자 구조·탭 순서 개선은 Task 013
 - **Task 006: 다일 일정 막대 (F005)** ✅ - 완료
