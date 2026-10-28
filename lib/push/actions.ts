@@ -11,6 +11,16 @@ export type PushResult =
   | { ok: true }
   | { ok: false; code: "unauthorized" | "validation" | "limit" | "failed" };
 
+type Session = NonNullable<Awaited<ReturnType<typeof requireUser>>>;
+
+// 이 계정이 웹 푸시를 켜 둔 상태인지 저장한다(사용자 메타데이터). 브라우저 구독과 별개라서, 로그아웃으로 구독이 해제돼도
+// 켜 둔 상태는 남고 다시 로그인하면 권한이 허용된 브라우저에서 자동으로 다시 구독한다. 실패해도 구독 자체는 유효하다.
+async function savePushPreference(session: Session, enabled: boolean) {
+  if ((session.user.user_metadata?.push_enabled === true) === enabled) return;
+  const { error } = await session.supabase.auth.updateUser({ data: { push_enabled: enabled } });
+  if (error) console.error("[push] save preference failed:", error.code ?? "unknown");
+}
+
 // 이 브라우저의 푸시 구독을 저장한다. lang은 발송 워커가 알림 문구의 언어를 정하는 데 쓴다.
 // Server Action은 직접 POST로도 호출되므로 로그인과 입력을 서버에서 매번 확인한다.
 export async function subscribePush(subscription: unknown, lang: unknown): Promise<PushResult> {
@@ -45,10 +55,12 @@ export async function subscribePush(subscription: unknown, lang: unknown): Promi
     console.error("[push] subscribePush failed:", upsertError.message);
     return { ok: false, code: "failed" };
   }
+  await savePushPreference(session, true);
   return { ok: true };
 }
 
-// 구독을 해제한다. RLS가 본인 행만 보이게 하므로 남의 endpoint를 넘겨도 아무것도 지워지지 않는다.
+// 구독을 해제한다. 로그아웃 때 이 브라우저의 구독을 정리하는 데 쓰며, 켜 둔 상태는 그대로 둔다(다시 로그인하면 자동 복원).
+// RLS가 본인 행만 보이게 하므로 남의 endpoint를 넘겨도 아무것도 지워지지 않는다.
 // 이미 없는 구독이어도 성공으로 본다.
 export async function unsubscribePush(endpoint: unknown): Promise<PushResult> {
   const session = await requireUser();
@@ -61,6 +73,22 @@ export async function unsubscribePush(endpoint: unknown): Promise<PushResult> {
     console.error("[push] unsubscribePush failed:", error.message);
     return { ok: false, code: "failed" };
   }
+  return { ok: true };
+}
+
+// 사용자가 설정에서 웹 푸시를 직접 끈다: 이 브라우저의 구독을 지우고 켜 둔 상태도 해제해 자동 복원되지 않게 한다.
+export async function disablePush(endpoint: unknown): Promise<PushResult> {
+  const session = await requireUser();
+  if (!session) return { ok: false, code: "unauthorized" };
+  const parsed = parsePushEndpoint(endpoint);
+  if (!parsed) return { ok: false, code: "validation" };
+
+  const { error } = await session.supabase.from("push_subscriptions").delete().eq("endpoint", parsed);
+  if (error) {
+    console.error("[push] disablePush failed:", error.message);
+    return { ok: false, code: "failed" };
+  }
+  await savePushPreference(session, false);
   return { ok: true };
 }
 

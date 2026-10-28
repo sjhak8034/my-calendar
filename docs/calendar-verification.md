@@ -337,7 +337,9 @@
 
 **확인함**: `lib/push/input.ts`의 `parsePushSubscription` 16건(FCM·Firefox·Windows·Apple 정상, `http`·내부 IP·`localhost`·접미사/앞붙임 호스트 속임·`@` userinfo·포트·키 길이/문자 오류·`keys` 없음·`null`·문자열 거부, 여분 필드 제거), `/sw.js`가 로그인 redirect 없이 200과 `no-cache`·`Service-Worker-Allowed` 헤더로 응답, 브라우저에서 스위치를 켜면 `push_subscriptions`에 `lang`과 함께 저장, "테스트 알림 보내기"로 OS 알림 수신(처음에는 `VAPID_SUBJECT`에 `mailto:`가 빠져 `Vapid subject is not a valid URL`로 실패해 형식을 고침), 워커를 호출해 실제 일정의 웹 푸시 알림 수신.
 
-**확인하지 못한 것**: 알림을 눌렀을 때 해당 날짜 화면이 열리는 동작, 영어 화면에서 구독한 사용자의 영문 문구, 스위치를 끄면 `push_subscriptions` 행이 삭제되는 것과 새로고침 후 상태 유지, 브라우저에서만 구독이 사라진 경우 `410`으로 행이 지워지고 `skipped(subscription_expired)`가 되는 것, 알림 권한 차단 상태의 안내 문구, 사용자당 10개 상한(`limit`), RLS 강화 마이그레이션 적용 후 PostgREST로 직접 INSERT가 거부되는 것, 다른 계정으로 같은 브라우저에서 구독했을 때 소유자가 옮겨지는 것, `403`·`5xx` 등 푸시 서비스 오류 시 `failed` 기록, 여러 브라우저에 동시 발송, iOS·Firefox·Safari.
+**확인함(로그아웃 시 구독 해제·자동 복원)**: `subscribeThisBrowser`를 가짜 브라우저로 검증(공개 키 없음, 구독 없음이면 새로 구독하고 저장, 같은 키의 기존 구독은 재사용, 키가 다른 기존 구독은 해제 후 새로 구독, 한도 초과·저장 실패 시 브라우저 구독을 되돌림, 지원 여부 판단). `releasePushSubscription`을 가짜 `navigator`로 검증(서비스 워커·PushManager 미지원, 등록 없음, 구독 없음일 때 아무것도 하지 않음, 구독이 있으면 서버 삭제 후 브라우저 해제 순서, 서버 삭제가 실패하거나 멈춰도 브라우저 구독은 해제되고 타임아웃 안에 끝남, 예외가 나도 던지지 않음).
+
+**확인하지 못한 것**: 브라우저에서 로그아웃(일반·게스트)했을 때 실제로 구독이 해제되고 이후 발송이 `skipped(no_subscription)`이 되는 것, 같은 계정으로 다시 로그인했을 때 권한 창 없이 자동으로 다시 구독되고 스위치가 켜져 있는 것, 설정에서 직접 끈 뒤 다시 로그인하면 자동으로 켜지지 않는 것, 알림 권한이 허용되지 않은 브라우저에서 권한 창이 뜨지 않는 것, 다른 계정으로 로그인했을 때 이전 계정의 알림이 오지 않는 것, 사용자 메타데이터 `push_enabled` 저장, 알림을 눌렀을 때 해당 날짜 화면이 열리는 동작, 영어 화면에서 구독한 사용자의 영문 문구, 스위치를 끄면 `push_subscriptions` 행이 삭제되는 것과 새로고침 후 상태 유지, 브라우저에서만 구독이 사라진 경우 `410`으로 행이 지워지고 `skipped(subscription_expired)`가 되는 것, 알림 권한 차단 상태의 안내 문구, 사용자당 10개 상한(`limit`), RLS 강화 마이그레이션 적용 후 PostgREST로 직접 INSERT가 거부되는 것, 다른 계정으로 같은 브라우저에서 구독했을 때 소유자가 옮겨지는 것, `403`·`5xx` 등 푸시 서비스 오류 시 `failed` 기록, 여러 브라우저에 동시 발송, iOS·Firefox·Safari.
 
 ## 17. 카카오톡 알림 (Task 012)
 

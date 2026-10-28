@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { signOut } from "@/app/[lang]/login/actions";
+import { SignOutForm } from "@/components/app-shell/sign-out-form";
 
 type Props = {
   lang: string;
@@ -47,12 +47,11 @@ export function GuestSignOut({ lang, labels }: Props) {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {labels.cancel}
             </Button>
-            <form action={signOut}>
-              <input type="hidden" name="lang" value={lang} />
+            <SignOutForm lang={lang}>
               <Button type="submit" variant="destructive">
                 {labels.signOut}
               </Button>
-            </form>
+            </SignOutForm>
           </DialogFooter>
         </DialogContent>
       </Dialog>

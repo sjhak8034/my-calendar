@@ -3,29 +3,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { sendTestPush, subscribePush, unsubscribePush } from "@/lib/push/actions";
+import { disablePush, sendTestPush, subscribePush } from "@/lib/push/actions";
+import { subscribeThisBrowser, supportsPush } from "@/lib/push/client";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 type State = "checking" | "unsupported" | "denied" | "off" | "on";
-
-// VAPID 공개 키(base64url)를 PushManager.subscribe가 받는 바이트로 바꾼다.
-function toBytes(base64Url: string): Uint8Array<ArrayBuffer> {
-  const base64 = (base64Url + "=".repeat((4 - (base64Url.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const bytes = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-  return bytes;
-}
-
-function sameKey(current: ArrayBuffer | null | undefined, expected: Uint8Array) {
-  if (!current) return false;
-  const bytes = new Uint8Array(current);
-  return bytes.length === expected.length && bytes.every((value, i) => value === expected[i]);
-}
-
-function supportsPush() {
-  return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-}
 
 // 이 브라우저의 웹 푸시 구독을 켜고 끈다. 권한 요청은 반드시 사용자가 스위치를 눌렀을 때만 한다.
 export function PushToggle({ lang, dict }: { lang: string; dict: Dictionary["settings"]["push"] }) {
@@ -61,8 +43,7 @@ export function PushToggle({ lang, dict }: { lang: string; dict: Dictionary["set
   }, [lang]);
 
   async function turnOn() {
-    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!publicKey) {
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
       setError(dict.errors.notConfigured);
       return;
     }
@@ -77,22 +58,11 @@ export function PushToggle({ lang, dict }: { lang: string; dict: Dictionary["set
       return;
     }
 
-    const registration = await navigator.serviceWorker.register("/sw.js");
-    await navigator.serviceWorker.ready;
-    const key = toBytes(publicKey);
-    let subscription = await registration.pushManager.getSubscription();
-    // VAPID 키가 바뀌었으면 이전 구독으로는 보낼 수 없으니 새로 만든다.
-    if (subscription && !sameKey(subscription.options.applicationServerKey, key)) {
-      await subscription.unsubscribe();
-      subscription = null;
-    }
-    subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-
-    const result = await subscribePush(subscription.toJSON(), lang);
-    if (!result.ok) {
-      // 서버에 저장되지 않았으면 브라우저 쪽도 되돌려 둘이 어긋나지 않게 한다.
-      await subscription.unsubscribe();
-      setError(result.code === "limit" ? dict.errors.limit : dict.errors.failed);
+    const outcome = await subscribeThisBrowser(lang);
+    if (outcome !== "ok") {
+      setError(
+        outcome === "limit" ? dict.errors.limit : outcome === "notConfigured" ? dict.errors.notConfigured : dict.errors.failed,
+      );
       return;
     }
     setState("on");
@@ -103,7 +73,7 @@ export function PushToggle({ lang, dict }: { lang: string; dict: Dictionary["set
     const subscription = await registration?.pushManager.getSubscription();
     if (subscription) {
       // 서버를 먼저 지운다. 브라우저만 해제되면 서버에 쓸 수 없는 구독이 남는다.
-      const result = await unsubscribePush(subscription.endpoint);
+      const result = await disablePush(subscription.endpoint);
       if (!result.ok) {
         setError(dict.errors.failed);
         return;

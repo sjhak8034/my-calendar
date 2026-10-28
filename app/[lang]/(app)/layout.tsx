@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { AiWidget } from "@/components/ai/ai-widget";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
+import { PushAutoSubscribe } from "@/components/app-shell/push-auto-subscribe";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { UserCard } from "@/components/app-shell/user-card";
 import { hasLocale } from "@/lib/i18n/config";
@@ -32,6 +33,7 @@ export default async function AppLayout({
       />
       <div className="flex min-w-0 flex-1 flex-col">{children}</div>
       <AiWidget lang={lang} labels={ai} />
+      <PushAutoSubscribe lang={lang} />
     </div>
   );
 }

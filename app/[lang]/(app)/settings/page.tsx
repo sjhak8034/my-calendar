@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import { KakaoCard } from "@/components/settings/kakao-card";
 import { NotificationHistory } from "@/components/settings/notification-history";
 import { PushToggle } from "@/components/settings/push-toggle";
@@ -27,6 +28,8 @@ async function SettingsContent({ params, searchParams }: PageProps<"/[lang]/sett
   const { kakao } = await searchParams;
   const { settings } = await getDictionary(lang);
 
+  // 로그인 확인(Supabase getUser)이 현재 시각을 쓰므로 요청 시점으로 미룬다(cacheComponents).
+  await connection();
   const session = await requireUser();
   if (!session) redirect(`/${lang}/login`);
   const [kakaoStatus, records] = await Promise.all([
