@@ -9,7 +9,7 @@ import { isInvalidDayPath } from "@/lib/calendar/day-path";
 import { updateSession } from "@/lib/supabase/proxy";
 
 // 비로그인에게도 열어 두는 경로(언어 접두사 제외)
-const PUBLIC_PATHS = ["/login", "/privacy"];
+const PUBLIC_PATHS = ["/login", "/privacy", "/forgot-password"];
 
 // Accept-Language를 q 값 순으로 훑어 지원 로케일(ko-KR -> ko)을 찾는다.
 function fromAcceptLanguage(header: string | null): Locale | null {

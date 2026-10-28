@@ -1,17 +1,20 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  resendConfirmation,
   signInAsGuest,
   signInWithGoogle,
   signInWithPassword,
   signUp,
   type ActionState,
 } from "@/app/[lang]/login/actions";
+import { AUTH_CARD_CLASS, AUTH_INPUT_CLASS } from "@/components/auth/auth-styles";
 import { GoogleIcon } from "@/components/auth/google-icon";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
@@ -28,10 +31,9 @@ type Props = {
 const initialState: ActionState = {};
 
 // 화면에 보여 줄 오류의 출처. 가장 최근 액션(또는 초기 오류)만 표시한다.
-type ErrorSource = "initial" | "password" | "google" | "guest" | "none";
+type ErrorSource = "initial" | "password" | "google" | "guest" | "resend" | "none";
 
-// 시안의 둥근 입력창. cn이 충돌 클래스를 병합하지 않으므로 ! 로 기본값을 덮어쓴다.
-const inputClass = "h-12! rounded-xl! bg-card! px-4! text-sm!";
+const inputClass = AUTH_INPUT_CLASS;
 
 export function LoginForm({
   lang,
@@ -63,8 +65,13 @@ export function LoginForm({
     initialState,
   );
 
+  const [resendState, resendAction, resendPending] = useActionState(
+    resendConfirmation,
+    initialState,
+  );
+
   const isSignIn = mode === "signIn";
-  const busy = passwordPending || googlePending || guestPending;
+  const busy = passwordPending || googlePending || guestPending || resendPending;
   // 제출 중에는 이전 결과가 남아 보이지 않도록 숨긴다.
   const error = busy
     ? undefined
@@ -74,16 +81,30 @@ export function LoginForm({
         ? googleState.error
         : errorSource === "guest"
           ? guestState.error
-          : errorSource === "initial"
-            ? initialError
-            : undefined;
+          : errorSource === "resend"
+            ? resendState.error
+            : errorSource === "initial"
+              ? initialError
+              : undefined;
   // 가입 후 확인 메일을 보낸 경우의 안내(오류가 아니다)
-  const notice = !busy && errorSource === "password" ? passwordState.notice : undefined;
+  const notice = busy
+    ? undefined
+    : errorSource === "password"
+      ? passwordState.notice
+      : errorSource === "resend"
+        ? resendState.notice
+        : undefined;
+  // 이메일 확인이 끝나지 않은 계정이면 확인 메일을 다시 보낼 수 있게 한다(가입 직후, 확인 전 로그인).
+  const showResend =
+    !busy &&
+    passwordState.needsConfirmation === true &&
+    Boolean(passwordState.email) &&
+    (errorSource === "password" || errorSource === "resend");
   // 입력과 관련된 오류(Google 실패 제외)만 입력에 연결한다.
   const inputError = errorSource === "password" ? error : undefined;
 
   return (
-    <div className="flex w-full max-w-[38rem] flex-col gap-6 rounded-[2rem] bg-card p-6 text-card-foreground shadow-[0_24px_60px_-20px_color-mix(in_oklab,var(--foreground)_18%,transparent)] dark:shadow-[0_24px_60px_-20px_color-mix(in_oklab,black_50%,transparent)] sm:p-12">
+    <div className={AUTH_CARD_CLASS}>
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           {isSignIn ? dict.signInTitle : dict.signUpTitle}
@@ -147,6 +168,18 @@ export function LoginForm({
             </button>
           </div>
         </div>
+        {isSignIn ? (
+          <div className="-mt-2 text-right">
+            <Link
+              href={`/${lang}/forgot-password`}
+              className="rounded-sm text-sm underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {dict.forgotPassword}
+            </Link>
+          </div>
+        ) : (
+          <p className="-mt-2 text-xs text-muted-foreground">{dict.passwordHint}</p>
+        )}
         {/* 비어 있을 때는 음수 마진으로 gap을 상쇄해 입력창-버튼 간격을 16px로 유지 */}
         <p
           id="form-error"
@@ -172,6 +205,19 @@ export function LoginForm({
               : dict.signUpButton}
         </Button>
       </form>
+
+      {showResend && (
+        <form action={resendAction} onSubmit={() => setErrorSource("resend")} className="-mt-2 text-center">
+          <input type="hidden" name="lang" value={lang} />
+          <input type="hidden" name="email" value={passwordState.email ?? ""} />
+          <button
+            type="submit"
+            className="rounded-sm text-sm font-semibold underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {dict.resendConfirmation}
+          </button>
+        </form>
+      )}
 
       <div className="flex items-center justify-center gap-3 text-sm">
         <span aria-hidden="true" className="h-px w-3 bg-foreground" />

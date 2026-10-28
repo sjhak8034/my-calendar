@@ -3,15 +3,15 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { defaultLocale, hasLocale, type Locale } from "@/lib/i18n/config";
+import { checkPassword, type PasswordIssue } from "@/lib/auth/password";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { requireUser } from "@/lib/supabase/require-user";
 import { createClient } from "@/lib/supabase/server";
 
 // useActionState 상태. error는 현재 언어로 번역된 메시지다.
 // email은 실패 후에도 입력값을 복원하기 위해 돌려준다(비밀번호는 제외).
-export type ActionState = { error?: string; notice?: string; email?: string };
-
-const MIN_PASSWORD_LENGTH = 6;
+// needsConfirmation: 이메일 확인이 끝나지 않은 계정이라 확인 메일을 다시 보낼 수 있다는 표시.
+export type ActionState = { error?: string; notice?: string; email?: string; needsConfirmation?: boolean };
 
 function readLang(formData: FormData): Locale {
   const value = formData.get("lang");
@@ -30,7 +30,14 @@ function readCredentials(formData: FormData) {
 // Supabase 원본 문구 대신 error.code로 사전 키를 고른다.
 function errorKey(
   code: string | undefined,
-): "invalidCredentials" | "emailNotConfirmed" | "emailTaken" | "passwordTooShort" | "generic" {
+):
+  | "invalidCredentials"
+  | "emailNotConfirmed"
+  | "emailTaken"
+  | "passwordWeak"
+  | "passwordSame"
+  | "rateLimited"
+  | "generic" {
   switch (code) {
     case "invalid_credentials":
       return "invalidCredentials";
@@ -40,10 +47,20 @@ function errorKey(
     case "email_exists":
       return "emailTaken";
     case "weak_password":
-      return "passwordTooShort";
+      return "passwordWeak";
+    case "same_password":
+      return "passwordSame";
+    case "over_email_send_rate_limit":
+    case "over_request_rate_limit":
+      return "rateLimited";
     default:
       return "generic";
   }
+}
+
+// 비밀번호 규칙을 어긴 이유를 사용자용 문구로 바꾼다.
+function passwordMessage(errors: { passwordTooShort: string; passwordWeak: string }, issue: PasswordIssue): string {
+  return issue === "tooShort" ? errors.passwordTooShort : errors.passwordWeak;
 }
 
 // origin은 요청 헤더에서 계산한다(하드코딩 금지).
@@ -73,7 +90,13 @@ export async function signInWithPassword(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: dict.errors[errorKey(error.code)], email };
+  if (error) {
+    return {
+      error: dict.errors[errorKey(error.code)],
+      email,
+      needsConfirmation: error.code === "email_not_confirmed",
+    };
+  }
 
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
@@ -87,9 +110,8 @@ export async function signUp(
   const { email, password } = readCredentials(formData);
 
   if (!email) return { error: dict.errors.generic, email };
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return { error: dict.errors.passwordTooShort, email };
-  }
+  const issue = checkPassword(password);
+  if (issue) return { error: passwordMessage(dict.errors, issue), email };
 
   const supabase = await createClient();
   // 이메일 확인이 켜져 있으면 메일의 링크가 이 주소로 돌아와 로그인을 마친다(/auth/callback이 인가 코드를 세션으로 바꾼다).
@@ -110,7 +132,7 @@ export async function signUp(
     return { error: dict.errors.emailTaken, email };
   }
   // 세션이 없으면 이메일 확인이 켜져 있어 확인 메일을 보낸 상태다. 오류가 아니라 안내를 보여 준다.
-  if (!data.session) return { notice: dict.login.checkEmail, email };
+  if (!data.session) return { notice: dict.login.checkEmail, email, needsConfirmation: true };
 
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
@@ -168,9 +190,8 @@ export async function upgradeWithEmail(
   if (!session || session.user.is_anonymous !== true) redirect(`/${lang}`);
 
   if (!email) return { error: dict.errors.generic, email };
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return { error: dict.errors.passwordTooShort, email };
-  }
+  const issue = checkPassword(password);
+  if (issue) return { error: passwordMessage(dict.errors, issue), email };
 
   const { supabase } = session;
   const { error } = await supabase.auth.updateUser({ email, password });
@@ -217,6 +238,86 @@ export async function upgradeWithGoogle(
   }
 
   redirect(data.url);
+}
+
+// 비밀번호 재설정 메일을 보낸다. 계정이 있는지 알려 주지 않도록 결과와 상관없이 같은 안내를 보이고,
+// 요청이 너무 많을 때만 따로 알린다. 메일의 링크는 /auth/callback이 세션으로 바꾼 뒤 새 비밀번호 화면으로 보낸다.
+export async function requestPasswordReset(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const lang = readLang(formData);
+  const dict = await getDictionary(lang);
+  const { email } = readCredentials(formData);
+  if (!email) return { error: dict.errors.generic, email };
+
+  const origin = await requestOrigin();
+  const supabase = await createClient();
+  const redirectTo = origin
+    ? `${origin}/auth/callback?${new URLSearchParams({ lang, next: `/${lang}/reset-password`, recovery: "1" })}`
+    : undefined;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined);
+  if (error) {
+    console.error("[auth] resetPasswordForEmail failed:", error.code ?? "unknown", error.status ?? "");
+    if (errorKey(error.code) === "rateLimited") return { error: dict.errors.rateLimited, email };
+  }
+  return { notice: dict.forgotPassword.sent, email };
+}
+
+// 확인 메일을 다시 보낸다(가입 후 메일을 못 받았거나 링크가 만료된 경우). 계정 존재 여부는 알려 주지 않는다.
+export async function resendConfirmation(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const lang = readLang(formData);
+  const dict = await getDictionary(lang);
+  const { email } = readCredentials(formData);
+  if (!email) return { error: dict.errors.generic, email, needsConfirmation: true };
+
+  const origin = await requestOrigin();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: origin ? { emailRedirectTo: `${origin}/auth/callback?lang=${lang}` } : undefined,
+  });
+  if (error) {
+    console.error("[auth] resend confirmation failed:", error.code ?? "unknown", error.status ?? "");
+    if (errorKey(error.code) === "rateLimited") {
+      return { error: dict.errors.rateLimited, email, needsConfirmation: true };
+    }
+  }
+  return { notice: dict.login.resendSent, email, needsConfirmation: true };
+}
+
+// 새 비밀번호로 바꾼다. 메일의 재설정 링크(/auth/callback?recovery=1)로 로그인된 상태에서만 쓴다.
+// 비밀번호가 새어 나간 경우를 대비해 다른 기기의 로그인은 모두 끊는다.
+export async function updatePassword(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const lang = readLang(formData);
+  const dict = await getDictionary(lang);
+
+  const session = await requireUser();
+  if (!session) redirect(`/${lang}/forgot-password?error=expired`);
+  // 이메일이 없는 게스트 계정에 비밀번호를 붙이는 용도가 아니다.
+  if (session.user.is_anonymous === true) redirect(`/${lang}`);
+
+  const password = formData.get("password");
+  const confirm = formData.get("confirm");
+  if (typeof password !== "string" || typeof confirm !== "string") return { error: dict.errors.generic };
+  if (password !== confirm) return { error: dict.errors.passwordMismatch };
+  const issue = checkPassword(password);
+  if (issue) return { error: passwordMessage(dict.errors, issue) };
+
+  const { error } = await session.supabase.auth.updateUser({ password });
+  if (error) {
+    console.error("[auth] updatePassword failed:", error.code ?? "unknown", error.status ?? "");
+    return { error: dict.errors[errorKey(error.code)] };
+  }
+  await session.supabase.auth.signOut({ scope: "others" });
+  redirect(`/${lang}`);
 }
 
 export async function signOut(formData: FormData): Promise<void> {

@@ -29,7 +29,11 @@
     "pending": "Working...",
     "guestButton": "Continue as guest",
     "guestHint": "Try it without signing up. Your events are kept in this browser and deleted after 30 days without a visit.",
-    "checkEmail": "We sent a confirmation email. Open the link in it to finish signing up. If you don't see it, check your spam folder."
+    "checkEmail": "We sent a confirmation email. Open the link in it to finish signing up. If you don't see it, check your spam folder.",
+    "forgotPassword": "Forgot your password?",
+    "passwordHint": "At least 8 characters, with both letters and numbers.",
+    "resendConfirmation": "Resend confirmation email",
+    "resendSent": "We sent the confirmation email again. Please check your inbox and spam folder."
   },
   "nav": {
     "signUp": "Sign up",
@@ -78,12 +82,16 @@
   "errors": {
     "invalidCredentials": "Incorrect email or password.",
     "emailTaken": "This email is already registered.",
-    "passwordTooShort": "Password must be at least 6 characters.",
+    "passwordTooShort": "Your password must be at least 8 characters.",
     "generic": "Something went wrong. Please try again later.",
     "googleFailed": "Google sign-in failed. Please try again later.",
     "guestFailed": "Could not start as a guest. Please try again later.",
     "identityExists": "This Google account is already linked to another account. If you sign out and sign in with it, your guest data won't be moved.",
-    "emailNotConfirmed": "Please confirm your email first. Open the link in the email we sent when you signed up."
+    "emailNotConfirmed": "Please confirm your email first. Open the link in the email we sent when you signed up.",
+    "passwordWeak": "Your password must be at least 8 characters and include both letters and numbers.",
+    "passwordSame": "You can't reuse your previous password. Please enter a different one.",
+    "passwordMismatch": "The two passwords don't match.",
+    "rateLimited": "Too many requests. Please try again in a moment."
   },
   "week": {
     "title": "Weekly schedule",
@@ -325,5 +333,20 @@
     "testTitle": "Test notification",
     "testBody": "Notifications are working in this browser.",
     "openCalendar": "Open calendar"
+  },
+  "forgotPassword": {
+    "title": "Reset your password",
+    "description": "Enter the email you signed up with and we'll send you a link to set a new password.",
+    "button": "Send reset email",
+    "sent": "If an account exists for that email, we sent a reset email. Open the link in this browser. If you don't see it, check your spam folder.",
+    "expired": "The link has expired or was already used. Please request a new reset email.",
+    "back": "Back to sign in"
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "description": "Enter a new password. Changing it signs you out of all other devices.",
+    "passwordLabel": "New password",
+    "confirmLabel": "Confirm new password",
+    "button": "Change password"
   }
 }

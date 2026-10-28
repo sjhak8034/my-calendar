@@ -365,6 +365,14 @@
 
 **확인하지 못한 것**: 로그인한 상태에서 `/ko/day/abc`·`/ko/없는경로`의 404 화면 표시, `error.tsx`(런타임 오류 시 다시 시도)와 `global-error.tsx`의 실제 표시, 영어 화면의 404 문구, 아이콘·OG 이미지가 각 기기·링크 미리보기에서 보이는 모습(`icon-512.png`와 `apple-icon.png`는 눈으로 확인하지 않음), 홈 화면에 설치(iOS·Android)와 iOS 웹 푸시, `Strict-Transport-Security`·`X-Frame-Options`가 운영(HTTPS)에서 의도대로 동작하는지, 보안 헤더 때문에 카카오 동의 화면 이동·구글 로그인·푸시가 깨지지 않는지.
 
+## 20. 비밀번호 재설정·확인 메일 재발송·비밀번호 규칙 (Task 013 2단계)
+
+`npm run lint`, `npx tsc --noEmit`, `npm run build` 통과.
+
+**확인함**: `checkPassword` 규칙 13건(7자·6자·빈 값은 길이 부족, 영문만·숫자만·기호+숫자는 영문+숫자 부족, 영문+숫자 8자·대문자·기호 포함·긴 값·공백 포함은 통과, 한글+숫자는 영문으로 치지 않음), `/ko/forgot-password`·`/en/forgot-password`가 로그인 없이 열리고 문구가 표시됨(`?error=expired` 안내 포함), 로그인 화면에 "비밀번호를 잊으셨나요?" 링크와 가입 화면의 규칙 안내가 표시됨, 비로그인으로 `/ko/reset-password`는 로그인으로 이동, 콜백의 `recovery=1`은 코드가 없거나 잘못된 경우 `forgot-password?error=expired`로(`next=//evil.com`도 안전), 일반 로그인 콜백 실패(`?code=bogus`)는 기존대로 `login?error=oauth`.
+
+**확인하지 못한 것**: 실제 재설정 메일 발송과 링크로 새 비밀번호를 정하고 다시 로그인하는 흐름, 같은 이메일이 없을 때도 같은 안내가 나오는 것, 다른 브라우저에서 링크를 열었을 때의 동작, 비밀번호를 바꾼 뒤 다른 기기의 로그인이 해제되는 것, 이전과 같은 비밀번호·서로 다른 두 비밀번호·약한 비밀번호 거부 메시지, 확인 메일 다시 보내기 버튼(가입 직후·확인 전 로그인)과 요청 과다 안내, 게스트가 재설정 화면에 접근하는 경우, 게스트의 이메일 전환(`upgradeWithEmail`)에 새 규칙이 적용되는 것, Supabase 대시보드의 비밀번호 정책(코드 규칙과 같은 값으로 맞춰야 함), 영어 화면의 새 문구 전체.
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).
