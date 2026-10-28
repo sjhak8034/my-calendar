@@ -2,6 +2,7 @@
 
 import { hasLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { hitRateLimit } from "@/lib/rate-limit";
 import { sendPushToUser } from "@/lib/notify/web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -94,12 +95,17 @@ export async function disablePush(endpoint: unknown): Promise<PushResult> {
 
 export type TestPushResult =
   | { ok: true }
-  | { ok: false; code: "unauthorized" | "notSubscribed" | "failed" };
+  | { ok: false; code: "unauthorized" | "notSubscribed" | "rateLimited" | "failed" };
 
 // 설정 화면의 "테스트 알림 보내기": 본인 구독에만 보낸다.
 export async function sendTestPush(): Promise<TestPushResult> {
   const session = await requireUser();
   if (!session) return { ok: false, code: "unauthorized" };
+
+  // 푸시 서비스를 반복해서 부르지 못하게 사용자당 1분에 3번까지만 보낸다.
+  const limit = await hitRateLimit(session.supabase, "push_test", 3, 60);
+  if (limit === "limited") return { ok: false, code: "rateLimited" };
+  if (limit === "error") return { ok: false, code: "failed" };
 
   let summary;
   try {

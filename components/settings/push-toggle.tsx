@@ -90,7 +90,15 @@ export function PushToggle({ lang, dict }: { lang: string; dict: Dictionary["set
     try {
       const result = await sendTestPush();
       if (result.ok) setNotice(dict.testSent);
-      else setError(result.code === "notSubscribed" ? dict.errors.testNone : dict.errors.failed);
+      else {
+        setError(
+          result.code === "notSubscribed"
+            ? dict.errors.testNone
+            : result.code === "rateLimited"
+              ? dict.errors.rateLimited
+              : dict.errors.failed,
+        );
+      }
     } catch {
       setError(dict.errors.failed);
     } finally {

@@ -63,7 +63,9 @@ export function KakaoCard({
               ? dict.errors.reconnect
               : outcome.code === "notConfigured"
                 ? dict.notConfigured
-                : dict.errors.failed;
+                : outcome.code === "rateLimited"
+                  ? dict.errors.rateLimited
+                  : dict.errors.failed;
         setBanner({ text, tone: "error" });
       }
       // 상태(연결됨·재연결 필요)가 바뀌었을 수 있어 서버 데이터를 다시 가져온다.

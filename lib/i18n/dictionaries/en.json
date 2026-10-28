@@ -257,7 +257,8 @@
         "limit": "You've reached the number of browsers this account can register. Turn it off in a browser you no longer use first.",
         "failed": "Couldn't change the setting. Please try again in a moment.",
         "notConfigured": "Push notifications aren't set up yet.",
-        "testNone": "No notification subscription is registered for this account. Turn the switch off and on again."
+        "testNone": "No notification subscription is registered for this account. Turn the switch off and on again.",
+        "rateLimited": "You sent test notifications too often. Please try again in a minute."
       },
       "test": "Send test notification",
       "testSent": "Sent a test notification. If you don't see it, check your browser and system notification settings."
@@ -286,7 +287,8 @@
       "errors": {
         "failed": "Couldn't complete that. Please try again in a moment.",
         "notConnected": "KakaoTalk isn't connected.",
-        "reconnect": "The connection expired. Please connect again."
+        "reconnect": "The connection expired. Please connect again.",
+        "rateLimited": "You sent test messages too often. Please try again in a minute."
       },
       "guest": {
         "title": "An account is required",

@@ -381,6 +381,14 @@
 
 **확인하지 못한 것**(되돌릴 수 없어 시험용 계정으로 확인해야 함): 설정 화면 맨 아래 "계정 삭제" 카드와 대화상자 표시(이메일 입력 전에는 삭제 버튼이 꺼져 있음), 이메일 일치 후 실제 삭제와 로그인 화면 이동, 삭제 후 각 테이블의 해당 사용자 행이 0개인지(SQL), 같은 이메일로 다시 가입되는지, 삭제 후 푸시 자동 복원이 일어나지 않는지, 카카오 연결이 있는 계정의 카카오 쪽 연결 끊김, 푸시를 켠 브라우저의 구독 해제, 삭제 도중 실패했을 때의 안내, 게스트에게 카드가 보이지 않는 것, 영어 화면, `SUPABASE_SERVICE_ROLE_KEY`가 없을 때의 실패 안내, 다른 사용자 이메일을 입력했을 때의 거부(서버 확인).
 
+## 22. 보안 하드닝 (Task 013 4단계)
+
+`npm run lint`, `npx tsc --noEmit`, `npm run build` 통과.
+
+**확인함**(개발 서버, 비로그인): `/api/ai`가 인증 없이·남의 Origin으로·GET으로 호출해도 401, 없는 `/api/*` 경로 401, `/api/cron/notify`가 비밀 없음·틀린 비밀·`Basic` 형식에서 401이고 GET은 405, 보호 화면 7곳(`/ko`, `/ko/settings`, `/ko/day/…`, `/ko/upgrade`, `/ko/reset-password`, `/auth/kakao/connect`, `/auth/kakao/callback`)이 로그인으로 이동, `/auth/callback`의 `safeNextPath`를 소스에서 그대로 뽑아 `//evil.com`·`/\evil.com`·탭/개행 삽입·`/..//evil.com`·`https://evil.com`·`javascript:`·`/%09/evil.com`·빈 값 등 우회 시도 11건이 모두 거부되고 정상 경로는 통과, 서비스 워커의 알림 클릭 URL 처리가 같은 사이트만 허용(외부 주소·`//`·`javascript:`·`data:`·하위 도메인 속임·빈 값은 사이트 첫 화면으로), 푸시 endpoint 허용 목록 16건(2단계 이전 검증), `code-reviewer` 보안 리뷰(높은 위험의 RLS·권한·열린 리다이렉트·비밀 노출 문제 없음, 지적 사항은 `docs/ROADMAP.md` Task 013 참고).
+
+**확인하지 못한 것**: 마이그레이션 `20261031000003_hardening.sql` 자체(로컬에 Postgres가 없어 SQL을 실행해 보지 못함 — 적용 후 정책 제거, 제약 오류, 일정 추가·수정이 정상인지, 일정 10,000개 상한 확인), 테스트 발송 빈도 제한(1분 3회 초과 시 안내와 1분 뒤 해제), 게스트의 카카오 테스트 거부, AI의 주제 이탈 거절이 실제로 동작하는지와 프롬프트 인젝션 시나리오("이전 지시 무시", "시스템 프롬프트 알려줘", 일정 설명에 지시문), `/api/ai`의 로그인 후 Origin·크기 검사, 로그인 상태의 RLS 교차 접근(계정 2개로 서로의 events·ai·push·kakao 행 조회·수정·삭제), anon 키로 RPC·테이블 직접 호출 거부, 일반 계정의 `delete_guest_account` 거부, 카카오 state 위조, 로그아웃 후 푸시, 약한 비밀번호 거부.
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).
