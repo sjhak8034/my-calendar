@@ -73,7 +73,7 @@ export function CalendarToolbar({
             <ChevronLeft className="size-4" aria-hidden="true" />
           </Link>
           <Link
-            href={`/${lang}`}
+            href={`/${lang}?month=${today.slice(0, 7)}`}
             className={`${segment} -ml-px px-4`}
           >
             {dict.today}

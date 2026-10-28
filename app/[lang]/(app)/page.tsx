@@ -1,11 +1,12 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import {
   endOfMonth,
   formatDate,
+  formatMonthParam,
   getMonthGrid,
   parseMonthParam,
   startOfMonth,
@@ -40,9 +41,12 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
   const parsed = parseMonthParam(
     typeof monthParam === "string" ? monthParam : undefined,
   );
-  const [todayYear, todayMonth] = today.split("-").map(Number);
-  const year = parsed?.year ?? todayYear;
-  const month = parsed?.month ?? todayMonth;
+  // 홈 주소(/ko)나 잘못된 month 값은 오늘이 속한 달의 ?month=로 통일한다.
+  if (!parsed) {
+    const [todayYear, todayMonth] = today.split("-").map(Number);
+    redirect(`/${lang}?month=${formatMonthParam(todayYear, todayMonth)}`);
+  }
+  const { year, month } = parsed;
 
   const grid = getMonthGrid(year, month);
   const gridStart = grid[0][0].date;
