@@ -37,7 +37,7 @@ async function requireUser() {
   return (await requireSessionUser())?.supabase ?? null;
 }
 
-// TODO(Task 010): 저장·수정·삭제 시 notifications 행을 만들고 갱신·취소한다(종일 일정 제외).
+// 알림 예약은 DB 트리거(events_schedule_notifications)가 일정 저장·시각 수정 때 처리한다. 삭제는 FK cascade.
 export async function createEvent(input: EventInput): Promise<ActionResult> {
   const supabase = await requireUser();
   if (!supabase) return { ok: false, code: "unauthorized" };

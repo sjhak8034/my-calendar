@@ -2,14 +2,14 @@
 
 월간 캘린더, 날짜별 시간 상세, 날짜 범위 AI 대화, 시작·종료 알림(웹 푸시 + 카카오톡)을 만드는 개발 로드맵. 요구사항은 `docs/PRD.md`를 따른다.
 
-**📅 최종 업데이트**: 2026-10-26
-**📊 진행 상황**: 8/13 Tasks 완료 (Task 009 AI 대화 1~3단계 완료·마무리 점검 대기, Task 014 게스트 모드 014a 완료·014b 구현, UI 검증 대기)
+**📅 최종 업데이트**: 2026-10-28
+**📊 진행 상황**: 9/13 Tasks 완료 (Task 009 AI 대화 1~3단계 완료·마무리 점검 대기, Task 010 알림 워커 완료(웹 푸시·카카오톡 발송은 Task 011·012), Task 014 게스트 모드 014a 완료·014b 구현)
 
 ## 착수 전 결정 사항
 
 - AI 대화 사용량 제한(시간당 20회, 하루 100회)·메시지 200자·대화 30일 보관·쓰기 작업은 확인 버튼 필수: 확정(Task 009)
 - 종일 다일 일정의 종료일 포함 여부와 입력 폼의 종료<시작 검증 메시지: Task 008 전 (확정됨: 주 시작 월요일, 6주 고정, 한 칸 3줄, 색 팔레트 8종)
-- Vercel Cron / Supabase `pg_cron`·`pg_net` 요금제별 제한 확인: Task 010 전
+- Vercel Cron / Supabase `pg_cron`·`pg_net` 요금제별 제한 확인: Task 010 전 (확인됨: Vercel Hobby는 Cron 하루 1회라 `pg_cron`으로 호출, `pg_net` 기본 타임아웃 5초라 10초 지정. Supabase 플랜별 `pg_cron` 사용 가능 여부는 대시보드에서 확장 활성화 시 확인)
 - 카카오 `talk_message` 동의 항목의 다중 사용자 제공 조건(검수 여부): Task 012 전
 - Next.js 16의 인증 확인 위치는 `node_modules/next/dist/docs/` 확인 후 결정: Task 003 전
 
@@ -98,13 +98,13 @@
 
 ### Phase 4: 알림
 
-- **Task 010: 알림 예약 및 발송 워커 (F011, F014)** - 우선순위
-  - 일정 저장 시 시작 10분 전·종료 시각 알림 행 생성(종일 일정 제외), 수정·삭제 시 갱신·취소
-  - `app/api/cron/notify/route.ts`: 공유 비밀 헤더 검증, 발송 시각이 된 알림 조회 후 발송
-  - Supabase `pg_cron` + `pg_net`으로 1분마다 호출
-  - 중복 발송 방지(상태 컬럼 + 원자적 갱신)
-  - `pg_cron`으로 일 1회 `select public.purge_expired_ai_chats(1000)` 실행(30일 지난 AI 대화 정리, Task 009 보완)
-  - `proxy.ts`는 `/api/*`를 로그인 필요 경로로 처리하므로, cron 엔드포인트(`/api/cron/*`)는 비밀 헤더 검증과 함께 proxy에서 예외로 연다
+- **Task 010: 알림 예약 및 발송 워커 (F011, F014)** ✅ - 완료(마이그레이션 적용·워커 로컬 검증)
+  - **예약은 DB 트리거**(`events_schedule_notifications`, `20261030000000_notifications.sql`): 일정 저장 시 시작 10분 전·종료 시각 알림을 채널(`web_push`, `kakao`)별로 한 행씩 만든다. 종일 일정과 이미 지난 시각은 제외. 시작·종료·종일이 바뀌면 기존 알림(발송된 것 포함)을 지우고 새 시각으로 다시 만들어 일정을 옮기면 다시 알린다(제목·설명만 바꾸면 그대로). 삭제는 FK cascade. 앱 코드(직접 편집·드래그·AI 카드)가 어떤 경로로 저장해도 같은 규칙. 앞으로 있는 기존 일정은 마이그레이션이 백필
+  - **발송 워커** `app/api/cron/notify/route.ts`(POST): `Authorization: Bearer CRON_SECRET`(타이밍 안전 비교, 16자 미만이면 503)로 인증하고 service role 클라이언트(`lib/supabase/admin.ts`)로 `claim_due_notifications`를 호출. `proxy.ts`는 `/api/cron/*`만 로그인 검사에서 제외
+  - **중복 발송 방지**: `claim_due_notifications`가 `for update skip locked`로 보낼 행을 `sending`으로 원자적으로 선점해 워커가 동시에 떠도 한 알림은 한 번만 처리. 결과는 `status='sending'` 조건으로 기록. 선점 후 5분 넘게 결과가 없으면 `pending`으로 되돌리고(워커 중단 복구), 발송 시각에서 10분 넘게 늦은 알림은 보내지 않고 `skipped(expired)`
+  - **채널**: `lib/notify/dispatch.ts`의 `dispatchNotification`. 웹 푸시(Task 011)·카카오톡(Task 012) 전까지는 `skipped(channel_not_ready)`로 닫는다. 새 상태 `sending`·`skipped`를 추가
+  - **스케줄**: Vercel Hobby의 Cron은 하루 1회라 1분 간격이 불가 → Supabase `pg_cron` + `pg_net`이 1분마다 Vercel의 `/api/cron/notify`를 호출(`supabase/cron/schedule.sql`, 비밀값은 Vault). 같은 파일에 일 1회(03:00 KST) 정리 작업 `purge_expired_ai_chats`·`purge_inactive_guests`·`purge_old_notifications`도 등록. 배포 주소가 필요해 Task 013 배포 후 실행, 로컬은 curl로 워커를 직접 호출
+  - ⚠️ 적용 필요: `supabase/migrations/20261030000000_notifications.sql` 실행, `.env`에 `SUPABASE_SERVICE_ROLE_KEY`·`CRON_SECRET` 추가(배포 시 Vercel에도 등록)
 - **Task 011: 웹 푸시 알림 (F012)** - 우선순위
   - `public/sw.js` 서비스 워커, VAPID 키 구성
   - 설정 페이지(`/settings`): 푸시 권한 요청, 구독 등록·해제

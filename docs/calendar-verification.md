@@ -323,6 +323,14 @@
 
 **확인하지 못한 것**: `/upgrade` 화면(이메일 전환 폼, 중복 이메일 오류, 비밀번호 6자 미만 오류), Google 연결(Manual linking 설정 필요)과 복귀, 이미 연결된 Google 계정 안내, 일반 사용자의 `/upgrade` 접근 시 홈 이동, `purge_inactive_guests`의 `auth.sessions.refreshed_at` 컬럼 동작(`select public.purge_inactive_guests(1);`), 게스트가 메뉴 시트 안 로그아웃 대화상자에서 포커스 동작.
 
+## 15. 알림 예약·발송 워커 (Task 010)
+
+`npm run lint`, `npm run build` 통과.
+
+**확인함**(로컬 개발 서버 + 마이그레이션 적용, 2026-10-28): 워커 인증(헤더 없음·틀린 비밀 401, GET 405, `proxy`가 `/api/cron/*`를 로그인 없이 통과), 올바른 비밀로 호출 시 200(`claimed: 0`), 11분 뒤 일정 생성 시 알림 4행(start·end × web_push·kakao) 생성, `send_at`을 1분 전으로 당기고 호출하면 `{claimed:4, sent:0, skipped:4, failed:0}`과 DB의 `skipped / channel_not_ready` 4건, 곧바로 다시 호출하면 `claimed: 0`(재선점 없음).
+
+**확인하지 못한 것**: `send_at` 값 자체(시작 10분 전·종료 정각), 종일 일정·과거 시각 제외, 시각 수정(드래그·사이드바·AI 카드) 시 기존 알림 삭제·재예약, 제목만 수정하면 알림 유지, 일정 삭제 시 cascade, 기존 일정 백필, 설정 없음 503, 병렬 호출 시 같은 알림이 한 번만 처리됨, 10분 넘게 늦은 알림 `skipped(expired)`, `sending` 5분 초과 복구, 타 사용자 알림 비노출(RLS).
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).

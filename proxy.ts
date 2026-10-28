@@ -39,8 +39,13 @@ function negotiateLocale(request: NextRequest): Locale {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 알림 발송용: Supabase pg_cron이 1분마다 호출하는 경로라 로그인 쿠키가 없다.
+  // 공유 비밀로 호출하는 이 경로는 로그인 검사 없이 통과시킨다(막으면 알림이 발송되지 않는다).
+  // 이 경로의 라우트는 반드시 스스로 비밀 헤더를 검증해야 한다(app/api/cron/notify/route.ts).
+  if (pathname.startsWith("/api/cron/")) return NextResponse.next();
+
   // API 경로(/api/*)는 언어 접두사·로그인 화면 이동 없이 세션만 갱신하고, 비로그인은 401 JSON으로 막는다.
-  // 각 라우트도 스스로 로그인을 다시 확인한다. 외부 호출용 경로(예: cron)는 만들 때 여기서 따로 연다.
+  // 각 라우트도 스스로 로그인을 다시 확인한다.
   if (pathname.startsWith("/api/")) {
     const { user, response } = await updateSession(request);
     if (!user) {
