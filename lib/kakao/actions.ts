@@ -4,8 +4,7 @@ import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { sendKakaoToUser } from "@/lib/notify/kakao";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
-import { unlink } from "./client";
-import { getAccessToken } from "./tokens";
+import { unlinkKakaoForUser } from "./unlink-user";
 
 export type KakaoActionResult =
   | { ok: true }
@@ -19,12 +18,7 @@ export async function disconnectKakao(): Promise<KakaoActionResult> {
   const admin = createAdminClient();
   if (!admin) return { ok: false, code: "failed" };
 
-  try {
-    const token = await getAccessToken(session.user.id);
-    if (token.ok) await unlink(token.accessToken);
-  } catch (e) {
-    console.error("[kakao] unlink skipped:", e instanceof Error ? e.name : "error");
-  }
+  await unlinkKakaoForUser(session.user.id);
 
   const { error } = await admin.from("kakao_tokens").delete().eq("user_id", session.user.id);
   if (error) {

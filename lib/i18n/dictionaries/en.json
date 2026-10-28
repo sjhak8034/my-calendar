@@ -325,6 +325,22 @@
         "kakao_refresh_failed": "Couldn't refresh the KakaoTalk connection",
         "expired": "Too late after the scheduled time, so it wasn't sent"
       }
+    },
+    "account": {
+      "title": "Delete account",
+      "description": "Permanently deletes your account and all your data (events, AI chats, notification history, web push and KakaoTalk connections). This can't be undone.",
+      "button": "Delete account",
+      "dialogTitle": "Delete your account?",
+      "dialogDescription": "All your data, including events and AI chats, is deleted right away and can't be recovered. To continue, enter the email you signed up with.",
+      "emailLabel": "Your email",
+      "cancel": "Cancel",
+      "confirm": "Delete permanently",
+      "deleting": "Deleting...",
+      "errors": {
+        "mismatch": "That email doesn't match.",
+        "failed": "Couldn't delete your account. Please try again in a moment.",
+        "unauthorized": "You need to be signed in. Please sign in again and retry."
+      }
     }
   },
   "notify": {

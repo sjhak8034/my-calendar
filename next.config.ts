@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   cacheComponents: true,
   partialPrefetching: true,
+  // 개발 서버가 서버 액션의 인자를 터미널에 그대로 찍는 것을 끈다(로그인·비밀번호 폼의 값이나 푸시 구독 키가 로그에 남지 않게).
+  // 요청 로그(POST /ko/login 200 in ...)는 그대로 나온다. 운영 빌드에는 이 로그가 없다.
+  logging: { serverFunctions: false },
   // 서비스 워커는 브라우저가 캐시하면 갱신이 늦어지므로 항상 다시 확인하게 하고, 이 범위(전체 사이트)에서만 동작하도록 고정한다.
   async headers() {
     return [

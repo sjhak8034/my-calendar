@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import { DeleteAccountCard } from "@/components/settings/delete-account-card";
 import { KakaoCard } from "@/components/settings/kakao-card";
 import { NotificationHistory } from "@/components/settings/notification-history";
 import { PushToggle } from "@/components/settings/push-toggle";
@@ -52,6 +53,10 @@ async function SettingsContent({ params, searchParams }: PageProps<"/[lang]/sett
         result={isConnectResult(kakao) ? kakao : null}
       />
       <NotificationHistory lang={lang} dict={settings.history} records={records} />
+      {/* 게스트는 로그아웃하면 계정이 지워지므로 별도 삭제 메뉴가 없다. */}
+      {session.user.is_anonymous !== true && session.user.email && (
+        <DeleteAccountCard lang={lang} email={session.user.email} dict={settings.account} />
+      )}
     </main>
   );
 }
@@ -63,6 +68,7 @@ function SettingsSkeleton() {
       <div aria-hidden="true" className="h-32 animate-pulse rounded-xl border bg-card" />
       <div aria-hidden="true" className="h-40 animate-pulse rounded-xl border bg-card" />
       <div aria-hidden="true" className="h-56 animate-pulse rounded-xl border bg-card" />
+      <div aria-hidden="true" className="h-28 animate-pulse rounded-xl border bg-card" />
     </main>
   );
 }
