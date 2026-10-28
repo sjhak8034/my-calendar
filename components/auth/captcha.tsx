@@ -68,8 +68,9 @@ function TurnstileWidget({
           sitekey: siteKey,
           language: lang,
           theme: "auto",
-          // 보통은 보이지 않고, 추가 확인이 필요할 때만 나타난다.
-          appearance: "interaction-only",
+          // 항상 보이게 한다(확인 중 → 성공 표시). 사용자가 직접 누르는 확인은 Cloudflare가 의심스럽다고 판단할 때만 나타난다.
+          // 평소에는 보이지 않게 하려면 "interaction-only".
+          appearance: "always",
           callback: (token: string) => onTokenRef.current(token),
           "expired-callback": () => onTokenRef.current(null),
           "error-callback": () => onTokenRef.current(null),
@@ -88,7 +89,7 @@ function TurnstileWidget({
     if (resetSignal > 0 && widgetIdRef.current) window.turnstile?.reset(widgetIdRef.current);
   }, [resetSignal]);
 
-  return <div ref={containerRef} className="flex justify-center empty:hidden" />;
+  return <div ref={containerRef} className="flex min-h-[65px] justify-center" />;
 }
 
 export type Captcha = {
