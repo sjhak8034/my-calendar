@@ -1,5 +1,19 @@
 import type { NextConfig } from "next";
 
+// 모든 응답에 붙는 기본 보안 헤더. CSP는 Next.js의 인라인 스크립트·서비스 워커·푸시와 맞추는 시험이 필요해 후속으로 미뤘다.
+const securityHeaders = [
+  // 브라우저가 응답 형식을 추측해 스크립트로 실행하지 않게 한다.
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // 다른 사이트로 이동할 때 경로·검색어를 넘기지 않는다(같은 사이트 안에서는 전체 주소).
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // 다른 사이트가 이 앱을 iframe에 끼워 클릭을 가로채지 못하게 한다.
+  { key: "X-Frame-Options", value: "DENY" },
+  // HTTPS로만 접속하게 한다(로컬 HTTP에서는 무시된다). preload는 되돌리기 어려워 넣지 않는다.
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+  // 쓰지 않는 기기 기능을 막는다. 알림(푸시)은 이 정책의 대상이 아니다.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+];
+
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
@@ -13,6 +27,7 @@ const nextConfig: NextConfig = {
   // 서비스 워커는 브라우저가 캐시하면 갱신이 늦어지므로 항상 다시 확인하게 하고, 이 범위(전체 사이트)에서만 동작하도록 고정한다.
   async headers() {
     return [
+      { source: "/:path*", headers: securityHeaders },
       {
         source: "/sw.js",
         headers: [

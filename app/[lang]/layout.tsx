@@ -6,6 +6,7 @@ import { lang } from "next/root-params";
 import { IntroOverlay } from "@/components/welcome/intro-overlay";
 import { hasLocale, locales } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { siteUrl } from "@/lib/site";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -24,7 +25,19 @@ export async function generateMetadata({
   const { lang: value } = await params;
   if (!hasLocale(value)) return {};
   const dict = await getDictionary(value);
-  return { title: dict.meta.title, description: dict.meta.description };
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: dict.meta.title,
+    description: dict.meta.description,
+    // og:image는 app/opengraph-image.png 파일 규칙이 자동으로 붙인다.
+    openGraph: {
+      title: dict.meta.title,
+      description: dict.meta.description,
+      siteName: "my-calendar",
+      locale: value === "ko" ? "ko_KR" : "en_US",
+      type: "website",
+    },
+  };
 }
 
 export function generateStaticParams() {

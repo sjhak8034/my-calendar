@@ -357,6 +357,14 @@
 
 **확인하지 못한 것**: 가입 후 안내 문구 표시(ko·en), 링크를 다른 브라우저·기기에서 열었을 때의 동작, `emailRedirectTo`가 Supabase Redirect URLs에서 허용되는지, 확인 전 로그인 시 `email_not_confirmed` 안내, 이미 가입했지만 확인하지 않은 이메일로 다시 가입했을 때의 동작, 메일 발송 한도 초과(`over_email_send_rate_limit`) 시 안내(지금은 일반 오류), 확인 메일 재발송·비밀번호 재설정(미구현).
 
+## 19. 오류·404·보안 헤더·메타데이터 (Task 013 1단계)
+
+`npm run lint`, `npx tsc --noEmit`, `npm run build` 통과.
+
+**확인함**(개발 서버, `curl`): `/ko/day/abc`, `/en/day/abc`, `/ko/day/2026-13-45`, `/ko/day/2026-02-30`, `/ko/day/1800-01-01`이 HTTP 404와 404 화면(문구·`noindex`)으로 나옴, 올바른 날짜(`/ko/day/2026-10-28`)는 비로그인 시 로그인으로 이동, 퍼센트 인코딩이 깨진 경로(`/ko/day/%ZZ`)는 변경 전과 같이 로그인으로 이동(처음에는 rewrite하면 500이 나서 판별 함수가 이런 경로를 건드리지 않게 고침). 모든 응답에 보안 헤더 5종(`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Strict-Transport-Security`, `Permissions-Policy`)이 붙고 `/sw.js`의 캐시·`Service-Worker-Allowed` 헤더도 유지됨, `/manifest.webmanifest`·`/robots.txt`·`/sitemap.xml`·아이콘 3종·`/apple-icon.png`·`/opengraph-image.png`가 200, 새 라우트가 프로덕션 빌드에 포함됨.
+
+**확인하지 못한 것**: 로그인한 상태에서 `/ko/day/abc`·`/ko/없는경로`의 404 화면 표시, `error.tsx`(런타임 오류 시 다시 시도)와 `global-error.tsx`의 실제 표시, 영어 화면의 404 문구, 아이콘·OG 이미지가 각 기기·링크 미리보기에서 보이는 모습(`icon-512.png`와 `apple-icon.png`는 눈으로 확인하지 않음), 홈 화면에 설치(iOS·Android)와 iOS 웹 푸시, `Strict-Transport-Security`·`X-Frame-Options`가 운영(HTTPS)에서 의도대로 동작하는지, 보안 헤더 때문에 카카오 동의 화면 이동·구글 로그인·푸시가 깨지지 않는지.
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).

@@ -5,6 +5,7 @@ import {
   LOCALE_COOKIE,
   type Locale,
 } from "@/lib/i18n/config";
+import { isInvalidDayPath } from "@/lib/calendar/day-path";
 import { updateSession } from "@/lib/supabase/proxy";
 
 // 비로그인에게도 열어 두는 경로(언어 접두사 제외)
@@ -81,6 +82,16 @@ export async function proxy(request: NextRequest) {
     (p) => subPath === p || subPath === `${p}/`,
   );
   const isLogin = subPath === "/login" || subPath === "/login/";
+
+  // 잘못된 날짜 경로(/day/abc, /day/2026-13-45)는 로그인 여부와 상관없이 404로 처리한다.
+  // 날짜 화면의 notFound()는 Suspense 안이라 HTTP 200으로 나가므로 여기서 먼저 걸러,
+  // 어디에도 맞지 않는 주소를 받는 app/[lang]/[...rest]가 404 화면과 404 상태를 돌려주게 한다.
+  if (isInvalidDayPath(subPath)) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${lang}/404`;
+    url.search = "";
+    return NextResponse.rewrite(url);
+  }
 
   // 2) 세션 갱신 + 3) 접근 제어
   const { user, response } = await updateSession(request);
