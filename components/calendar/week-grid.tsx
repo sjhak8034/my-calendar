@@ -6,7 +6,6 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   GRID_END_HOUR,
   GRID_START_HOUR,
-  eventDateSpan,
   fillTemplate,
   formatFullDate,
   formatHourLabel,
@@ -17,7 +16,6 @@ import {
   type CalendarDate,
   type DayTimeline,
   type EarlyEvent,
-  type AllDayBar,
   type TimeBlock,
   buildWeekTimeline,
 } from "@/lib/calendar";
@@ -116,7 +114,7 @@ function WeekHeaderLink({
   );
 }
 
-// 주간 시간표. 카드 자체가 가로·세로 스크롤 컨테이너이고, 헤더/종일/6시 이전 줄은 위에 sticky로 붙는다.
+// 주간 시간표. 카드 자체가 가로·세로 스크롤 컨테이너이고, 헤더/6시 이전 줄은 위에 sticky로 붙는다(종일 일정은 주간에서 보여 주지 않는다).
 // CSS 변수: --hour-h(시간당 높이), --time-col(시간 눈금 열 너비), --day-min(날짜 열 최소 너비)
 export function WeekGrid({
   lang,
@@ -146,7 +144,6 @@ export function WeekGrid({
   }, [events, reconcile]);
 
   const hasEarly = timeline.days.some((day) => day.earlyEvents.length > 0);
-  const hasAllDay = timeline.allDay.bars.length > 0;
 
   // 위/아래로 이어지는 일정은 스크린리더에도 알린다.
   const ariaLabel = (title: string, time: string, from = false, to = false) =>
@@ -162,7 +159,7 @@ export function WeekGrid({
     <div
       data-slot="week-grid"
       // 휴대폰은 7일·06~24시가 스크롤 없이 한 화면에 보이게 한다: 열 최소 너비를 없애고, 눈금 열을 좁히고, 카드를 화면 가장자리까지 넓히고,
-      // 페이지가 정해 준 남은 높이를 카드가 flex로 채우며 시간 눈금 본문(week-body)이 머리글·종일·6시 이전 줄을 뺀 나머지를 모두 차지한다(시간 간격이 자동으로 맞춰지고, 최소 0.875rem이라 아주 작은 화면에서 종일·6시 이전 줄이 많을 때만 그리드 안이 스크롤).
+      // 페이지가 정해 준 남은 높이를 카드가 flex로 채우며 시간 눈금 본문(week-body)이 머리글·6시 이전 줄을 뺀 나머지를 모두 차지한다(시간 간격이 자동으로 맞춰지고, 최소 0.875rem이라 아주 작은 화면에서 6시 이전 줄이 있을 때만 그리드 안이 스크롤).
       // sm부터는 열 최소 6rem(가로 스크롤)·시간당 3.5rem·안쪽 세로 스크롤.
       className="isolate -mx-3 overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs [--day-min:0px] [--hour-h:0.875rem] [--time-col:2rem] max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col sm:mx-0 sm:rounded-xl sm:border-x sm:[--day-min:6rem] sm:[--hour-h:3.5rem] sm:[--time-col:4rem]"
     >
@@ -177,7 +174,7 @@ export function WeekGrid({
         className="max-h-none scroll-pt-[16.5rem] scroll-pl-[var(--time-col)] overflow-auto max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col sm:max-h-[max(24rem,calc(100dvh-7rem))] lg:max-h-[max(28rem,calc(100dvh-15rem))]"
       >
         <div className="min-w-[calc(var(--time-col)+7*var(--day-min))] max-sm:flex max-sm:flex-1 max-sm:flex-col">
-          {/* 위에 붙는 영역: 헤더 + 종일 + 6시 이전 */}
+          {/* 위에 붙는 영역: 헤더 + 6시 이전 */}
           <div data-slot="week-sticky" className="sticky top-0 z-40 bg-card">
             {/* 헤더 행 */}
             <div data-slot="week-header" className={cn(ROW, "border-b")}>
@@ -205,46 +202,6 @@ export function WeekGrid({
                   </div>
                 );
               })}
-            </div>
-
-            {/* 종일 줄 */}
-            <div data-slot="week-allday" className={cn(ROW, "border-b")}>
-              <div data-slot="time-gutter" className={cn(GUTTER, GUTTER_LABEL)}>
-                {dict.allDay}
-              </div>
-              {/* 막대가 많으면 이 줄 안에서만 세로 스크롤(상한 7rem) */}
-              <div
-                role="group"
-                aria-label={dict.allDay}
-                className="col-span-7 max-h-28 overflow-x-hidden overflow-y-auto [scrollbar-width:thin]"
-              >
-                <div
-                  className={cn(
-                    "relative grid grid-cols-7 content-start gap-y-0.5 py-1",
-                    !hasAllDay && "min-h-8",
-                  )}
-                >
-                  <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid grid-cols-7">
-                    {weekDays.map((date) => (
-                      <div
-                        key={date}
-                        data-selected={date === selectedDate || undefined}
-                        className={cn("border-l", SELECTED_BG)}
-                      />
-                    ))}
-                  </div>
-                  {timeline.allDay.bars.map((bar) => (
-                    <AllDayBarItem
-                      key={bar.key}
-                      bar={bar}
-                      lang={lang}
-                      event={eventsById[bar.id]}
-                      allDayEvent={dict.allDayEvent}
-                      ariaLabel={ariaLabel}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* 6시 이전 줄: 주 전체에 해당 일정이 없으면 생략 */}
@@ -490,57 +447,6 @@ function TimedBlock({
         )}
       </EventBlock>
     </li>
-  );
-}
-
-function AllDayBarItem({
-  bar,
-  lang,
-  event,
-  allDayEvent,
-  ariaLabel,
-}: {
-  bar: AllDayBar;
-  lang: Locale;
-  event: EditableEvent;
-  allDayEvent: string;
-  ariaLabel: LabelFn;
-}) {
-  const color = normalizeEventColor(bar.color);
-  const span = eventDateSpan(bar.startAt, bar.endAt);
-  return (
-    <EventBlock
-      variant="bar"
-      color={color}
-      event={event}
-      aria-label={ariaLabel(
-        bar.title,
-        span.start === span.end
-          ? allDayEvent
-          : `${allDayEvent}, ${formatFullDate(span.start, lang)} – ${formatFullDate(span.end, lang)}`,
-        bar.continuesFromPrev,
-        bar.continuesToNext,
-      )}
-      data-continues-from-prev={bar.continuesFromPrev || undefined}
-      data-continues-to-next={bar.continuesToNext || undefined}
-      style={{
-        gridColumn: `${bar.startCol + 1} / span ${bar.endCol - bar.startCol + 1}`,
-        gridRow: bar.lane + 1,
-      }}
-      className={cn(
-        "relative z-10",
-        bar.continuesFromPrev ? "ml-0 rounded-l-none border-l-0" : "ml-0.5 rounded-l-md",
-        bar.continuesToNext ? "mr-0 rounded-r-none border-r-0" : "mr-0.5 rounded-r-md",
-      )}
-    >
-      <span
-        data-slot="event-title"
-        title={bar.title}
-        className="min-w-0 flex-1 truncate leading-snug font-semibold"
-      >
-        {bar.title}
-      </span>
-    </EventBlock>
   );
 }
 

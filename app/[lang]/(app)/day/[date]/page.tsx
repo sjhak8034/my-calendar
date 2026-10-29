@@ -121,7 +121,7 @@ function WeekSkeleton() {
       <div aria-hidden="true" className="h-[4.75rem] animate-pulse rounded-xl border bg-card shadow-xs sm:h-[5.75rem]" />
       <div
         aria-hidden="true"
-        className="-mx-3 grid grid-cols-[2rem_repeat(7,minmax(0,1fr))] grid-rows-[4.75rem_2rem_1fr] overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs max-sm:min-h-0 max-sm:flex-1 sm:mx-0 sm:h-[max(24rem,calc(100dvh-7rem))] sm:grid-cols-[4rem_repeat(7,minmax(0,1fr))] sm:grid-rows-[3.5rem_2rem_1fr] sm:rounded-xl sm:border-x lg:h-[max(28rem,calc(100dvh-15rem))]"
+        className="-mx-3 grid grid-cols-[2rem_repeat(7,minmax(0,1fr))] grid-rows-[4.75rem_1fr] overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs max-sm:min-h-0 max-sm:flex-1 sm:mx-0 sm:h-[max(24rem,calc(100dvh-7rem))] sm:grid-cols-[4rem_repeat(7,minmax(0,1fr))] sm:grid-rows-[3.5rem_1fr] sm:rounded-xl sm:border-x lg:h-[max(28rem,calc(100dvh-15rem))]"
       >
         <div className="col-span-8 grid grid-cols-subgrid border-b">
           <div />
@@ -131,7 +131,6 @@ function WeekSkeleton() {
             </div>
           ))}
         </div>
-        <div className="col-span-8 border-b" />
         <div className="col-span-8 grid grid-cols-subgrid">
           <div />
           {Array.from({ length: 7 }, (_, i) => (

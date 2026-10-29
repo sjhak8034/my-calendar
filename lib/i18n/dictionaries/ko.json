@@ -215,8 +215,6 @@
     "nextWeek": "다음 주",
     "monthView": "월간 보기",
     "earlyEvents": "6시 이전",
-    "allDay": "종일",
-    "allDayEvent": "종일 일정",
     "continuesFromPrevious": "이전 시간에서 이어짐",
     "selectedDay": "선택한 날짜",
     "eventLabel": "{title}, {time}",

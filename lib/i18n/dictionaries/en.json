@@ -215,8 +215,6 @@
     "nextWeek": "Next week",
     "monthView": "Month view",
     "earlyEvents": "Before 6 AM",
-    "allDay": "All day",
-    "allDayEvent": "All-day event",
     "continuesFromPrevious": "Continues from earlier",
     "selectedDay": "Selected day",
     "eventLabel": "{title}, {time}",
