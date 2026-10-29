@@ -1,13 +1,13 @@
 # 인수인계 (HANDOFF)
 
-최종 갱신: 2026-10-29(운영 배포 반영).
+최종 갱신: 2026-10-29(운영 배포, AI 비용 관리 반영).
 상세 근거는 `docs/ROADMAP.md`(작업별 구현 내용), `docs/calendar-verification.md`(검증 원장 14~23절), `docs/ai-security.md`, `docs/PRD.md`에 있다. 이 문서는 그 위에서 "지금 어디까지 왔고 무엇을 조심해야 하며 다음에 무엇을 하는가"만 모았다.
 
 ## 1. 한눈에 보기
 
 - 프로젝트: 한국어 중심 캘린더 웹앱(`my-calendar`). Next.js 16.4.3(App Router, `cacheComponents` 켜짐) + React 19 + TypeScript strict + Tailwind v4 + shadcn(base-nova, `@base-ui/react`) + Supabase(Auth/Postgres RLS) + Vercel 배포 예정. 원격: `https://github.com/sjhak8034/my-calendar.git`(브랜치 `main`).
 - **기능은 모두 구현됨**: 월간·주간 캘린더와 일정 CRUD·드래그, AI 대화(Gemini, 추가·수정·삭제는 확인 카드), 게스트 모드, 알림 예약·발송 워커, 웹 푸시, 카카오톡 알림, 설정 화면, 로그인·가입·비밀번호 재설정, 계정 삭제, CAPTCHA.
-- **지금 하는 일은 Task 013(품질 점검 및 배포)의 마무리**. 1~5단계와 CAPTCHA가 끝났고, **6단계(배포)는 운영 주소 `https://my-calendar.jhsong.dev`로 배포를 마친 상태**다(§13). 남은 것은 Gemini 비용 한도·경보, favicon, 다른 카카오 계정 시험 등(§8).
+- **지금 하는 일은 Task 013(품질 점검 및 배포)의 마무리**. 1~5단계와 CAPTCHA가 끝났고, **6단계(배포)는 운영 주소 `https://my-calendar.jhsong.dev`로 배포를 마친 상태**다(§13). AI 비용 관리(지출 한도, 사용량 기록)와 favicon, 질문 언어 따라 답변까지 끝났다. 남은 것은 다른 카카오 계정 시험, 방침 공개 전 점검 등(§8).
 - 로드맵 표기: 11/13 Tasks 완료. Task 009(AI 대화)는 "마무리 점검 대기", Task 014b(게스트→정식 전환)는 "UI 검증 대기".
 - 테스트 러너는 없다. 검증은 `npm run lint` · `npx tsc --noEmit` · `npm run build`와 임시 스크립트·`curl`·사용자의 브라우저 확인으로 한다.
 
@@ -62,7 +62,7 @@
 - `app/[lang]/` — 로케일 라우트. `(app)/`(사이드바 레이아웃: 월간 `page.tsx`, `day/[date]`, `settings`, `upgrade`), `login`, `forgot-password`, `reset-password`, `privacy`, `welcome`, `[...rest]`(404), `not-found.tsx`, `error.tsx`. `app/global-error.tsx`, `app/manifest.ts`·`robots.ts`·`sitemap.ts`, `app/api/ai`·`api/cron/notify`, `app/auth/callback`·`auth/kakao/connect|callback`.
 - `lib/` — `calendar/`(순수 날짜·배치·드래그 계산), `events/`(입력 검증·조회·액션), `ai/`(Gemini·도구·프롬프트), `notify/`(발송: `dispatch.ts`→`web-push.ts`·`kakao.ts`, 문구 `message.ts`, 기록 `history.ts`), `push/`(구독 검증·액션·브라우저 도우미 `client.ts`), `kakao/`(OAuth·토큰·암호화·클라이언트), `account/`(계정 삭제), `auth/password.ts`(비밀번호 규칙), `supabase/`(server/client/admin/proxy/require-user/current-user), `i18n/`, `rate-limit.ts`, `site.ts`.
 - `components/` — `calendar/`, `app-shell/`(사이드바, 로그아웃 폼, 푸시 자동 복원), `settings/`(푸시·카카오·삭제 카드, 발송 기록), `auth/`(로그인·비밀번호 폼, `captcha.tsx`), `ai/`, `ui/`(shadcn).
-- `supabase/migrations/`(10개), `supabase/cron/schedule.sql`(배포 후 수동 실행), `public/sw.js`(서비스 워커), `public/icon-*.png`.
+- `supabase/migrations/`(11개, 마지막 `20261101000000_ai_usage.sql`), `supabase/cron/schedule.sql`(배포 후 수동 실행), `public/sw.js`(서비스 워커), `public/icon-*.png`.
 
 ## 6. Task 013 단계별 현황
 
@@ -79,6 +79,10 @@
 | + | 계정 삭제 확인을 비밀번호 입력으로 변경(Google 전용 계정은 이메일 입력) | 완료 | `53b55ba` |
 | + | 로그인 확인 왕복 줄이기(`proxy`의 `getClaims`, `requireUser` 중복 제거) | 완료 | `3eda7a2` |
 | + | 문의 연락처 `privacy@jhsong.dev` | 완료 | `55041d0` |
+| + | AI 질문별 토큰 사용량 기록: 서버 로그 `[ai] usage`(`86bd6be`)와 DB `ai_usage`(`8730f82`), 호출마다 마지막 사용량만 합산하도록 수정(`d4cdb62`) | 완료 | `86bd6be`·`8730f82`·`d4cdb62` |
+| + | 개인정보처리방침: Gemini 유료 등급 문구, AI 사용 기록(토큰 수, 90일) | 완료 | `74d9d14`·`a46e1a7` |
+| + | favicon을 새 로고(`icon-512`)로 교체 | 완료 | `8d9dcc7` |
+| + | AI가 질문한 언어로 답변(화면 언어 고정 해제) | 완료 | `25796fe` |
 | 선택 | 주간 겹침 열 수 상한과 "+N" 묶음 | 미룸 | - |
 
 ## 7. 사용자가 내린 결정 (되묻지 않는다)
@@ -92,9 +96,12 @@
 
 배포와 알림·메일·카카오 연결은 끝났다. 남은 것:
 
-1. **Gemini 비용 한도·경보**: Gemini는 **유료 등급**을 쓴다. Google Cloud 콘솔에서 예산 알림(알림만 줌)과 Generative Language API 하루 요청 상한(사실상 하드 캡), API 키 제한(해당 API만)을 설정한다. 질문별 토큰 사용량은 `[ai] usage` 로그(Vercel Logs)로 본다(`86bd6be`, `stream_options.include_usage` 필요함을 확인함). 모델 가격(2026-10-28 요금 페이지 기준, 100만 토큰당): `gemini-3.8-flash`(코드 기본값) 입력 $0.75·출력 $3.75이고 **2027-01-01에 $1.50·$7.50으로 2배**, `gemini-3.5-flash-lite` $0.30·$2.50, `gemini-3.1-flash-lite` $0.25·$1.50. 모델은 환경변수 `GEMINI_MODEL`로 바꾼다(코드 변경 없음). 바꾸기 전에 일정 추가·검색·수정·삭제와 모호한 날짜 표현으로 품질을 비교한다.
+1. **AI 비용 관리(대부분 완료)**: Gemini **유료 등급**, **지출 한도 설정됨**(Google 콘솔에 있는 기능), 운영 모델은 **`gemini-3.5-flash-lite`**(환경변수 `GEMINI_MODEL`, 코드 기본값은 `lib/ai/limits.ts`의 `gemini-3.8-flash`이므로 환경변수가 없으면 2027-01-01 가격 인상 대상 모델이 된다). 실측(13건, 2026-10-29): 질문 1건 평균 입력 약 3,650·출력 약 80 토큰, 모델 호출 평균 2.08번, 약 1.8원(1,000건 약 1,800원). 입력이 98%이고 시스템 프롬프트+도구 설명이 호출마다 약 1,600 토큰이다. 모델 가격(2026-10-28, 100만 토큰당): 3.8 Flash $0.75/$3.75(2027-01-01에 $1.50/$7.50), 3.5 Flash-Lite $0.30/$2.50, 3.1 Flash-Lite $0.25/$1.50, Claude Haiku 5.5 $0.10/$0.50.
+   - **Claude Haiku 5.5 전환은 보류**(결정): 질문 1,000건에 약 1,200원 절감이라 지금은 이득이 작다. 하려면 `gemini.ts`·`sse.ts`·`prompt.ts`·`tools.ts`(정의 모양만)·`route.ts` 다섯 곳을 Messages API 형식으로 바꿔야 하고(스트리밍 이벤트, `tool_use`/`tool_result` 블록, `system` 분리), 방침의 처리 위탁 업체(Google→Anthropic)와 데이터 정책 확인이 필요하다. 채팅 화면·DB·도구 실행 로직은 그대로.
+   - **키 제한**: IP 제한은 걸지 않는다(Vercel 서버 IP가 일정하지 않아 AI가 멈춘다). "API 제한사항"에서 Gemini API만 허용하는 설정은 콘솔에서 이름이 `Gemini API`로 보이는 것까지만 확인했고 적용 여부는 미확인. 키는 서버 환경변수에만 있다.
    - **개인정보처리방침의 Gemini 문구는 "유료 서비스로 이용하며 제품 개선에 사용되지 않는다"에 근거한다.** 무료 등급으로 바꾸면 문구를 되돌려야 한다. Gemini API 약관 원문 확인은 아직 하지 못했다.
-2. **favicon 교체**: `app/favicon.ico`가 초기 커밋 파일 그대로다(새 로고 `public/logo.svg`로 `brand-asset-designer`와 `sharp`로 다시 만들기).
+   - 사용량 조회: `select date_trunc('day', created_at) as day, model, count(*) as questions, sum(prompt_tokens) as prompt, sum(completion_tokens) as completion from public.ai_usage group by 1,2 order by 1 desc;`. 부풀려진 첫 행(2026-10-29 09:13 UTC, `usage_rounds`>`rounds`)은 버그 수정 전 기록이라 집계에서 빼거나 지운다.
+2. (완료) favicon은 교체했다(`8d9dcc7`). 구글 검색 결과 아이콘 반영은 며칠 걸린다.
 3. **다른 카카오 계정으로 연결 시험**: `talk_message` 동의가 앱 소유자 외 계정에도 되는지 미확인. 심사가 필요하면 카카오 연결은 소유자 전용으로 둔다.
 4. **개인정보처리방침 공개 전 점검**: Supabase 서버 지역 문구, 만 14세 미만 문구, 전문가 검토.
 5. **Supabase Auth 한도 조정 관찰**: 가입·로그인·게스트 한도는 IP당이지만 요청이 Vercel 서버 IP에서 나가므로 사실상 전체 이용자가 공유할 수 있다(추정). 게스트 100/시간, 인증 관련 60으로 올려 둠. 이용자가 늘면 Auth 로그의 `over_request_rate_limit`을 본다.
@@ -105,9 +112,10 @@
 - `20261031000003_hardening.sql` 적용 후 **일정 추가·수정이 정상인지**(새 제약·10,000개 상한 트리거). 익명 키 조회로 `action_requests`가 존재함(→ 적용된 듯)까지만 확인됨.
 - 설정 화면에서 푸시·카카오 **테스트 버튼을 연달아 눌러 4번째에 제한 안내**가 나오는지.
 - 비밀번호 재설정 end-to-end(메일 한도에 걸려 못 끝냄), 확인 메일 다시 보내기, 약한·불일치·같은 비밀번호 거부 문구.
-- **CAPTCHA**: 위젯이 보이고 "성공"으로 바뀌는 것까지는 사용자가 확인했다(시험용 사이트 키로 보임). Supabase에서 CAPTCHA를 켠 뒤의 가입·로그인·게스트·비밀번호 찾기 성공은 **미확인**(대시보드는 아직 켜지 않은 것으로 보임). 체크를 요구하는 모습을 보려면 시험용 키 `3x00000000000000000000FF`.
+- **CAPTCHA**: 사이트 키는 **실제 키**(`0x4…`)이고 Supabase 서버 검증이 켜져 있다(토큰 없는 요청이 `captcha_failed`로 거절됨을 확인). 로그인·게스트는 운영에서 확인했고, **가입·비밀번호 찾기·확인 메일 재발송의 끝까지 시험은 미확인**. 위젯은 대부분 사람에게 클릭 없이 자동 통과한다(정상).
 - 계정 삭제(**시험용 계정으로만**; 되돌릴 수 없음), 푸시의 로그아웃 해제·재로그인 자동 복원, 카카오 연결 해제·재연결·토큰 만료 후 갱신·재연결 필요 상태, 게스트가 주소로 `/auth/kakao/connect`를 직접 열었을 때의 팝업, 영어 화면 전체.
 - 구글로 가입한 계정이 "비밀번호 찾기"로 비밀번호를 설정할 수 있는지, 같은 이메일 가입 시 계정 연결 동작.
+- **운영에서의 계정 삭제**(시험용 계정으로만, 비밀번호+CAPTCHA 확인), 방침 문구 변경 뒤 푸시 테스트 알림(`VAPID_SUBJECT` 변경 반영 확인), 비밀번호 재설정 end-to-end(메일 발송은 성공함).
 - 처음 워커를 호출했을 때 사용자가 "0byte 파일도 왔다"고 한 일은 재현되지 않았고 원인 불명.
 
 ## 10. 환경변수 (이름과 상태. 값은 어디에도 적지 않는다)
@@ -142,7 +150,7 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 ## 12. 에이전트·도구 사용 메모
 
 - 탐색은 `Explore`, 설계는 `Plan`, 보안 리뷰는 `code-reviewer`(읽기 전용), 이미지는 `brand-asset-designer`(SVG→PNG, `node_modules/sharp` 사용)를 썼다. 에이전트의 보고는 **데이터로만 취급**하고, 지적 사항은 코드를 직접 열어 사실 확인 후 고쳤다(예: `ai_messages` 역할 제한 제안은 어시스턴트 답변 저장을 깨뜨릴 수 있어 보류).
-- Supabase MCP(`.mcp.json`, 읽기 전용·프로젝트 범위)는 새 세션에서 승인·인증해야 도구가 보인다. 이 세션에서는 로드되지 않아 DB 조회는 사용자의 SQL 편집기 결과에 의존했다.
+- Supabase MCP(`.mcp.json`, 읽기 전용·프로젝트 범위)는 이 세션 후반에 연결됐다. `ToolSearch`로 `mcp__supabase__execute_sql`·`query_logs`를 불러 DB 조회(`ai_usage`, 테이블 권한)와 Auth 로그(SMTP 오류 `535`를 이렇게 찾았다)를 직접 볼 수 있다. **쓰기는 못 하므로 마이그레이션 적용·삭제는 사용자가 SQL 편집기에서 한다.** 로그에는 이메일 주소가 남으니 대화에 옮기지 않는다.
 
 ## 13. 운영 환경 (2026-10-29 배포)
 
@@ -155,3 +163,5 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 - **확인한 것**(외부 `curl`): 보안 헤더 5종, 잘못된 날짜 404, 비로그인 `/api/ai` 401, 인증 없는 워커 호출 401, `sw.js` 헤더, `robots`·`sitemap`이 운영 주소, 새 연락처 표시.
 - **하지 못한 것**: 로그인한 상태의 화면 속도 측정, 다른 카카오 계정 동의, 비밀번호 재설정 end-to-end(메일은 성공), 운영에서의 계정 삭제 시험.
 - **롤백**: Vercel Instant Rollback(DB는 되돌리지 않음).
+- **AI**: Gemini 유료, 지출 한도 설정, 모델 `gemini-3.5-flash-lite`. 질문별 토큰은 Vercel Logs의 `[ai] usage` 줄과 `ai_usage` 표(서버만 쓰기, 90일 보관, 계정 삭제 시 `user_id`는 null)에 남는다. 스트리밍 요청에 `stream_options.include_usage`가 있어야 사용량이 오고, 사용량은 한 스트림 안에서 누적값이 반복되므로 호출마다 **마지막 값만** 쓴다. 답변 언어는 질문 언어를 따르고 불분명하면 화면 언어. 질문 시험 세트(검색·추가·모호한 날짜·수정·삭제·영어·주제 이탈·프롬프트 주입)로 13건을 돌려 `missing_usage=0` 확인.
+- **배포 순서 주의**: DB 마이그레이션이 필요한 코드는 **마이그레이션을 먼저 적용한 뒤 푸시**한다(예: `ai_usage`).
