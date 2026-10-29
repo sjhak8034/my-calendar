@@ -13,16 +13,32 @@ export type RangeSelectCallbacks = {
 
 export type StartRangeSelectParams = {
   pointerId: number;
-  anchor: CalendarDate; // 누른 칸의 날짜
+  anchor?: CalendarDate; // 누른 칸의 날짜. 없으면 point 아래의 칸(일정 막대를 눌렀을 때)
+  point?: { x: number; y: number }; // 누른 화면 좌표
   root: HTMLElement; // 날짜 칸([data-slot="day-cell"][data-date])을 품은 요소
+  // 이 거리(px) 이상 움직이면 다른 칸에 들어가지 않았어도 끌기로 본다. 일정 막대처럼 눌러서 바로 끌기 상태가 보여야 할 때 쓴다
+  // (없으면 다른 날짜 칸에 들어가야 끌기가 시작된다. 날짜 칸을 눌러 기간을 고를 때는 한 칸 안의 흔들림을 클릭으로 두려고 쓰지 않는다).
+  slopPx?: number;
+  // 누른 칸(origin)과 지금 칸(current)으로 하이라이트·커밋할 구간을 만든다. 기본은 두 날짜 사이(기간 선택).
+  // 일정 막대 끌기는 이동·시작일·종료일 늘이기 규칙을 넘긴다.
+  compute?: (origin: CalendarDate, current: CalendarDate) => DateSpan;
   callbacks: RangeSelectCallbacks;
 };
 
 type Cell = { date: CalendarDate; left: number; right: number; top: number; bottom: number };
 
 // 끌기를 시작해 리스너를 걸고, 중단하는 함수를 돌려준다(화면을 떠날 때 부른다).
-export function startRangeSelect({ pointerId, anchor, root, callbacks }: StartRangeSelectParams): () => void {
-  let current = anchor;
+// 눌린 곳의 날짜 칸을 찾지 못하면 아무것도 걸지 않고 null을 돌려준다.
+export function startRangeSelect({
+  pointerId,
+  anchor,
+  point,
+  root,
+  slopPx,
+  compute,
+  callbacks,
+}: StartRangeSelectParams): (() => void) | null {
+  let current: CalendarDate = anchor ?? "";
   // 다른 날짜 칸에 한 번이라도 들어가야 "끌기"로 본다. 한 칸 안의 흔들림은 그대로 클릭(날짜 상세 이동)으로 남는다.
   let active = false;
   let cells: Cell[] | null = null;
@@ -44,6 +60,10 @@ export function startRangeSelect({ pointerId, anchor, root, callbacks }: StartRa
     const hit = cells.find((c) => x >= c.left && x < c.right && y >= c.top && y < c.bottom);
     return hit ? hit.date : null;
   };
+
+  const origin = anchor ?? (point ? dateAt(point.x, point.y) : null);
+  if (!origin) return null;
+  current = origin;
 
   const setActive = () => {
     active = true;
@@ -70,7 +90,7 @@ export function startRangeSelect({ pointerId, anchor, root, callbacks }: StartRa
     callbacks.onFinish();
   };
 
-  const range = () => normalizeRange(anchor, current);
+  const range = () => (compute ? compute(origin, current) : normalizeRange(origin, current));
 
   function onMove(ev: PointerEvent) {
     if (ev.pointerId !== pointerId) return;
@@ -79,11 +99,18 @@ export function startRangeSelect({ pointerId, anchor, root, callbacks }: StartRa
       onUp(ev);
       return;
     }
+    // 눌러서 조금만 움직여도 바로 끌기로 본다(slopPx). 제자리 칸이면 구간은 그대로다(놓아도 저장할 것이 없다).
+    const slopped =
+      !active && slopPx !== undefined && point !== undefined && Math.hypot(ev.clientX - point.x, ev.clientY - point.y) >= slopPx;
     const date = dateAt(ev.clientX, ev.clientY);
-    if (!date || date === current) return;
-    current = date;
-    if (!active) setActive();
-    callbacks.onChange(range());
+    if (date && date !== current) {
+      current = date;
+      if (!active && current !== origin) setActive();
+      callbacks.onChange(range());
+    } else if (slopped) {
+      setActive();
+      callbacks.onChange(range());
+    }
   }
 
   function onUp(ev: PointerEvent) {

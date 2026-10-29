@@ -26,7 +26,7 @@ export function EventSidePanel() {
           <X className="size-4" aria-hidden="true" />
         </button>
       </div>
-      <p className="px-5 pb-2 text-xs text-muted-foreground">{hint}</p>
+      {hint && <p className="px-5 pb-2 text-xs text-muted-foreground">{hint}</p>}
       <EventForm
         key={panel.session}
         mode={panel.mode}

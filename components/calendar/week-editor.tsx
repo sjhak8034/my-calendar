@@ -82,6 +82,7 @@ type WeekEditorContext = {
   dragging: boolean; // 포인터로 끌고 있는 중
   dragInfo: DragInfo | null;
   deleteHover: boolean; // 끄는 블록이 삭제 영역 위에 있음
+  reportError: (message: string) => void; // 화면 아래 오류 알림(몇 초 뒤 사라진다). 월간 끌기 저장 실패에 쓴다
   hint: string; // 사이드바 위에 보이는 한 줄 안내(주간은 끌기 안내, 월간은 기간 선택 안내)
   openCreate: (date: CalendarDate, minutes?: number) => void;
   openCreateRange: (startDate: CalendarDate, endDate: CalendarDate) => void; // 월간에서 기간(종일)으로 새 일정(항상 새 폼)
@@ -113,6 +114,7 @@ export function useWeekEditor(): WeekEditorContext {
 type Props = {
   labels: EventFormLabels;
   hint?: string; // 생략하면 labels.dragHint
+  hintEdit?: string; // 기존 일정을 수정하는 동안의 안내(생략하면 hint와 같다, 빈 문자열이면 안내를 숨긴다)
   initialCreateDate?: CalendarDate; // ?new=1로 들어오면 사이드바를 연 채 시작(지금은 링크가 없고 북마크 호환용. 월간 "일정 추가"는 월간에서 직접 연다)
   children: ReactNode;
 };
@@ -120,7 +122,7 @@ type Props = {
 // 일정 편집 상태: 사이드바 폼, 그리드의 초안 블록, 드래그 이동·크기 조절, 낙관적 업데이트.
 // 주간 화면이 주로 쓰고, 월간 화면은 사이드바와 새 일정 초안(기간 선택)만 쓴다(드래그·삭제 영역은 월간에서 유휴 상태).
 // 드래그 이벤트 처리는 drag-session, 낙관적 덮어쓰기는 use-event-overrides에 있다.
-export function WeekEditorProvider({ labels, hint, initialCreateDate, children }: Props) {
+export function WeekEditorProvider({ labels, hint, hintEdit, initialCreateDate, children }: Props) {
   const [panel, setPanel] = useState<Panel | null>(() =>
     initialCreateDate
       ? { mode: "create", eventId: null, values: defaultInput(initialCreateDate), session: 1 }
@@ -392,7 +394,8 @@ export function WeekEditorProvider({ labels, hint, initialCreateDate, children }
       dragging,
       dragInfo,
       deleteHover,
-      hint: hint ?? labels.dragHint,
+      reportError: setError,
+      hint: panel?.mode === "edit" && hintEdit !== undefined ? hintEdit : (hint ?? labels.dragHint),
       openCreate,
       openCreateRange,
       selectRange,
@@ -415,6 +418,7 @@ export function WeekEditorProvider({ labels, hint, initialCreateDate, children }
       dragInfo,
       deleteHover,
       hint,
+      hintEdit,
       openCreate,
       openCreateRange,
       selectRange,

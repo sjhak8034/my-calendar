@@ -14,6 +14,7 @@ import {
   startOfMonth,
   todayInSeoul,
 } from "@/lib/calendar";
+import type { EditableEvent } from "@/lib/events/input";
 import { getEventsForRange } from "@/lib/events/queries";
 import { buildMonthLayout } from "@/lib/events/month-layout";
 import { hasLocale } from "@/lib/i18n/config";
@@ -55,12 +56,18 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
   const gridEnd = grid[grid.length - 1][6].date;
   const monthFirst = formatDate({ year, month, day: 1 });
 
-  const result = await getEventsForRange(gridStart, gridEnd);
-  const weeks = buildMonthLayout(grid, result.ok ? result.events : []);
+  // 월간에서도 일정을 눌러 수정하므로 설명까지 가져온다(수정 폼이 설명을 그대로 보여 주고 저장해야 해서 자르지 않는다).
+  const result = await getEventsForRange(gridStart, gridEnd, { includeDescription: true });
+  const monthEvents = result.ok ? result.events : [];
+  const weeks = buildMonthLayout(grid, monthEvents);
+  const editableEvents: EditableEvent[] = monthEvents.map((event) => ({
+    ...event,
+    description: event.description ?? null,
+  }));
 
   return (
     // 월간 화면에서도 일정 입력창(사이드바)을 연다: 날짜 칸을 끌어 기간을 고르거나 툴바의 "일정 추가".
-    <WeekEditorProvider labels={dict.eventForm} hint={dict.eventForm.rangeHint}>
+    <WeekEditorProvider labels={dict.eventForm} hint={dict.eventForm.rangeHint} hintEdit="">
     <main className={PAGE_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight sm:mb-1">
         {dict.calendar.title}
@@ -87,7 +94,7 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
           {dict.calendar.truncated}
         </p>
       )}
-      <MonthSelect>
+      <MonthSelect events={editableEvents}>
         <MonthGrid lang={lang} grid={grid} weeks={weeks} today={today} dict={dict.calendar} />
       </MonthSelect>
     </main>

@@ -44,6 +44,7 @@ export function DayCell({
       )}
     >
       <Link
+        draggable={false}
         href={`/${lang}/day/${date}`}
         aria-label={label}
         aria-current={isToday ? "date" : undefined}

@@ -27,6 +27,9 @@ export function EventChip({ lang, segment, allDayLabel }: Props) {
     <Link
       href={`/${lang}/day/${segment.startDate}`}
       data-slot="event-chip"
+      draggable={false}
+      data-event-id={segment.id}
+      data-lane={lane}
       data-color={color}
       data-continues-from-prev={continuesFromPrev || undefined}
       data-continues-to-next={continuesToNext || undefined}
@@ -37,7 +40,7 @@ export function EventChip({ lang, segment, allDayLabel }: Props) {
         gridRow: lane + 1,
       }}
       className={cn(
-        "pointer-events-auto relative z-10 flex min-w-0 items-center gap-1.5 border px-1 text-[11px] leading-none outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-2 sm:text-xs dark:hover:brightness-110",
+        "pointer-events-auto relative z-10 flex data-[dragging]:opacity-40 min-w-0 items-center gap-1.5 border px-1 text-[11px] leading-none outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-2 sm:text-xs dark:hover:brightness-110",
         COLOR_CLASS[color],
         // 종일·여러 날 일정은 옅은 사선 무늬로 시간이 정해진 일정(무늬 없음)과 구분한다.
         isTimed ? "" : "event-hatch",
@@ -45,6 +48,21 @@ export function EventChip({ lang, segment, allDayLabel }: Props) {
         continuesToNext ? "mr-0 rounded-r-none border-r-0" : "mr-0.5 rounded-r-md",
       )}
     >
+      {/* 종일 막대의 진짜 시작·종료 쪽 끝: 마우스로 끌어 시작일·종료일을 바꾼다(주를 넘어 이어지는 쪽 끝은 제외). 터치는 끌기가 없다. */}
+      {segment.allDay && !continuesFromPrev && (
+        <span
+          aria-hidden="true"
+          data-handle="start"
+          className="absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize rounded-l-md hover:bg-foreground/15"
+        />
+      )}
+      {segment.allDay && !continuesToNext && (
+        <span
+          aria-hidden="true"
+          data-handle="end"
+          className="absolute inset-y-0 right-0 z-10 w-2 cursor-ew-resize rounded-r-md hover:bg-foreground/15"
+        />
+      )}
       <span className="min-w-0 flex-1 truncate font-semibold">{segment.title}</span>
       {time && (
         <span className="hidden shrink-0 font-normal sm:inline">{time}</span>
