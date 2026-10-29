@@ -126,7 +126,7 @@
         "items": [
           "Supabase: 계정 인증, 데이터베이스(계정·일정·AI 대화·알림 기록 저장), 인증 메일 발송.",
           "Vercel: 서비스 호스팅과 접속 처리.",
-          "Google: Google 로그인, AI 대화(Gemini). 질문과 일정 내용이 전달되며, Google이 자사 정책에 따라 처리·보관할 수 있어요.",
+          "Google: Google 로그인, AI 대화(Gemini). 질문과 일정 내용이 전달돼요. AI는 유료 서비스로 이용하며, Google은 이 내용을 제품 개선에 사용하지 않는다고 밝히고 있어요. 다만 오용 방지 등을 위해 Google의 정책에 따라 일정 기간 보관될 수 있어요.",
           "Kakao: 카카오톡 \"나에게 보내기\" 알림 발송과 연결 해제.",
           "Cloudflare: 가입·로그인 보안 확인(Turnstile). 브라우저 정보가 확인에 사용돼요.",
           "브라우저 푸시 서비스(Google, Mozilla, Apple, Microsoft): 웹 푸시 알림 전달."

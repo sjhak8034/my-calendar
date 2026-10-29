@@ -126,7 +126,7 @@
         "items": [
           "Supabase: sign-in, the database (accounts, events, AI chats, notification history), and authentication emails.",
           "Vercel: hosting and request handling.",
-          "Google: Google sign-in and AI chat (Gemini). Your questions and event details are sent, and Google may process and retain them under its own policies.",
+          "Google: Google sign-in and AI chat (Gemini). Your questions and event details are sent. The AI runs on a paid service, and Google states that it does not use this content to improve its products. It may still be retained for a limited time under Google's policies, for example to prevent abuse.",
           "Kakao: sending KakaoTalk \"Send to me\" reminders and disconnecting.",
           "Cloudflare: security check on sign-up and sign-in (Turnstile), which uses browser information.",
           "Browser push services (Google, Mozilla, Apple, Microsoft): delivering web push notifications."
