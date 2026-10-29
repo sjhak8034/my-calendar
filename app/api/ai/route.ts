@@ -14,6 +14,7 @@ import { GeminiError, openChatStream } from "@/lib/ai/gemini";
 import { buildMessages, systemPrompt, type ChatMessage, type ModelMessage } from "@/lib/ai/prompt";
 import { ToolCallAssembler, feedSse, parseChatData } from "@/lib/ai/sse";
 import { AI_TOOLS, runTool } from "@/lib/ai/tools";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 
 type ErrorCode =
@@ -171,9 +172,34 @@ export async function POST(request: Request) {
   let finished!: () => void;
   const streamEnded = new Promise<void>((resolve) => (finished = resolve));
 
+  // 질문 1건의 토큰 사용량을 비용 확인용으로 저장한다(숫자만, 서버만 쓸 수 있는 표). 실패해도 답변에는 영향이 없다.
+  async function recordUsage() {
+    if (tally.rounds === 0) return;
+    const admin = createAdminClient();
+    if (!admin) return;
+    const { error } = await admin.from("ai_usage").insert({
+      user_id: user.id,
+      is_guest: isGuest,
+      model: process.env.GEMINI_MODEL || AI_DEFAULT_MODEL,
+      rounds: tally.rounds,
+      usage_rounds: tally.usageRounds,
+      prompt_tokens: tally.prompt,
+      completion_tokens: tally.completion,
+      reasoning_tokens: tally.reasoning,
+      total_tokens: tally.total,
+    });
+    if (error) {
+      console.error("[ai] usage insert failed:", error.code ?? "unknown");
+      return;
+    }
+    // 오래된 기록을 조금씩 지운다(90일).
+    await admin.rpc("purge_old_ai_usage", { p_batch: 100 });
+  }
+
   // 사용자가 중단하거나 탭을 닫아도 받은 만큼의 답변은 저장한다(서버리스 수명은 after로 연장).
   after(async () => {
     await streamEnded;
+    await recordUsage();
     if (!answer) return;
     const { error } = await supabase
       .from("ai_messages")
