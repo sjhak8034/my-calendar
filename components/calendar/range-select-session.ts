@@ -55,7 +55,7 @@ export function startRangeSelect({ pointerId, anchor, root, callbacks }: StartRa
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
     window.removeEventListener("pointercancel", onCancel);
-    window.removeEventListener("blur", onCancel);
+    window.removeEventListener("blur", onBlur);
     window.removeEventListener("keydown", onKey, true);
     window.removeEventListener("scroll", invalidate, true);
     window.removeEventListener("resize", invalidate);
@@ -104,6 +104,13 @@ export function startRangeSelect({ pointerId, anchor, root, callbacks }: StartRa
     finish();
   }
 
+  // 창이 포커스를 잃음(Alt-Tab, 알림 등): 선택은 취소하지만 포인터는 아직 눌려 있어서,
+  // 돌아와 놓을 때 생기는 클릭이 날짜 칸 링크를 열지 않게 한다(끌기 중이었을 때만).
+  function onBlur() {
+    if (active) callbacks.onSuppressClick();
+    onCancel();
+  }
+
   // Esc: 끄는 중이면 선택을 취소한다. 캡처 단계에서 받아 사이드바 닫기(Esc)가 같이 일어나지 않게 막는다.
   function onKey(ev: KeyboardEvent) {
     if (ev.key !== "Escape") return;
@@ -120,7 +127,7 @@ export function startRangeSelect({ pointerId, anchor, root, callbacks }: StartRa
   window.addEventListener("pointermove", onMove);
   window.addEventListener("pointerup", onUp);
   window.addEventListener("pointercancel", onCancel);
-  window.addEventListener("blur", onCancel);
+  window.addEventListener("blur", onBlur);
   window.addEventListener("keydown", onKey, true);
   window.addEventListener("scroll", invalidate, true);
   window.addEventListener("resize", invalidate);

@@ -26,7 +26,7 @@ export function useMonthSelection(): DateSpan | null {
 // 그리드(children)는 서버 렌더 결과 그대로라 선택이 바뀌어도 다시 그려지지 않고, 각 주의 하이라이트 레이어(WeekSelection)만 갱신된다.
 // 터치는 끌기를 지원하지 않는다(화면 스크롤과 겹침). 터치에서는 날짜 칸이 그대로 링크이고 툴바의 "일정 추가"로 입력창을 연다.
 export function MonthSelect({ children }: { children: ReactNode }) {
-  const { panel, openCreateRange } = useWeekEditor();
+  const { panel, selectRange } = useWeekEditor();
   const [dragRange, setDragRange] = useState<DateSpan | null>(null);
   const stop = useRef<(() => void) | null>(null); // 진행 중인 끌기를 끊는 함수
   const suppressClick = useRef(false); // 끌기 직후의 클릭(날짜 칸 링크 이동)을 막는 표시
@@ -53,7 +53,7 @@ export function MonthSelect({ children }: { children: ReactNode }) {
       root: e.currentTarget,
       callbacks: {
         onChange: setDragRange,
-        onCommit: (range) => openCreateRange(range.start, range.end),
+        onCommit: (range) => selectRange(range.start, range.end),
         onSuppressClick: () => {
           suppressClick.current = true;
         },

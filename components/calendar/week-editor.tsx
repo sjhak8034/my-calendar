@@ -84,7 +84,8 @@ type WeekEditorContext = {
   deleteHover: boolean; // 끄는 블록이 삭제 영역 위에 있음
   hint: string; // 사이드바 위에 보이는 한 줄 안내(주간은 끌기 안내, 월간은 기간 선택 안내)
   openCreate: (date: CalendarDate, minutes?: number) => void;
-  openCreateRange: (startDate: CalendarDate, endDate: CalendarDate) => void; // 월간에서 기간(종일)으로 새 일정
+  openCreateRange: (startDate: CalendarDate, endDate: CalendarDate) => void; // 월간에서 기간(종일)으로 새 일정(항상 새 폼)
+  selectRange: (startDate: CalendarDate, endDate: CalendarDate) => void; // 월간에서 끌어 고른 기간: 열려 있는 새 일정 폼은 날짜만 바꾼다
   openEdit: (event: EditableEvent) => void;
   close: () => void;
   closeSession: (session: number) => void; // 이 세션의 패널일 때만 닫는다
@@ -112,7 +113,7 @@ export function useWeekEditor(): WeekEditorContext {
 type Props = {
   labels: EventFormLabels;
   hint?: string; // 생략하면 labels.dragHint
-  initialCreateDate?: CalendarDate; // 월간 화면의 "일정 추가"로 들어오면 사이드바를 연 채 시작
+  initialCreateDate?: CalendarDate; // ?new=1로 들어오면 사이드바를 연 채 시작(지금은 링크가 없고 북마크 호환용. 월간 "일정 추가"는 월간에서 직접 연다)
   children: ReactNode;
 };
 
@@ -157,7 +158,7 @@ export function WeekEditorProvider({ labels, hint, initialCreateDate, children }
     };
   }, []);
 
-  // ?new=1로 들어왔다면 주소에서 지운다(새로 고침마다 다시 열리지 않게).
+  // ?new=1로 들어왔다면 주소에서 지운다(새로 고침마다 다시 열리지 않게). 월간 툴바가 더는 이 주소로 보내지 않지만 북마크 호환으로 남겨 둔다.
   useEffect(() => {
     if (initialCreateDate) window.history.replaceState(null, "", window.location.pathname);
   }, [initialCreateDate]);
@@ -232,6 +233,16 @@ export function WeekEditorProvider({ labels, hint, initialCreateDate, children }
   const updateValues = useCallback((patch: Partial<EventInput>) => {
     setPanel((prev) => (prev ? { ...prev, values: { ...prev.values, ...patch } } : prev));
   }, []);
+
+  // 월간에서 끌어 고른 기간. 새 일정 입력창이 이미 열려 있으면 작성 중인 제목·설명·색·시간을 지우지 않도록 날짜만 바꾸고,
+  // 닫혀 있거나 기존 일정을 수정 중이면 새 일정 폼을 연다.
+  const selectRange = useCallback(
+    (startDate: CalendarDate, endDate: CalendarDate) => {
+      if (panelRef.current?.mode === "create") updateValues({ startDate, endDate });
+      else openCreateRange(startDate, endDate);
+    },
+    [updateValues, openCreateRange],
+  );
 
   // 떠 있는 블록과 미리보기(끄는 동안의 임시 표시)를 걷는다.
   const clearTransient = useCallback(() => {
@@ -384,6 +395,7 @@ export function WeekEditorProvider({ labels, hint, initialCreateDate, children }
       hint: hint ?? labels.dragHint,
       openCreate,
       openCreateRange,
+      selectRange,
       openEdit,
       close,
       closeSession,
@@ -405,6 +417,7 @@ export function WeekEditorProvider({ labels, hint, initialCreateDate, children }
       hint,
       openCreate,
       openCreateRange,
+      selectRange,
       openEdit,
       close,
       closeSession,
