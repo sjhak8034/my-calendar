@@ -1,6 +1,6 @@
 # 인수인계 (HANDOFF)
 
-최종 갱신: 2026-10-30(월간 편집 기능 푸시 완료 §14, 날씨 표시 커밋·푸시 완료 §15).
+최종 갱신: 2026-10-30(월간 편집 §14·날씨 §15 푸시 완료, 휴대폰 주간 7일 보기 §16 미커밋).
 상세 근거는 `docs/ROADMAP.md`(작업별 구현 내용), `docs/calendar-verification.md`(검증 원장 14~23절), `docs/ai-security.md`, `docs/PRD.md`에 있다. 이 문서는 그 위에서 "지금 어디까지 왔고 무엇을 조심해야 하며 다음에 무엇을 하는가"만 모았다.
 
 ## 1. 한눈에 보기
@@ -219,3 +219,21 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 - **Open-Meteo 무료 이용은 비상업 용도·출처 표기 조건**이다(그리드 아래 "날씨 제공: Open-Meteo" 링크로 충족). 앱이 수익을 내면 유료 플랜이 필요하다. 서비스를 바꾸려면 `lib/weather/forecast.ts`(URL·파서)만 고치면 된다.
 - 하루 단위 예보(시간대별 없음), 날씨 끄기 설정 없음, 첫 방문에 위치 허용 창이 뜸. 후속 아이디어(요청 없음): 설정에서 도시 선택·끄기, 섭씨/화씨.
 - 조정 값: 아이콘 색·크기(`weather-icon.tsx`), 캐시 시간(`CACHE_TTL_MS`), 거부 기억 기간(`DENIED_TTL_MS`).
+
+## 16. 최근 작업: 휴대폰 주간 7일 한눈에 + 막대 글자 잘림(2026-10-30, **미커밋**)
+
+**요청**: 휴대폰에서 주간 그리드가 한눈에 안 보임(가로 스크롤로 3일만 보임) → 7일이 다 보이게. 사용자가 선택: **7일 압축 + 아래에 선택한 날 목록**. 추가 요청: 월·주 그리드의 **일정 막대 글자 위가 약간씩 잘림** → 세로 길이(줄 높이) 늘리기.
+
+**미커밋 파일(`git status`)**: 새로 `components/calendar/week-agenda.tsx`. 수정 `components/calendar/{week-grid,block-text,event-block,event-chip,week-selection}.tsx`, `app/[lang]/(app)/day/[date]/page.tsx`(스켈레톤), `lib/i18n/dictionaries/{ko,en}.json`(`week.agendaLabel`·`noEventsOnDay`), 문서 4개. 제안 커밋: `✨ feat: 휴대폰 주간 화면에서 7일을 한눈에 보고 선택한 날 목록 표시` + `🐛 fix: 막대 글자 윗부분이 잘리지 않게 줄 높이 확대` + `📝 docs: …`(같은 파일을 겹쳐 고쳐 한 커밋으로 묶어도 됨).
+
+**구현 요점**
+- 폭은 `week-grid.tsx` 루트의 CSS 변수가 결정한다: 기본(휴대폰) `--day-min:0px`·`--time-col:2rem`, `sm:`(640px)부터 `6rem`·`4rem`. 모든 클래스는 "기본 = 휴대폰, `sm:` = 기존 모양"으로 썼다. `cn`이 충돌을 병합하지 않으므로 같은 속성은 `기본`과 `sm:`가 서로 다른 값으로만 겹치게 했다.
+- 머리글 `WeekHeaderLink`: 휴대폰은 세로(요일/날짜/아이콘/최고 기온), `sm:`부터 한 줄 + 아래 `최저° / 최고°`. 휴대폰 높이 `4.75rem`(스켈레톤 동일).
+- 목록 `WeekAgenda`: `WeekGrid`가 `Object.values(eventsById)`(낙관적 덮어쓰기 반영)를 넘긴다. 서버 작업 없음. 머리글을 누르면 `/day/날짜`로 이동해 목록이 바뀐다(서버 왕복).
+- **막대 글자 잘림 원인**: 막대의 `leading-none`(줄 높이 = 글자 크기)과 제목의 `truncate`(overflow hidden)가 겹쳐 한글 윗부분이 잘림 → 제목·시각 span에 `leading-snug`. 막대 높이(`h-6`, 오버레이 `top-9`·4줄)는 건드리지 않았다.
+- 좁은 열의 제목 줄바꿈은 `break-keep [overflow-wrap:anywhere]`(단어 단위, 너무 길면 글자 단위).
+
+**확인한 것/못 한 것**: `calendar-verification.md` 28절(휴대폰 에뮬레이션 52건). **사용자 확인 대기**: 실제 휴대폰, 글자 잘림 해소, 목록·입력창 모양. **시험 팁**: 하네스 페이지에 `<meta name="viewport" content="width=device-width, initial-scale=1">`가 없으면 `isMobile` 에뮬레이션이 980px로 그려 `sm:` 스타일이 적용된다(앱에는 메타가 있음).
+
+**제한·후속 아이디어(요청 없음)**: 열이 약 45~50px라 블록 제목은 3~4글자, 태블릿 폭(640~800px)은 여전히 가로 스크롤(`--day-min`을 중간값으로), 목록 선택을 클라이언트 상태로 즉시 전환, 월간도 휴대폰에서 일정 목록 제공.
+
