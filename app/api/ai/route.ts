@@ -12,7 +12,7 @@ import {
 } from "@/lib/ai/limits";
 import { GeminiError, openChatStream } from "@/lib/ai/gemini";
 import { buildMessages, systemPrompt, type ChatMessage, type ModelMessage } from "@/lib/ai/prompt";
-import { ToolCallAssembler, feedSse, parseChatData } from "@/lib/ai/sse";
+import { ToolCallAssembler, feedSse, parseChatData, type TokenUsage } from "@/lib/ai/sse";
 import { AI_TOOLS, runTool } from "@/lib/ai/tools";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
@@ -220,6 +220,7 @@ export async function POST(request: Request) {
         let text = "";
         let rest = "";
         let done = false;
+        let roundUsage: TokenUsage | null = null;
         while (!done) {
           const { value, done: streamDone } = await reader.read();
           if (streamDone) break;
@@ -236,16 +237,20 @@ export async function POST(request: Request) {
               } else if (delta.kind === "finish") {
                 finish = delta.reason;
               } else if (delta.kind === "usage") {
-                tally.usageRounds += 1;
-                tally.prompt += delta.usage.prompt;
-                tally.completion += delta.usage.completion;
-                tally.reasoning += delta.usage.reasoning;
-                tally.total += delta.usage.total;
+                // 사용량은 한 응답 안에서 여러 조각에 누적값으로 반복해 올 수 있어, 합산하지 않고 마지막 값만 둔다.
+                roundUsage = delta.usage;
               } else {
                 done = true;
               }
             }
           }
+        }
+        if (roundUsage) {
+          tally.usageRounds += 1;
+          tally.prompt += roundUsage.prompt;
+          tally.completion += roundUsage.completion;
+          tally.reasoning += roundUsage.reasoning;
+          tally.total += roundUsage.total;
         }
         return { text, calls: assembler.result };
       }
