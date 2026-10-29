@@ -139,6 +139,20 @@ export function defaultInput(date: CalendarDate, minutes = 9 * 60): EventInput {
   };
 }
 
+// 월간 그리드에서 기간을 골라 새 일정을 만들 때의 초기값: 종일, 시작일~종료일(종료일 포함, 23:59로 저장된다).
+export function defaultRangeInput(startDate: CalendarDate, endDate: CalendarDate): EventInput {
+  return {
+    title: "",
+    description: "",
+    allDay: true,
+    startDate,
+    startTime: ALL_DAY_START_TIME,
+    endDate,
+    endTime: ALL_DAY_END_TIME,
+    color: "blue",
+  };
+}
+
 export type StoredEvent = {
   title: string;
   description: string | null;
