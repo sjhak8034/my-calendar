@@ -64,6 +64,7 @@
     "nextMonth": "Next month",
     "addEvent": "Add event",
     "moreEvents": "{count} more…",
+    "collapse": "Show less",
     "eventCountOne": "{count} event",
     "eventCountOther": "{count} events",
     "allDay": "All day",

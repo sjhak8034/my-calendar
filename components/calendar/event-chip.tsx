@@ -9,10 +9,11 @@ type Props = {
   lang: Locale;
   segment: ChipSegment & { lane: number };
   allDayLabel: string;
+  collapsed?: boolean; // 3줄을 넘어 접힌 동안 숨기는 막대(주가 펼쳐지면 보인다)
 };
 
 // 일정 한 조각. 그리드 배치(grid-column/row)는 주 오버레이 안에서 style로 지정한다.
-export function EventChip({ lang, segment, allDayLabel }: Props) {
+export function EventChip({ lang, segment, allDayLabel, collapsed }: Props) {
   const color = normalizeEventColor(segment.color);
   const { startCol, endCol, lane, continuesFromPrev, continuesToNext } = segment;
   const isTimed = !segment.allDay && segment.spanDays === 1;
@@ -40,7 +41,8 @@ export function EventChip({ lang, segment, allDayLabel }: Props) {
         gridRow: lane + 1,
       }}
       className={cn(
-        "pointer-events-auto relative z-10 flex data-[dragging]:opacity-40 data-[lifted]:z-20 data-[lifted]:scale-105 data-[lifted]:shadow-lg [-webkit-touch-callout:none] min-w-0 items-center gap-1.5 border px-1 text-[11px] leading-none outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-2 sm:text-xs dark:hover:brightness-110",
+        "pointer-events-auto relative z-10 data-[dragging]:opacity-40 data-[lifted]:z-20 data-[lifted]:scale-105 data-[lifted]:shadow-lg [-webkit-touch-callout:none] min-w-0 items-center gap-1.5 border px-1 text-[11px] leading-none outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-2 sm:text-xs dark:hover:brightness-110",
+        collapsed ? "hidden group-data-[expanded]/week:flex" : "flex",
         COLOR_CLASS[color],
         // 종일·여러 날 일정은 옅은 사선 무늬로 시간이 정해진 일정(무늬 없음)과 구분한다.
         isTimed ? "" : "event-hatch",

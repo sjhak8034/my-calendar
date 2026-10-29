@@ -39,6 +39,8 @@ export function DayCell({
       data-today={isToday || undefined}
       className={cn(
         "relative min-h-[9.5rem] border-r border-b p-1.5 transition-colors last:border-r-0",
+        // 이 주가 펼쳐지면(ExpandableWeek) 일정 줄 수에 맞춰 칸 높이가 늘어난다: 날짜 줄 2.25rem + 줄 높이 1.5rem + 줄 간격 0.25rem + 여백.
+        "group-data-[expanded]/week:min-h-[calc(2.5rem+1.75rem*var(--week-rows))]",
         inMonth
           ? "bg-card hover:bg-muted/30"
           : "bg-muted/40 text-muted-foreground hover:bg-muted/60",
@@ -51,7 +53,7 @@ export function DayCell({
           aria-label={label}
           aria-current={isToday ? "date" : undefined}
           className={cn(
-            "inline-flex size-6 items-center justify-center rounded-full text-[11px] font-medium outline-none sm:text-xs after:absolute after:inset-0 focus-visible:after:ring-3 focus-visible:after:ring-ring/50",
+            "inline-flex size-6 items-center justify-center rounded-full text-[11px] font-medium outline-none [-webkit-touch-callout:none] sm:text-xs after:absolute after:inset-0 focus-visible:after:ring-3 focus-visible:after:ring-ring/50",
             isToday && "bg-foreground text-background",
           )}
         >

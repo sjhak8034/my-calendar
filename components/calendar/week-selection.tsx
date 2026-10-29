@@ -48,7 +48,7 @@ export function WeekSelection({ days }: { days: CalendarDate[] }) {
         <div
           aria-hidden="true"
           data-slot="month-bar-preview"
-          className="pointer-events-none absolute inset-x-0 top-9 z-20 grid grid-cols-7 grid-rows-[repeat(4,1.5rem)] gap-y-1"
+          className="pointer-events-none absolute inset-x-0 top-9 z-20 grid grid-cols-7 grid-rows-[repeat(4,1.5rem)] gap-y-1 group-data-[expanded]/week:grid-rows-[repeat(var(--week-rows),1.5rem)]"
         >
           <div
             style={{ gridColumn: `${bar.startCol + 1} / ${bar.endCol + 2}`, gridRow: preview.lane + 1 }}

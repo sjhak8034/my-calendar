@@ -64,6 +64,7 @@
     "nextMonth": "다음 달",
     "addEvent": "일정 추가",
     "moreEvents": "{count}개 더 보기",
+    "collapse": "접기",
     "eventCountOne": "일정 {count}개",
     "eventCountOther": "일정 {count}개",
     "allDay": "종일",
