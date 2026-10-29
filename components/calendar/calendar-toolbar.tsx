@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   formatMonthParam,
   formatMonthShort,
@@ -8,10 +8,9 @@ import {
   getAdjacentMonth,
   type CalendarDate,
 } from "@/lib/calendar";
+import { NewEventButton } from "@/components/calendar/new-event-button";
 import { SEGMENT_CLASS } from "@/components/calendar/toolbar-styles";
-import { buttonVariants } from "@/components/ui/button";
 import type { Locale } from "@/lib/i18n/config";
-import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 type Props = {
@@ -86,17 +85,8 @@ export function CalendarToolbar({
             <ChevronRight className="size-4" aria-hidden="true" />
           </Link>
         </div>
-        {/* 오늘이 속한 주간 화면으로 가서 사이드바를 연 채 시작한다. */}
-        <Link
-          href={`/${lang}/day/${today}?new=1`}
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "lg" }),
-            "bg-foreground px-4! text-background",
-          )}
-        >
-          <Plus aria-hidden="true" />
-          {dict.addEvent}
-        </Link>
+        {/* 이 화면에서 바로 사이드바를 연다(오늘 하루짜리 종일 일정. 기간은 달력에서 끌어 고르거나 폼의 날짜로 늘린다). */}
+        <NewEventButton date={today} label={dict.addEvent} allDay />
       </div>
     </div>
   );

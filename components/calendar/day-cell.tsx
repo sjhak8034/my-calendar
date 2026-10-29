@@ -13,7 +13,7 @@ type Props = {
 };
 
 // 날짜 칸 배경. 날짜 숫자 링크를 stretched link로 만들어 칸 전체를 클릭 영역으로 쓴다.
-// 일정 칩은 오버레이에서 별도 링크로 위(z-10)에 올라온다.
+// 일정 칩은 오버레이에서 별도 링크로 위(z-10)에 올라온다. data-date는 월간 기간 선택(끌기)이 칸의 날짜를 읽는 데 쓴다.
 export function DayCell({
   lang,
   date,
@@ -33,6 +33,7 @@ export function DayCell({
     <div
       role="gridcell"
       data-slot="day-cell"
+      data-date={date}
       data-in-month={inMonth}
       data-today={isToday || undefined}
       className={cn(

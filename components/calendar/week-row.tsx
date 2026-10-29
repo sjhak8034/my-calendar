@@ -5,6 +5,7 @@ import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import type { WeekData } from "@/lib/events/month-layout";
 import { DayCell } from "./day-cell";
 import { EventChip } from "./event-chip";
+import { WeekSelection } from "./week-selection";
 
 type Props = {
   lang: Locale;
@@ -37,6 +38,8 @@ export function WeekRow({ lang, days, today, data, dict }: Props) {
           />
         ))}
       </div>
+      {/* 기간 선택 하이라이트: 날짜 칸 위, 일정 칩 아래(별도 레이어라 칩의 줄 배치에 영향이 없다). */}
+      <WeekSelection days={days.map((day) => day.date)} />
       <div
         role="presentation"
         data-slot="week-overlay"

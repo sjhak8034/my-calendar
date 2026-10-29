@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { MonthGrid } from "@/components/calendar/month-grid";
+import { MonthSelect } from "@/components/calendar/month-select";
+import { WeekEditorProvider } from "@/components/calendar/week-editor";
 import {
   endOfMonth,
   formatDate,
@@ -57,6 +59,8 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
   const weeks = buildMonthLayout(grid, result.ok ? result.events : []);
 
   return (
+    // 월간 화면에서도 일정 입력창(사이드바)을 연다: 날짜 칸을 끌어 기간을 고르거나 툴바의 "일정 추가".
+    <WeekEditorProvider labels={dict.eventForm} hint={dict.eventForm.rangeHint}>
     <main className={PAGE_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight sm:mb-1">
         {dict.calendar.title}
@@ -83,8 +87,11 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
           {dict.calendar.truncated}
         </p>
       )}
-      <MonthGrid lang={lang} grid={grid} weeks={weeks} today={today} dict={dict.calendar} />
+      <MonthSelect>
+        <MonthGrid lang={lang} grid={grid} weeks={weeks} today={today} dict={dict.calendar} />
+      </MonthSelect>
     </main>
+    </WeekEditorProvider>
   );
 }
 

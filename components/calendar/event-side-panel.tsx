@@ -6,7 +6,7 @@ import { useWeekEditor } from "@/components/calendar/week-editor";
 
 // 오른쪽 사이드바(작은 화면은 아래 시트). 모달이 아니라서 열려 있는 동안에도 그리드를 끌 수 있다.
 export function EventSidePanel() {
-  const { panel, labels, close, closeSession, updateValues } = useWeekEditor();
+  const { panel, labels, hint, close, closeSession, updateValues } = useWeekEditor();
   if (!panel) return null;
   const title = panel.mode === "edit" ? labels.editEvent : labels.newEvent;
   return (
@@ -26,7 +26,7 @@ export function EventSidePanel() {
           <X className="size-4" aria-hidden="true" />
         </button>
       </div>
-      <p className="px-5 pb-2 text-xs text-muted-foreground">{labels.dragHint}</p>
+      <p className="px-5 pb-2 text-xs text-muted-foreground">{hint}</p>
       <EventForm
         key={panel.session}
         mode={panel.mode}

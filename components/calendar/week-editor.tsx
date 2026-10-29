@@ -29,6 +29,7 @@ import {
 import { fromDayRange, type CalendarDate, type DayRange } from "@/lib/calendar";
 import {
   defaultInput,
+  defaultRangeInput,
   fromEvent,
   type EditableEvent,
   type EventInput,
@@ -81,7 +82,9 @@ type WeekEditorContext = {
   dragging: boolean; // 포인터로 끌고 있는 중
   dragInfo: DragInfo | null;
   deleteHover: boolean; // 끄는 블록이 삭제 영역 위에 있음
+  hint: string; // 사이드바 위에 보이는 한 줄 안내(주간은 끌기 안내, 월간은 기간 선택 안내)
   openCreate: (date: CalendarDate, minutes?: number) => void;
+  openCreateRange: (startDate: CalendarDate, endDate: CalendarDate) => void; // 월간에서 기간(종일)으로 새 일정
   openEdit: (event: EditableEvent) => void;
   close: () => void;
   closeSession: (session: number) => void; // 이 세션의 패널일 때만 닫는다
@@ -108,13 +111,15 @@ export function useWeekEditor(): WeekEditorContext {
 
 type Props = {
   labels: EventFormLabels;
+  hint?: string; // 생략하면 labels.dragHint
   initialCreateDate?: CalendarDate; // 월간 화면의 "일정 추가"로 들어오면 사이드바를 연 채 시작
   children: ReactNode;
 };
 
-// 주간 화면의 일정 편집 상태: 사이드바 폼, 그리드의 초안 블록, 드래그 이동·크기 조절, 낙관적 업데이트.
+// 일정 편집 상태: 사이드바 폼, 그리드의 초안 블록, 드래그 이동·크기 조절, 낙관적 업데이트.
+// 주간 화면이 주로 쓰고, 월간 화면은 사이드바와 새 일정 초안(기간 선택)만 쓴다(드래그·삭제 영역은 월간에서 유휴 상태).
 // 드래그 이벤트 처리는 drag-session, 낙관적 덮어쓰기는 use-event-overrides에 있다.
-export function WeekEditorProvider({ labels, initialCreateDate, children }: Props) {
+export function WeekEditorProvider({ labels, hint, initialCreateDate, children }: Props) {
   const [panel, setPanel] = useState<Panel | null>(() =>
     initialCreateDate
       ? { mode: "create", eventId: null, values: defaultInput(initialCreateDate), session: 1 }
@@ -178,6 +183,18 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       mode: "create",
       eventId: null,
       values: defaultInput(date, minutes),
+      session: ++sessionCounter.current,
+    });
+  }, [remember]);
+
+  // 월간 그리드에서 끌어 고른 기간(또는 툴바의 오늘 하루)으로 종일 일정 초안을 연다.
+  const openCreateRange = useCallback((startDate: CalendarDate, endDate: CalendarDate) => {
+    remember();
+    setError(null);
+    setPanel({
+      mode: "create",
+      eventId: null,
+      values: defaultRangeInput(startDate, endDate),
       session: ++sessionCounter.current,
     });
   }, [remember]);
@@ -364,7 +381,9 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       dragging,
       dragInfo,
       deleteHover,
+      hint: hint ?? labels.dragHint,
       openCreate,
+      openCreateRange,
       openEdit,
       close,
       closeSession,
@@ -383,7 +402,9 @@ export function WeekEditorProvider({ labels, initialCreateDate, children }: Prop
       dragging,
       dragInfo,
       deleteHover,
+      hint,
       openCreate,
+      openCreateRange,
       openEdit,
       close,
       closeSession,

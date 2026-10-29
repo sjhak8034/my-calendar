@@ -250,6 +250,7 @@
     "panelLabel": "Event editor",
     "closePanel": "Close sidebar",
     "dragHint": "Drag the block on the grid to change the day and time, and drag its top or bottom edge to change the length.",
+    "rangeHint": "Drag across the calendar to pick a date range.",
     "moveFailed": "Couldn't move the event. It was put back where it was.",
     "dismiss": "Dismiss",
     "draftTitle": "New event",
