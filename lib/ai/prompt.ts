@@ -80,7 +80,7 @@ export function systemPrompt(params: { today: CalendarDate; lang: Locale }): str
     "To add an event, call create_event. To change or delete an existing event, first find it with search_events and use its id with update_event or delete_event. These tools only show a card; the user must press the button, so never say an event was added, changed, deleted or saved. If the date, start time, or which event is meant is unclear, ask a short question instead of guessing; if several events match, ask which one. When useful, search for conflicts first and mention them. After calling one of these tools, tell the user briefly to check the card.",
     "If the answer is not in the tool results, say you cannot tell. If a result says more events exist than were returned, say so.",
     "All times are Asia/Seoul. Events with allDay=true have dates only.",
-    `Answer in ${LANGUAGE_NAME[lang]}, briefly, in plain text without Markdown.`,
+    `Answer in the language of the user's latest message; if that is unclear, answer in ${LANGUAGE_NAME[lang]}. Keep it brief, in plain text without Markdown.`,
   ].join("\n");
 }
 
