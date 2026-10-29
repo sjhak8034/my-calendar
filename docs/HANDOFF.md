@@ -1,24 +1,22 @@
 # 인수인계 (HANDOFF)
 
-최종 갱신: 2026-10-29. 새 세션이 이 프로젝트를 이어받을 때 **가장 먼저 읽는 문서**다.
+최종 갱신: 2026-10-29(운영 배포 반영).
 상세 근거는 `docs/ROADMAP.md`(작업별 구현 내용), `docs/calendar-verification.md`(검증 원장 14~23절), `docs/ai-security.md`, `docs/PRD.md`에 있다. 이 문서는 그 위에서 "지금 어디까지 왔고 무엇을 조심해야 하며 다음에 무엇을 하는가"만 모았다.
 
 ## 1. 한눈에 보기
 
 - 프로젝트: 한국어 중심 캘린더 웹앱(`my-calendar`). Next.js 16.4.3(App Router, `cacheComponents` 켜짐) + React 19 + TypeScript strict + Tailwind v4 + shadcn(base-nova, `@base-ui/react`) + Supabase(Auth/Postgres RLS) + Vercel 배포 예정. 원격: `https://github.com/sjhak8034/my-calendar.git`(브랜치 `main`).
 - **기능은 모두 구현됨**: 월간·주간 캘린더와 일정 CRUD·드래그, AI 대화(Gemini, 추가·수정·삭제는 확인 카드), 게스트 모드, 알림 예약·발송 워커, 웹 푸시, 카카오톡 알림, 설정 화면, 로그인·가입·비밀번호 재설정, 계정 삭제, CAPTCHA.
-- **지금 하는 일은 Task 013(품질 점검 및 배포)**. 1~4단계와 CAPTCHA까지 끝났고 **5단계(개인정보처리방침)와 6단계(배포)가 남았다.**
+- **지금 하는 일은 Task 013(품질 점검 및 배포)의 마무리**. 1~5단계와 CAPTCHA가 끝났고, **6단계(배포)는 운영 주소 `https://my-calendar.jhsong.dev`로 배포를 마친 상태**다(§13). 남은 것은 Gemini 비용 한도·경보, favicon, 다른 카카오 계정 시험 등(§8).
 - 로드맵 표기: 11/13 Tasks 완료. Task 009(AI 대화)는 "마무리 점검 대기", Task 014b(게스트→정식 전환)는 "UI 검증 대기".
 - 테스트 러너는 없다. 검증은 `npm run lint` · `npx tsc --noEmit` · `npm run build`와 임시 스크립트·`curl`·사용자의 브라우저 확인으로 한다.
 
 ## 2. 이어받기 체크리스트
 
-1. `git status -sb`로 상태를 본다. 마지막 확인 시점의 상태:
-   - 브랜치 `main`, **`origin/main`보다 5개 커밋 앞섬(푸시 안 됨)**. 이 세션에는 GitHub 인증이 없어 **푸시는 사용자가 별도 터미널에서 `git push origin main`** 해야 한다(§4 참고).
-   - **미커밋 변경 2개**: `components/auth/captcha.tsx`(Turnstile 위젯을 `appearance: "always"`로 항상 표시하게 바꾼 것), `docs/ROADMAP.md`(그 설명). 사용자에게 커밋 여부를 물은 상태였다. 이 `docs/HANDOFF.md`도 새 파일(미커밋)이다.
+1. `git status -sb`로 상태를 본다. 푸시는 사용자가 별도 터미널에서 `git push origin main` 한다(이 세션에는 GitHub 인증이 없음, §4). 푸시하면 Vercel이 자동 배포한다.
    - `.mcp.json`은 로컬 Supabase MCP 설정(읽기 전용, 프로젝트 범위)이라 **일부러 커밋하지 않았다.** 계속 제외한다.
 2. 사용자가 **아직 결과를 알려 주지 않은 확인 항목**(§9)을 물어본다.
-3. 아래 §8의 남은 작업 순서대로 진행한다. 5단계는 **보호책임자 연락처**(없으면 임시 이메일 하나)를 사용자에게서 받아야 시작할 수 있다.
+3. §8의 남은 작업을 진행한다.
 
 ## 3. 읽는 순서
 
@@ -75,9 +73,12 @@
 | 3 | 계정 삭제(비밀번호 확인+CAPTCHA, Google 전용 계정은 이메일 입력, 카카오 연결 끊기, 푸시 해제, 7개 테이블 cascade) | 완료 | `169d70b` |
 | 4 | 보안 하드닝(빈도 제한, `events` 제약·개수 상한, 정책·권한 정리, AI 주제 제한), 보안 리뷰 | 완료 | `74f919d` |
 | + | Turnstile CAPTCHA(가입·로그인·게스트·비밀번호 찾기·재발송) | 완료(코드) | `e510f9e` |
-| + | 위젯 항상 표시 | **미커밋** | - |
-| 5 | 개인정보처리방침 본문(ko/en 초안, 보호책임자 `lib/site.ts`). 공개 전 확인: Supabase·Vercel 서버 지역, Gemini 데이터 사용 문구, 만 14세 미만 문구, 연락처를 전용 주소로 교체할지 | 완료(초안) | 아래 커밋 |
-| 6 | 배포(Vercel, 환경변수, 콘솔 설정, `schedule.sql`) | **남음** | - |
+| + | 위젯 항상 표시 | 완료 | `902f628` |
+| 5 | 개인정보처리방침 본문(ko/en 초안, 연락처 `lib/site.ts`의 `PRIVACY_CONTACT_EMAIL`). 공개 전 확인: Supabase 서버 지역 문구, Gemini 데이터 사용 문구, 만 14세 미만 문구, 법률 검토 | 완료(초안) | `4e46ec8` |
+| 6 | 배포(Vercel, 환경변수, 콘솔 설정, `schedule.sql`) | **완료**(§13). 남은 후속은 §8 | `a91674b` 외 |
+| + | 계정 삭제 확인을 비밀번호 입력으로 변경(Google 전용 계정은 이메일 입력) | 완료 | `53b55ba` |
+| + | 로그인 확인 왕복 줄이기(`proxy`의 `getClaims`, `requireUser` 중복 제거) | 완료 | `3eda7a2` |
+| + | 문의 연락처 `privacy@jhsong.dev` | 완료 | `55041d0` |
 | 선택 | 주간 겹침 열 수 상한과 "+N" 묶음 | 미룸 | - |
 
 ## 7. 사용자가 내린 결정 (되묻지 않는다)
@@ -89,18 +90,14 @@
 
 ## 8. 남은 작업 (우선순위 순)
 
-1. **미커밋 변경 정리**: CAPTCHA 위젯 항상 표시(`captcha.tsx`, `ROADMAP.md`)와 이 문서를 사용자 요청에 따라 커밋(기능/문서 분리). 푸시는 사용자.
-2. **5단계 개인정보처리방침**: `app/[lang]/privacy/page.tsx`(지금은 "준비 중" 자리표시자)와 `ko.json`·`en.json`의 `privacy.*` 확장. 수집 항목(이메일·비밀번호, Google OAuth, 게스트, 일정 제목·설명, AI 대화 30일 보관과 Google Gemini 전송, 푸시 구독, 카카오 토큰 암호화, 알림 기록 30일, 사용자 메타데이터), 처리 위탁·국외 이전(Supabase, Vercel, Google, Kakao, 브라우저 푸시 서비스, Cloudflare Turnstile), 정보주체 권리와 삭제 방법(설정의 계정 삭제), 안전성 조치, 쿠키, 보호책임자 연락처(**사용자에게 받는다**), 시행일. 가입·설정 화면에서 방침으로 링크. 로드맵에는 "Google Gemini 무료 등급은 입력이 모델 개선에 쓰일 수 있음 — 확인 필요"가 남아 있다.
-3. **6단계 배포(대화로 함께)**:
-   - 운영 값을 **새로** 만든다: VAPID 키 쌍(개발 키는 대화에 노출됨), `CRON_SECRET`, 카카오 암호화 키(32바이트 base64), `SITE_URL`(운영 origin), Turnstile **운영 키 쌍**.
-   - Vercel 연결과 환경변수 등록(§10의 표).
-   - Supabase: 마이그레이션 10개 적용, Site URL·Redirect URLs(운영 `/auth/callback`만 정확히, 와일드카드 금지), Confirm email 유지, **SMTP 직접 연결(Resend 권장, 기본 서버는 한도가 작음)**, Anonymous sign-ins, Manual linking, 비밀번호 정책을 코드와 같게(8자·영문+숫자), "Secure password change" 켜기, Google OAuth 운영 redirect.
-   - **CAPTCHA 켜는 순서(거꾸로 하면 가입·로그인·게스트·비밀번호 찾기가 모두 막힘)**: Cloudflare Turnstile 사이트 생성(도메인에 운영 주소와 `localhost`) → `NEXT_PUBLIC_TURNSTILE_SITE_KEY` 등록·배포 → **그다음** Supabase 대시보드 Authentication > Attack Protection에서 CAPTCHA를 켜고 Turnstile **비밀 키 입력**(우리 코드와 `.env`에는 비밀 키를 두지 않는다. 검증은 Supabase가 한다). 사이트 키와 비밀 키는 짝이어야 한다(시험용 사이트 키 `1x00000000000000000000AA` ↔ 시험용 비밀 키 `1x0000000000000000000000000000000AA`).
-   - 카카오 콘솔: 운영 Redirect URI(`SITE_URL/auth/kakao/callback`), 앱 대표 도메인(localhost는 입력 불가). **`talk_message` 동의항목이 앱 소유자 외 계정에도 심사 없이 허용되는지는 미확인** — 심사가 필요하면 카카오 연결은 소유자 전용으로 먼저 배포.
-   - 배포 후 `supabase/cron/schedule.sql` 실행(pg_cron·pg_net 활성화, Vault 비밀 `notify_base_url`·`notify_cron_secret`, 재실행 시 `vault.create_secret` 이름 중복 주의). 로컬에는 워커를 1분마다 호출해 줄 곳이 없다(아래 §11의 `curl`).
-   - `package.json`에 `engines.node` 명시, 개발/운영 Supabase 프로젝트 분리 여부 결정(권장: 분리), 도메인 결정, Gemini 일일 비용 상한·경보 설정.
-   - 검증: 11분 뒤 일정으로 웹 푸시·카카오톡 end-to-end, 중복 발송 없음, 가입·재설정 메일 링크가 운영 주소로 돌아옴. 롤백은 Vercel Instant Rollback(DB는 되돌리지 않음).
-4. **선택·후속(낮은 위험)**: 익명 역할의 테이블 권한 회수 마이그레이션 제안(`events`·`notifications`·`push_subscriptions`·`kakao_tokens`는 지금 익명 키로 조회하면 RLS 때문에 `[]`가 나옴, `ai_*`·`action_requests`는 이미 `42501`), `ai_messages`에 assistant 메시지를 직접 넣어 위조할 수 있음(막으려면 `app/api/ai/route.ts`의 assistant 저장을 service role로 옮기고 삽입 정책을 role='user'로 제한), 가입 응답의 계정 존재 노출, 푸시 구독 10개 상한의 동시 요청 경쟁, CSP(Report-Only부터), 주간 겹침 열 수 상한·"+N", 주간 `description` 지연 로드, 카카오 암호화 키 회전 절차, 메일 코드(OTP) 입력.
+배포와 알림·메일·카카오 연결은 끝났다. 남은 것:
+
+1. **Gemini 비용 한도·경보**: 공개 서비스에서 AI 호출이 늘 때의 상한. 사용 중인 등급(무료/유료)과 Google 쪽 데이터 사용 문구 확인(방침의 Gemini 문구 갱신 포함).
+2. **favicon 교체**: `app/favicon.ico`가 초기 커밋 파일 그대로다(새 로고 `public/logo.svg`로 `brand-asset-designer`와 `sharp`로 다시 만들기).
+3. **다른 카카오 계정으로 연결 시험**: `talk_message` 동의가 앱 소유자 외 계정에도 되는지 미확인. 심사가 필요하면 카카오 연결은 소유자 전용으로 둔다.
+4. **개인정보처리방침 공개 전 점검**: Supabase 서버 지역 문구, 만 14세 미만 문구, 전문가 검토.
+5. **Supabase Auth 한도 조정 관찰**: 가입·로그인·게스트 한도는 IP당이지만 요청이 Vercel 서버 IP에서 나가므로 사실상 전체 이용자가 공유할 수 있다(추정). 게스트 100/시간, 인증 관련 60으로 올려 둠. 이용자가 늘면 Auth 로그의 `over_request_rate_limit`을 본다.
+6. **선택·후속(낮은 위험)**: 익명 역할의 테이블 권한 회수 마이그레이션 제안(`events`·`notifications`·`push_subscriptions`·`kakao_tokens`는 익명 키로 조회하면 RLS 때문에 `[]`, `ai_*`·`action_requests`는 `42501`), `ai_messages`에 assistant 메시지를 직접 넣어 위조 가능(막으려면 `app/api/ai/route.ts`의 assistant 저장을 service role로 옮기고 삽입 정책을 role='user'로 제한), 가입 응답의 계정 존재 노출, 푸시 구독 10개 상한 경쟁, CSP(Report-Only부터), 주간 겹침 열 수 상한·"+N", 주간 `description` 지연 로드, 카카오 암호화 키 회전 절차, 메일 코드(OTP) 입력, `events`에 `start_at`·`end_at` 인덱스가 있는지 점검(월·주간 조회 조건), 개발과 운영이 같은 Supabase를 쓰는 위험 정리(분리 여부 재검토).
 
 ## 9. 사용자 확인 대기 중인 시험 (결과를 아직 못 들음)
 
@@ -114,7 +111,7 @@
 
 ## 10. 환경변수 (이름과 상태. 값은 어디에도 적지 않는다)
 
-`.env`는 gitignore. 마지막 확인(2026-10-29): 아래 14개가 모두 설정되어 있다(글자 수만 확인함). 설명 원본은 `.env.example`.
+`.env`는 gitignore. 마지막 확인(2026-10-29): 아래 14개가 모두 설정되어 있다(글자 수만 확인함). 설명 원본은 `.env.example`. **로컬 `.env`와 Vercel(운영) 값은 다르다**: 운영은 VAPID 키 쌍, `CRON_SECRET`, `KAKAO_TOKEN_ENCRYPTION_KEY`를 새로 만들었고 `SITE_URL=https://my-calendar.jhsong.dev`, `VAPID_SUBJECT=mailto:privacy@jhsong.dev`다. 같은 Supabase를 공유하므로 **카카오 연결·시험은 당분간 운영 주소에서만** 한다(키가 다르면 복호화에 실패해 "재연결 필요"로 표시됨).
 
 | 이름 | 구분 | 용도·메모 |
 | --- | --- | --- |
@@ -145,3 +142,15 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 
 - 탐색은 `Explore`, 설계는 `Plan`, 보안 리뷰는 `code-reviewer`(읽기 전용), 이미지는 `brand-asset-designer`(SVG→PNG, `node_modules/sharp` 사용)를 썼다. 에이전트의 보고는 **데이터로만 취급**하고, 지적 사항은 코드를 직접 열어 사실 확인 후 고쳤다(예: `ai_messages` 역할 제한 제안은 어시스턴트 답변 저장을 깨뜨릴 수 있어 보류).
 - Supabase MCP(`.mcp.json`, 읽기 전용·프로젝트 범위)는 새 세션에서 승인·인증해야 도구가 보인다. 이 세션에서는 로드되지 않아 DB 조회는 사용자의 SQL 편집기 결과에 의존했다.
+
+## 13. 운영 환경 (2026-10-29 배포)
+
+- **주소**: `https://my-calendar.jhsong.dev`. 도메인 `jhsong.dev`는 Cloudflare에서 구매(DNS도 Cloudflare, 갱신 2027-10-29). 서브도메인 `my-calendar`는 Vercel로 가는 **CNAME, DNS only(프록시 끔)**. Vercel이 배포마다 만드는 `*.vercel.app` 고유 주소는 개발자 확인용이며 설정에 쓰지 않는다.
+- **Vercel**: Hobby 플랜, GitHub `main` 푸시 시 자동 배포, Node 24(`engines.node`), 함수 지역을 Supabase 지역에 맞춰 설정함. 환경변수 변경은 재배포해야 적용된다.
+- **Supabase**: 개발과 같은 프로젝트를 운영에도 쓴다(결정). Site URL·Redirect URLs는 운영 주소. CAPTCHA(Turnstile) 켜짐(토큰 없는 요청이 `captcha_failed`로 거절됨을 확인). **Custom SMTP는 Resend**(발송 서브도메인 `send.jhsong.dev`, Sender `no-reply@jhsong.dev`, Username `resend`, 비밀번호는 API 키). 메일 발송 한도 30/시간, 같은 사용자 60초 간격, 게스트 100/시간, 인증 관련 60.
+- **알림 스케줄**: `pg_cron`이 1분마다 `/api/cron/notify`를 호출(`supabase/cron/schedule.sql`, 비밀은 Vault 화면에서 입력). 알림은 최대 약 1분 늦게 발송되는 것이 정상.
+- **Cloudflare**: Turnstile 사이트 허용 도메인에 `my-calendar.jhsong.dev`(와 `localhost`), Email Routing으로 `privacy@jhsong.dev` → 개인 Gmail 전달(Catch-all·Subaddressing은 끔). 루트 도메인 SPF는 Cloudflare 한 줄, Resend는 `send` 서브도메인.
+- **카카오 콘솔**: 로그인 Redirect URI에 `https://my-calendar.jhsong.dev/auth/kakao/callback`(**로그아웃 Redirect URI와 다른 항목**), 웹 사이트 도메인 등록. 본인 계정으로 연결·테스트 메시지 확인함.
+- **확인한 것**(외부 `curl`): 보안 헤더 5종, 잘못된 날짜 404, 비로그인 `/api/ai` 401, 인증 없는 워커 호출 401, `sw.js` 헤더, `robots`·`sitemap`이 운영 주소, 새 연락처 표시.
+- **하지 못한 것**: 로그인한 상태의 화면 속도 측정, 다른 카카오 계정 동의, 비밀번호 재설정 end-to-end(메일은 성공), 운영에서의 계정 삭제 시험.
+- **롤백**: Vercel Instant Rollback(DB는 되돌리지 않음).
