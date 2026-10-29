@@ -103,7 +103,7 @@
    - 사용량 조회: `select date_trunc('day', created_at) as day, model, count(*) as questions, sum(prompt_tokens) as prompt, sum(completion_tokens) as completion from public.ai_usage group by 1,2 order by 1 desc;`. 부풀려진 첫 행(2026-10-29 09:13 UTC, `usage_rounds`>`rounds`)은 버그 수정 전 기록이라 집계에서 빼거나 지운다.
 2. (완료) favicon은 교체했다(`8d9dcc7`). 구글 검색 결과 아이콘 반영은 며칠 걸린다.
 3. **다른 카카오 계정으로 연결 시험**: `talk_message` 동의가 앱 소유자 외 계정에도 되는지 미확인. 심사가 필요하면 카카오 연결은 소유자 전용으로 둔다.
-4. **개인정보처리방침 공개 전 점검**: Supabase 서버 지역 문구, 만 14세 미만 문구, 전문가 검토.
+4. **개인정보처리방침 공개 전 점검**: Supabase 서버 지역은 사용자가 "아시아(도쿄 또는 싱가포르)"라고 답해 방침에 "국외(아시아 지역)"로만 적었다(정확한 지역을 알게 되면 구체화), 만 14세 미만은 가입할 수 없다는 문구를 넣었다(나이 확인 기능은 없음), 남은 것은 Gemini API 약관 원문 확인과 전문가 검토.
 5. **Supabase Auth 한도 조정 관찰**: 가입·로그인·게스트 한도는 IP당이지만 요청이 Vercel 서버 IP에서 나가므로 사실상 전체 이용자가 공유할 수 있다(추정). 게스트 100/시간, 인증 관련 60으로 올려 둠. 이용자가 늘면 Auth 로그의 `over_request_rate_limit`을 본다.
 6. **선택·후속(낮은 위험)**: 익명 역할의 테이블 권한 회수 마이그레이션 제안(`events`·`notifications`·`push_subscriptions`·`kakao_tokens`는 익명 키로 조회하면 RLS 때문에 `[]`, `ai_*`·`action_requests`는 `42501`), `ai_messages`에 assistant 메시지를 직접 넣어 위조 가능(막으려면 `app/api/ai/route.ts`의 assistant 저장을 service role로 옮기고 삽입 정책을 role='user'로 제한), 가입 응답의 계정 존재 노출, 푸시 구독 10개 상한 경쟁, CSP(Report-Only부터), 주간 겹침 열 수 상한·"+N", 주간 `description` 지연 로드, 카카오 암호화 키 회전 절차, 메일 코드(OTP) 입력, `events`에 `start_at`·`end_at` 인덱스가 있는지 점검(월·주간 조회 조건), 개발과 운영이 같은 Supabase를 쓰는 위험 정리(분리 여부 재검토).
 

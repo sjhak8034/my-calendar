@@ -123,7 +123,7 @@
       {
         "heading": "4. Service providers and overseas transfer",
         "body": [
-          "The Service uses the companies below, and your information is stored on or sent to their servers, which may be outside Korea. We will confirm the exact server locations and add them here before the public launch."
+          "The Service uses the companies below, and your information is stored on or sent to their servers. The database (Supabase) servers are located overseas (in the Asia region)."
         ],
         "items": [
           "Supabase: sign-in, the database (accounts, events, AI chats, notification history), and authentication emails.",
@@ -162,7 +162,13 @@
         ]
       },
       {
-        "heading": "8. Changes",
+        "heading": "8. Age requirement",
+        "body": [
+          "You must be at least 14 years old to sign up. If we learn that an account belongs to someone under 14, we may delete the account and its data."
+        ]
+      },
+      {
+        "heading": "9. Changes",
         "body": [
           "If this policy changes, we will update this page with the new effective date."
         ]
