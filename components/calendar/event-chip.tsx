@@ -39,6 +39,8 @@ export function EventChip({ lang, segment, allDayLabel }: Props) {
       className={cn(
         "pointer-events-auto relative z-10 flex min-w-0 items-center gap-1.5 border px-1 text-[11px] leading-none outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-2 sm:text-xs dark:hover:brightness-110",
         COLOR_CLASS[color],
+        // 종일·여러 날 일정은 옅은 사선 무늬로 시간이 정해진 일정(무늬 없음)과 구분한다.
+        isTimed ? "" : "event-hatch",
         continuesFromPrev ? "ml-0 rounded-l-none border-l-0" : "ml-0.5 rounded-l-md",
         continuesToNext ? "mr-0 rounded-r-none border-r-0" : "mr-0.5 rounded-r-md",
       )}

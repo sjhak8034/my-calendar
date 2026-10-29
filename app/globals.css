@@ -232,3 +232,13 @@
     @apply font-sans;
   }
 }
+
+/* 월간 그리드의 종일·기간 일정 막대에 얹는 옅은 사선 무늬(시간이 정해진 일정 칩과 구분한다).
+   글자색(currentColor)을 쓰므로 8가지 색과 다크 모드에 따로 맞추지 않아도 된다. */
+@utility event-hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 5px,
+    color-mix(in oklab, currentColor 14%, transparent) 5px 6px
+  );
+}

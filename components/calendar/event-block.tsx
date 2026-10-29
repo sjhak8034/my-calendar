@@ -3,7 +3,7 @@
 import { type ComponentProps, type ReactNode } from "react";
 import { COLOR_CLASS } from "@/components/calendar/event-colors";
 import { useWeekEditor } from "@/components/calendar/week-editor";
-import { toDayRange, GRID_START_HOUR, type DayRange, type EventColor } from "@/lib/calendar";
+import { eventDateSpan, toDayRange, GRID_START_HOUR, type DayRange, type EventColor } from "@/lib/calendar";
 import { fromEvent, type EditableEvent } from "@/lib/events/input";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +44,9 @@ export function EventBlock({
 }: Props) {
   const editor = useWeekEditor();
   const range = variant === "block" ? draggableRange(event) : null;
+  // 종일·여러 날 일정은 월간 막대와 같은 옅은 사선 무늬로 시간이 정해진 일정(무늬 없음)과 구분한다.
+  const span = eventDateSpan(event.start_at, event.end_at);
+  const dateBased = event.all_day || span.start !== span.end;
   // 이 일정을 끌고 있는 동안 원래 자리에는 옅은 잔상만 남긴다. 놓으면 낙관적 업데이트로 이 블록 자체가
   // 새 위치에 그려지므로 따로 숨기거나 도착을 기다릴 필요가 없다.
   const dragging = editor.preview?.eventId === event.id && editor.dragging;
@@ -73,6 +76,7 @@ export function EventBlock({
         "group cursor-pointer outline-none duration-150 motion-reduce:transition-none hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 dark:hover:brightness-110",
         VARIANT_CLASS[variant],
         COLOR_CLASS[color],
+        dateBased && "event-hatch",
         range && "cursor-grab select-none active:cursor-grabbing",
         dragging ? "opacity-30 transition-[filter,opacity]" : "transition-[filter]",
         className,
