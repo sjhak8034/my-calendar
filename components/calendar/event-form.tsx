@@ -134,6 +134,9 @@ export function EventForm({
     });
   }
 
+  // 새 종일 일정(월간에서 만듦)은 시각이 없어서 시각 입력을 숨긴다. 수정에서는 기존처럼 항상 보인다.
+  const showTimes = !(mode === "create" && values.allDay);
+
   const err = (field: keyof EventErrors) => {
     const code = errors[field];
     return code ? message(code) : null;
@@ -161,16 +164,24 @@ export function EventForm({
           />
         </Field>
 
-        <div className="flex items-center justify-between gap-3">
-          <Label htmlFor={id("all-day")}>{labels.allDay}</Label>
-          <Switch
-            id={id("all-day")}
-            checked={values.allDay}
-            onCheckedChange={setAllDay}
-          />
-        </div>
+        {/* 새 일정에는 종일 스위치를 두지 않는다: 주간에서 만들면 시간 일정, 월간에서 만들면 종일 일정(시각 없음)으로 정해진다. 기존 일정 수정에서는 바꿀 수 있다. */}
+        {mode === "edit" && (
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor={id("all-day")}>{labels.allDay}</Label>
+            <Switch
+              id={id("all-day")}
+              checked={values.allDay}
+              onCheckedChange={setAllDay}
+            />
+          </div>
+        )}
 
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,8rem)] gap-x-3 gap-y-4">
+        <div
+          className={cn(
+            "grid gap-x-3 gap-y-4",
+            showTimes ? "grid-cols-[minmax(0,1fr)_minmax(0,8rem)]" : "grid-cols-2",
+          )}
+        >
           <Field label={labels.startDate} htmlFor={id("start-date")}>
             <Input
               id={id("start-date")}
@@ -181,6 +192,7 @@ export function EventForm({
               onChange={(e) => setStartDate(e.target.value)}
             />
           </Field>
+          {showTimes && (
           <Field label={labels.startTime} htmlFor={id("start-time")}>
             <Input
               id={id("start-time")}
@@ -191,6 +203,7 @@ export function EventForm({
               onChange={(e) => set("startTime", e.target.value)}
             />
           </Field>
+          )}
           {errors.start && (
             <FieldError id={id("start-error")} className="col-span-2 -mt-2">
               {err("start")}
@@ -207,6 +220,7 @@ export function EventForm({
               onChange={(e) => set("endDate", e.target.value)}
             />
           </Field>
+          {showTimes && (
           <Field label={labels.endTime} htmlFor={id("end-time")}>
             <Input
               id={id("end-time")}
@@ -217,6 +231,7 @@ export function EventForm({
               onChange={(e) => set("endTime", e.target.value)}
             />
           </Field>
+          )}
           {errors.end && (
             <FieldError id={id("end-error")} className="col-span-2 -mt-2">
               {err("end")}
