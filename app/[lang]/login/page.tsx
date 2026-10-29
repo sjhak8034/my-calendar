@@ -9,9 +9,10 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { buttonVariants } from "@/components/ui/button";
 import { hasLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { PRIVACY_CONTACT_EMAIL } from "@/lib/site";
 
 // 언어와 무관한 문의 메일 주소
-const CONTACT_EMAIL = "thdwjdgkr123@gmail.com";
+const CONTACT_EMAIL = PRIVACY_CONTACT_EMAIL;
 
 export default function LoginPage(props: PageProps<"/[lang]/login">) {
   // searchParams는 요청 시점 데이터이므로 Suspense 안에서 읽는다.

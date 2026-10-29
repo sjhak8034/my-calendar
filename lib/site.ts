@@ -12,4 +12,4 @@ export function siteUrl(): string {
 }
 
 // 개인정보 보호책임자 연락처. 개인정보처리방침에 표시된다.
-export const PRIVACY_CONTACT_EMAIL = "thdwjdgkr123@gmail.com";
+export const PRIVACY_CONTACT_EMAIL = "privacy@jhsong.dev";
