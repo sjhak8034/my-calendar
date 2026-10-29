@@ -60,7 +60,7 @@ export function WeekSelection({ days }: { days: CalendarDate[] }) {
               bar.continuesToNext ? "mr-0 rounded-r-none border-r-0" : "mr-0.5 rounded-r-md",
             )}
           >
-            <span className="min-w-0 flex-1 truncate font-semibold">{preview.title}</span>
+            <span className="min-w-0 flex-1 truncate leading-snug font-semibold">{preview.title}</span>
           </div>
         </div>
       )}

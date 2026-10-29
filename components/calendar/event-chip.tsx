@@ -63,7 +63,8 @@ export function EventChip({ lang, segment, allDayLabel }: Props) {
           className="absolute inset-y-0 right-0 z-10 w-2 cursor-ew-resize rounded-r-md hover:bg-foreground/15"
         />
       )}
-      <span className="min-w-0 flex-1 truncate font-semibold">{segment.title}</span>
+      {/* leading-none인 막대 안에서 truncate(넘치면 숨김)가 한글 윗부분을 자르지 않도록 제목만 줄 높이를 넉넉히 둔다. */}
+      <span className="min-w-0 flex-1 truncate leading-snug font-semibold">{segment.title}</span>
       {time && (
         <span className="hidden shrink-0 font-normal sm:inline">{time}</span>
       )}

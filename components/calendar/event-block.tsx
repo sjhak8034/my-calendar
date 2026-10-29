@@ -20,7 +20,7 @@ const VARIANT_CLASS = {
   // 종일 막대: 주 전체 그리드(grid-column/row는 style로 지정). 월간 막대와 같은 모양
   bar: "flex h-6 min-w-0 items-center border px-1 text-left text-[11px] leading-none sm:px-2 sm:text-xs",
   // 6시 이전 칩: 제목 + 시각 두 줄
-  chip: "flex w-full min-w-0 flex-col items-start rounded-md border px-1.5 py-1 text-left text-[11px] leading-tight",
+  chip: "flex w-full min-w-0 flex-col items-start rounded-md border px-0.5 py-1 text-left text-[11px] leading-tight sm:px-1.5",
 } as const;
 
 // 끌어 옮기거나 크기를 바꿀 수 있는 일정인지: 하루 안에 있고 06:00 이후에 시작하는 시간 일정

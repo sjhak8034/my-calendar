@@ -28,6 +28,7 @@ import { SlotCreate } from "@/components/calendar/slot-create";
 import { NowLine } from "@/components/calendar/now-line";
 import { ScrollToSelected } from "@/components/calendar/scroll-to-selected";
 import { useWeekEditor } from "@/components/calendar/week-editor";
+import { WeekAgenda } from "@/components/calendar/week-agenda";
 import { WeatherIcon } from "@/components/weather/weather-icon";
 import { useDayWeather } from "@/components/weather/weather-provider";
 import { applyRange, type EditableEvent } from "@/lib/events/input";
@@ -52,8 +53,8 @@ type Props = {
 
 const ROW = "grid grid-cols-[var(--time-col)_repeat(7,minmax(0,1fr))]";
 // 시간 눈금 열: 가로 스크롤해도 왼쪽에 고정. 비치지 않도록 카드 배경을 깐다.
-const GUTTER = "sticky left-0 z-30 bg-card text-right text-[11px] text-muted-foreground";
-const GUTTER_LABEL = "flex items-start justify-end pt-2.5 pr-2 leading-tight";
+const GUTTER = "sticky left-0 z-30 bg-card text-right text-[10px] text-muted-foreground sm:text-[11px]";
+const GUTTER_LABEL = "flex items-start justify-end pt-2.5 pr-1 leading-tight break-keep sm:pr-2";
 // 선택한 날짜 열의 옅은 배경
 const SELECTED_BG = "data-selected:bg-muted/60";
 
@@ -86,15 +87,18 @@ function WeekHeaderLink({
       href={`/${lang}/day/${date}`}
       aria-label={weather ? `${name}, ${weather.description}` : name}
       aria-current={isToday ? "date" : undefined}
-      className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
+      className="flex min-h-[4.75rem] w-full flex-col items-center justify-start gap-0.5 pt-1.5 outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset sm:min-h-14 sm:justify-center sm:pt-0"
     >
-      <span aria-hidden="true" className="flex items-center gap-1.5">
-        <WeatherIcon date={date} className="size-4" />
-        <span className="text-xs font-medium text-muted-foreground sm:text-[13px]">{weekday}</span>
+      {/* 휴대폰(열이 좁음)은 세로로 쌓는다: 요일, 날짜, 날씨 아이콘, 최고 기온. sm부터는 한 줄 + 아래 최저/최고 기온. */}
+      <span aria-hidden="true" className="flex flex-col items-center gap-0.5 sm:flex-row sm:gap-1.5">
+        <span className="order-last sm:order-none">
+          <WeatherIcon date={date} className="sm:size-4" />
+        </span>
+        <span className="text-[10px] font-medium text-muted-foreground sm:text-[13px]">{weekday}</span>
         <span
           data-slot="day-number"
           className={cn(
-            "flex size-7 items-center justify-center rounded-full text-sm font-semibold",
+            "flex size-6 items-center justify-center rounded-full text-xs font-semibold sm:size-7 sm:text-sm",
             isToday && "bg-foreground text-background",
           )}
         >
@@ -102,7 +106,12 @@ function WeekHeaderLink({
         </span>
       </span>
       <span data-slot="week-temps" aria-hidden="true" className="h-3 text-[10px] leading-3 whitespace-nowrap text-muted-foreground">
-        {weather?.temps}
+        {weather && (
+          <>
+            <span className="sm:hidden">{weather.tempMax}°</span>
+            <span className="hidden sm:inline">{weather.temps}</span>
+          </>
+        )}
       </span>
     </Link>
   );
@@ -151,9 +160,11 @@ export function WeekGrid({
       .join(", ");
 
   return (
+    <>
     <div
       data-slot="week-grid"
-      className="isolate overflow-hidden rounded-xl border bg-card shadow-xs [--day-min:6rem] [--hour-h:3.5rem] [--time-col:4rem]"
+      // 휴대폰은 7일이 한 화면에 다 보이게 열 최소 너비를 없애고 눈금 열을 좁히며 카드를 화면 가장자리까지 넓힌다. sm부터는 열 최소 6rem(가로 스크롤).
+      className="isolate -mx-3 overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs [--day-min:0px] [--hour-h:3.5rem] [--time-col:2rem] sm:mx-0 sm:rounded-xl sm:border-x sm:[--day-min:6rem] sm:[--time-col:4rem]"
     >
       {/* 스크롤 영역 자체에 이름을 둔다. 안에 포커스 가능한 링크·버튼이 항상 있어 tabIndex는 두지 않는다.
           scroll-padding: 가로는 고정 눈금 열, 세로는 sticky 영역(상한 기준 폴백, 실제 높이는 ScrollToSelected가 갱신) */}
@@ -163,7 +174,7 @@ export function WeekGrid({
         data-slot="week-scroll"
         role="group"
         aria-label={dict.gridLabel}
-        className="max-h-[max(24rem,calc(100dvh-7rem))] scroll-pt-[16.5rem] scroll-pl-[var(--time-col)] overflow-auto lg:max-h-[max(28rem,calc(100dvh-15rem))]"
+        className="max-h-[min(26rem,55dvh)] scroll-pt-[16.5rem] scroll-pl-[var(--time-col)] overflow-auto sm:max-h-[max(24rem,calc(100dvh-7rem))] lg:max-h-[max(28rem,calc(100dvh-15rem))]"
       >
         <div className="min-w-[calc(var(--time-col)+7*var(--day-min))]">
           {/* 위에 붙는 영역: 헤더 + 종일 + 6시 이전 */}
@@ -286,12 +297,14 @@ export function WeekGrid({
                   key={i}
                   data-slot="hour-label"
                   className={cn(
-                    "absolute right-2 leading-none whitespace-nowrap",
+                    "absolute right-1 leading-none whitespace-nowrap sm:right-2",
                     i > 0 ? "-translate-y-1/2" : "translate-y-1",
                   )}
                   style={{ top: `${(i / HOURS) * 100}%` }}
                 >
-                  {formatHourLabel(START_HOUR + i, lang)}
+                  {/* 좁은 눈금 열(휴대폰)에서는 24시간제 숫자만 */}
+                  <span className="sm:hidden">{(START_HOUR + i) % 24}</span>
+                  <span className="hidden sm:inline">{formatHourLabel(START_HOUR + i, lang)}</span>
                 </span>
               ))}
             </div>
@@ -336,6 +349,8 @@ export function WeekGrid({
         </div>
       </ScrollToSelected>
     </div>
+    <WeekAgenda lang={lang} selectedDate={selectedDate} events={Object.values(eventsById)} dict={dict} />
+    </>
   );
 }
 
@@ -411,7 +426,7 @@ function TimedBlock({
   return (
     <li
       data-slot="week-event"
-      className="absolute z-10 px-[3px] py-px transition-[top,height,left,width] duration-150 ease-out motion-reduce:transition-none"
+      className="absolute z-10 px-px py-px transition-[top,height,left,width] duration-150 ease-out motion-reduce:transition-none sm:px-[3px]"
       style={{
         top: `${top}%`,
         height: `${height}%`,
@@ -431,7 +446,7 @@ function TimedBlock({
             ? "flex flex-col justify-center py-0 leading-tight"
             : "flex items-center gap-1.5 py-0 leading-none",
           minutes < 30 && "text-[11px]",
-          clipped ? "pr-4 pl-1.5" : "px-1.5",
+          clipped ? "pr-3 pl-0.5 sm:pr-4 sm:pl-1.5" : "px-0.5 sm:px-1.5",
           block.clippedTop && "rounded-t-none border-t-0",
           block.clippedBottom && "rounded-b-none border-b-0",
         )}
@@ -451,7 +466,10 @@ function TimedBlock({
         <span
           data-slot="event-title"
           title={block.title}
-          className={cn("block min-w-0 truncate font-semibold", !twoLines && "flex-1")}
+          className={cn(
+            "block min-w-0 text-[10px] leading-snug font-semibold break-keep [overflow-wrap:anywhere] sm:text-xs sm:truncate",
+            !twoLines && "flex-1",
+          )}
         >
           {block.title}
         </span>
@@ -460,7 +478,7 @@ function TimedBlock({
           <span
             data-slot="event-time"
             className={cn(
-              "block truncate font-normal",
+              "hidden truncate leading-snug font-normal sm:block",
               twoLines ? "mt-0.5 text-[11px]" : "shrink-0 text-[11px]",
             )}
           >
@@ -515,7 +533,7 @@ function AllDayBarItem({
       <span
         data-slot="event-title"
         title={bar.title}
-        className="min-w-0 flex-1 truncate font-semibold"
+        className="min-w-0 flex-1 truncate leading-snug font-semibold"
       >
         {bar.title}
       </span>
@@ -546,11 +564,11 @@ function EarlyChip({
       <span
         data-slot="event-title"
         title={early.title}
-        className="block w-full min-w-0 truncate font-semibold"
+        className="block w-full min-w-0 text-[10px] leading-snug font-semibold break-keep [overflow-wrap:anywhere] sm:text-[11px] sm:truncate"
       >
         {early.title}
       </span>
-      <span data-slot="event-time" className="block w-full truncate font-normal">
+      <span data-slot="event-time" className="hidden w-full truncate leading-snug font-normal sm:block">
         {formatTime(early.startAt, lang)}
       </span>
     </EventBlock>

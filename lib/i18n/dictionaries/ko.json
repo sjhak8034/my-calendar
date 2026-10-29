@@ -219,6 +219,8 @@
     "allDayEvent": "종일 일정",
     "continuesFromPrevious": "이전 시간에서 이어짐",
     "selectedDay": "선택한 날짜",
+    "agendaLabel": "선택한 날짜의 일정",
+    "noEventsOnDay": "이 날은 일정이 없어요",
     "eventLabel": "{title}, {time}",
     "continuesToNext": "다음 시간으로 이어짐"
   },

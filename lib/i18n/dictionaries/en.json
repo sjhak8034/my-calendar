@@ -219,6 +219,8 @@
     "allDayEvent": "All-day event",
     "continuesFromPrevious": "Continues from earlier",
     "selectedDay": "Selected day",
+    "agendaLabel": "Events on the selected day",
+    "noEventsOnDay": "No events on this day",
     "eventLabel": "{title}, {time}",
     "continuesToNext": "Continues later"
   },

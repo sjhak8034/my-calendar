@@ -26,12 +26,17 @@ export function BlockText({
         twoLines ? "flex-col justify-center leading-tight" : "items-center gap-1.5 leading-none",
       )}
     >
-      <span className={cn("block min-w-0 truncate font-semibold", !twoLines && "flex-1")}>
+      <span
+        className={cn(
+          "block min-w-0 text-[10px] leading-snug font-semibold break-keep [overflow-wrap:anywhere] sm:text-xs sm:truncate",
+          !twoLines && "flex-1",
+        )}
+      >
         {title}
       </span>
       <span
         className={cn(
-          "block truncate text-[11px] font-normal tabular-nums",
+          "hidden truncate text-[11px] leading-snug font-normal tabular-nums sm:block",
           twoLines ? "mt-0.5" : "shrink-0",
         )}
       >
