@@ -91,6 +91,7 @@
           "Guest mode: a temporary account with no email. It is deleted as soon as you sign out.",
           "Events: title, description, start and end time, all-day flag, and color.",
           "AI chat: the questions you type and the AI's answers. The titles, descriptions, and times of events needed for the conversation are sent to the AI.",
+          "AI usage records: when you ask a question and how many tokens it used (no question or answer content). Used for cost control and abuse prevention.",
           "Web push: this browser's push subscription (endpoint and encryption keys) and your language.",
           "KakaoTalk reminders: if you connect, the access and refresh tokens issued by Kakao, stored encrypted. We don't receive your Kakao profile or friends.",
           "Notification history: the event title, type, channel, result, and time of reminders we sent.",
@@ -111,6 +112,7 @@
         "items": [
           "Account and events: until you delete your account. \"Delete account\" in Settings removes them right away.",
           "AI chat: 30 days after your last message. You can delete the whole history sooner from the chat window.",
+          "AI usage records (token counts): 90 days. When you delete your account, only numbers no longer linked to you remain.",
           "Notification history: deleted after 30 days.",
           "Guest account and data: deleted when you sign out. If you never sign out, deleted after 30 days without use.",
           "Push subscriptions: removed when you sign out, turn push off, or delete your account.",
