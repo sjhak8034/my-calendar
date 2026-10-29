@@ -1,6 +1,6 @@
 # 인수인계 (HANDOFF)
 
-최종 갱신: 2026-10-30(월간 편집 기능 푸시 완료 §14, 날씨 표시 구현·미커밋 §15).
+최종 갱신: 2026-10-30(월간 편집 기능 푸시 완료 §14, 날씨 표시 커밋·푸시 완료 §15).
 상세 근거는 `docs/ROADMAP.md`(작업별 구현 내용), `docs/calendar-verification.md`(검증 원장 14~23절), `docs/ai-security.md`, `docs/PRD.md`에 있다. 이 문서는 그 위에서 "지금 어디까지 왔고 무엇을 조심해야 하며 다음에 무엇을 하는가"만 모았다.
 
 ## 1. 한눈에 보기
@@ -15,7 +15,7 @@
 
 1. `git status -sb`로 상태를 본다. 푸시는 사용자가 별도 터미널에서 `git push origin main` 한다(이 세션에는 GitHub 인증이 없음, §4). 푸시하면 Vercel이 자동 배포한다.
    - `.mcp.json`은 로컬 Supabase MCP 설정(읽기 전용, 프로젝트 범위)이라 **일부러 커밋하지 않았다.** 계속 제외한다.
-2. **날씨 표시 작업이 구현됐고 아직 커밋 전이다(§15).** 작업 트리에 변경이 보이면 §15의 파일 목록과 맞는지 확인한다. 그 앞 작업(월간 편집, §14)은 푸시까지 끝났다.
+2. 2026-10-30 기준 작업 트리는 깨끗하고(`.mcp.json` 제외) `origin/main`과 같다. 미커밋 변경이 보이면 이전 세션이 남긴 것이니 `git diff`로 먼저 확인한다. 최근 작업은 §14(월간 편집), §15(날씨).
 3. 사용자가 **아직 결과를 알려 주지 않은 확인 항목**(§9)을 물어본다.
 4. §8의 남은 작업을 진행한다.
 
@@ -86,7 +86,7 @@
 | + | favicon을 새 로고(`icon-512`)로 교체 | 완료 | `8d9dcc7` |
 | + | AI가 질문한 언어로 답변(화면 언어 고정 해제) | 완료 | `25796fe` |
 | + | 월간 그리드 편집: 날짜 칸을 끌어 기간 일정 만들기, 종일·여러 날 일정 사선 무늬, 막대 클릭 수정, 막대 끌어 이동·양 끝 늘이기(§14) | 완료(푸시됨) | `6795444`·`214cba0`·`8ed9f2b`·`1f3bb24` 외 |
-| + | 날짜별 날씨·기온 표시(월간 아이콘, 주간 아이콘+기온, 브라우저 위치, Open-Meteo, §15) | 구현됨(미커밋, 실제 화면 확인 대기) | - |
+| + | 날짜별 날씨·기온 표시(월간 아이콘, 주간 아이콘+기온, 브라우저 위치, Open-Meteo, §15) | 구현됨(푸시됨, 실제 화면 확인 대기) | `9a21635` |
 | 선택 | 주간 겹침 열 수 상한과 "+N" 묶음 | 미룸 | - |
 
 ## 7. 사용자가 내린 결정 (되묻지 않는다)
@@ -171,7 +171,7 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 - **확인한 것**(외부 `curl`): 보안 헤더 5종, 잘못된 날짜 404, 비로그인 `/api/ai` 401, 인증 없는 워커 호출 401, `sw.js` 헤더, `robots`·`sitemap`이 운영 주소, 새 연락처 표시.
 - **하지 못한 것**: 로그인한 상태의 화면 속도 측정, 다른 카카오 계정 동의, 비밀번호 재설정 end-to-end(메일은 성공), 운영에서의 계정 삭제 시험.
 - **롤백**: Vercel Instant Rollback(DB는 되돌리지 않음).
-- **날씨(2026-10-30, 푸시 전)**: 브라우저가 `api.open-meteo.com`을 직접 호출한다(CSP가 없어 막히지 않음). 보안 헤더 `Permissions-Policy`가 `geolocation=(self)`로 바뀌어 **배포 뒤 헤더 확인**(`curl -I`)이 필요하다. 환경변수·DB 변경 없음. 방침 시행일이 2026-10-30으로 바뀜. Open-Meteo 무료는 비상업·출처 표기 조건(§15).
+- **날씨(2026-10-30, 푸시됨)**: 브라우저가 `api.open-meteo.com`을 직접 호출한다(CSP가 없어 막히지 않음). 보안 헤더 `Permissions-Policy`가 `geolocation=(self)`로 바뀌어 **배포 뒤 헤더 확인**(`curl -I`)이 필요하다. 환경변수·DB 변경 없음. 방침 시행일이 2026-10-30으로 바뀜. Open-Meteo 무료는 비상업·출처 표기 조건(§15).
 - **AI**: Gemini 유료, 지출 한도 설정, 모델 `gemini-3.5-flash-lite`. 질문별 토큰은 Vercel Logs의 `[ai] usage` 줄과 `ai_usage` 표(서버만 쓰기, 90일 보관, 계정 삭제 시 `user_id`는 null)에 남는다. 스트리밍 요청에 `stream_options.include_usage`가 있어야 사용량이 오고, 사용량은 한 스트림 안에서 누적값이 반복되므로 호출마다 **마지막 값만** 쓴다. 답변 언어는 질문 언어를 따르고 불분명하면 화면 언어. 질문 시험 세트(검색·추가·모호한 날짜·수정·삭제·영어·주제 이탈·프롬프트 주입)로 13건을 돌려 `missing_usage=0` 확인.
 - **배포 순서 주의**: DB 마이그레이션이 필요한 코드는 **마이그레이션을 먼저 적용한 뒤 푸시**한다(예: `ai_usage`).
 
@@ -199,11 +199,11 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 
 **조정할 수 있는 값**(사용자가 요청하면): 미리 보기가 같은 줄의 다른 막대를 가리는 정도(`week-selection.tsx`의 `z-20`·`shadow-md`), 무늬 세기(`app/globals.css`의 `14%`·`5px`), 양 끝 잡는 부분 폭(`event-chip.tsx`의 `w-2`, 8px), 끌기 시작 거리(`month-select.tsx`의 `DRAG_SLOP_PX`). 후속 아이디어(요청 없음): 여러 날 시간 일정의 양 끝 늘이기, 터치 끌기.
 
-## 15. 최근 작업: 날짜별 날씨·기온 표시(2026-10-30, **미커밋**)
+## 15. 최근 작업: 날짜별 날씨·기온 표시(2026-10-30, 커밋·푸시 완료)
 
 **요청**: 월간 그리드 날짜 옆에 날씨 아이콘, 주간 그리드 요일 앞에 날씨와 그 아래 작게 기온. **사용자 결정**: 지역=브라우저 위치(못 받으면 서울), 범위=오늘부터 약 2주 예보, 주간 기온=머리글 한 줄 아래. 월간은 아이콘만(기온은 툴팁)으로 이해해 구현함(사용자가 따로 정정하지 않음).
 
-**미커밋 파일(`git status`로 확인)**: 새로 `lib/weather/{codes,forecast}.ts`, `components/weather/{weather-provider,weather-icon}.tsx`. 수정 `app/[lang]/(app)/{layout,page}.tsx`, `app/[lang]/(app)/day/[date]/page.tsx`(출처 표기, 스켈레톤 `3.5rem`), `components/calendar/{day-cell,week-grid}.tsx`, `next.config.ts`(`geolocation=(self)`), `lib/i18n/dictionaries/{ko,en}.json`(`weather` 섹션, 방침 3곳+시행일), 문서 4개. 제안 커밋: `✨ feat: 월간·주간 그리드에 날짜별 날씨 아이콘과 기온 표시`(코드) + `📝 docs: …`.
+**커밋 `9a21635`(코드)·`cb8c550`(문서), 푸시 확인(`origin/main`과 같음). 변경 파일**: 새로 `lib/weather/{codes,forecast}.ts`, `components/weather/{weather-provider,weather-icon}.tsx`. 수정 `app/[lang]/(app)/{layout,page}.tsx`, `app/[lang]/(app)/day/[date]/page.tsx`(출처 표기, 스켈레톤 `3.5rem`), `components/calendar/{day-cell,week-grid}.tsx`, `next.config.ts`(`geolocation=(self)`), `lib/i18n/dictionaries/{ko,en}.json`(`weather` 섹션, 방침 3곳+시행일), 문서 4개.
 
 **구현 요점**
 - 데이터: `https://api.open-meteo.com/v1/forecast?daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul&forecast_days=16`. 응답의 **마지막 날은 값이 null**이라 `parseForecast`가 날짜별로 건너뛴다. 좌표는 `roundCoord`로 소수 둘째 자리.
@@ -214,6 +214,7 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 **확인한 것**: `tsc`·`lint`·`build`, 순수 함수 44건, 진짜 Chromium 28건(실제 컴포넌트, Open-Meteo 응답만 모의: 부산/서울 좌표, 월간·주간 표시, 캐시, 실패·이상한 응답, 높이 안정, 아이콘 위 클릭), 실제 Open-Meteo 응답 모양·CORS, 빌드 결과의 `Permissions-Policy` 헤더. 상세는 `calendar-verification.md` 27절. **확인하지 못한 것**(사용자 확인 대기): 실제 위치 허용 창과 내 지역 날씨, 다크 모드, 작은 화면 주간 머리글 폭, Safari·Firefox, 방침 문구.
 
 **주의·제한**
+- **운영 배포 확인 대기**: 푸시 직후(같은 날) `curl -I`로 본 운영 `Permissions-Policy`는 아직 `geolocation=()`이었다(배포가 끝나기 전으로 보임, 확정 아님). 배포 완료 뒤 `geolocation=(self)`로 바뀌었는지 다시 확인한다. 바뀌지 않으면 Vercel 배포 상태를 본다.
 - **개발 서버를 재시작해야** `Permissions-Policy` 변경이 반영된다(`next.config.ts`). 재시작 전에는 위치 요청이 차단돼 서울 날씨만 보인다.
 - **Open-Meteo 무료 이용은 비상업 용도·출처 표기 조건**이다(그리드 아래 "날씨 제공: Open-Meteo" 링크로 충족). 앱이 수익을 내면 유료 플랜이 필요하다. 서비스를 바꾸려면 `lib/weather/forecast.ts`(URL·파서)만 고치면 된다.
 - 하루 단위 예보(시간대별 없음), 날씨 끄기 설정 없음, 첫 방문에 위치 허용 창이 뜸. 후속 아이디어(요청 없음): 설정에서 도시 선택·끄기, 섭씨/화씨.
