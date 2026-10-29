@@ -1,6 +1,6 @@
 # 인수인계 (HANDOFF)
 
-최종 갱신: 2026-10-29(운영 배포, AI 비용 관리 반영).
+최종 갱신: 2026-10-29(월간 편집 기능 진행 중, §14).
 상세 근거는 `docs/ROADMAP.md`(작업별 구현 내용), `docs/calendar-verification.md`(검증 원장 14~23절), `docs/ai-security.md`, `docs/PRD.md`에 있다. 이 문서는 그 위에서 "지금 어디까지 왔고 무엇을 조심해야 하며 다음에 무엇을 하는가"만 모았다.
 
 ## 1. 한눈에 보기
@@ -15,8 +15,9 @@
 
 1. `git status -sb`로 상태를 본다. 푸시는 사용자가 별도 터미널에서 `git push origin main` 한다(이 세션에는 GitHub 인증이 없음, §4). 푸시하면 Vercel이 자동 배포한다.
    - `.mcp.json`은 로컬 Supabase MCP 설정(읽기 전용, 프로젝트 범위)이라 **일부러 커밋하지 않았다.** 계속 제외한다.
-2. 사용자가 **아직 결과를 알려 주지 않은 확인 항목**(§9)을 물어본다.
-3. §8의 남은 작업을 진행한다.
+2. **미커밋 변경이 있으면 §14를 먼저 읽는다**(월간 일정 수정·끌기 작업이 코드·문서 모두 커밋 전이다).
+3. 사용자가 **아직 결과를 알려 주지 않은 확인 항목**(§9)을 물어본다.
+4. §8의 남은 작업을 진행한다.
 
 ## 3. 읽는 순서
 
@@ -38,7 +39,8 @@
 - 새 라우트 폴더를 만들면 개발 서버가 못 알아볼 때가 있다(404). 파일을 `touch`하거나 재시작한다. `PageProps<"/[lang]/새경로">` 타입 오류가 나면 `npx next typegen`으로 타입을 다시 만든다.
 - **`.env`는 자동 모드가 읽기·쓰기를 거부한다.** 값은 읽지 않고 `grep -cE "^이름=" .env`와 `${#v}`로 **줄 수와 글자 수만** 확인하는 패턴을 쓴다. 값 입력과 수정은 사용자가 직접 한다. 사용자가 `.env`에 키를 붙이다 **줄바꿈 없이 이어 붙인 사고**(`SITE_URL=...NEXT_PUBLIC_TURNSTILE_SITE_KEY=...`)가 한 번 있었고 지금은 고쳐져 있다. `.env` 수정을 안내할 때는 "새 줄에 쓰세요"를 강조한다.
 - **GitHub 푸시 불가**: 원격이 HTTPS이고 이 세션에 `gh`·자격 증명이 없다. Windows의 Git 자격 증명 관리자를 빌려 쓰려는 시도는 보안 검사가 거부했다(우회하지 않는다).
-- **브라우저 도구 없음**: Claude in Chrome은 WSL에서 지원되지 않는다. 화면을 보려면 사용자가 스크린샷을 저장하게 하고(`/mnt/c/Users/thdwj/Downloads` 또는 `Pictures/Screenshots`) `Read`로 이미지를 읽는다.
+- **진짜 브라우저 시험이 가능하다(2026-10-29 발견)**: Claude in Chrome은 WSL에서 안 되지만 `playwright-core`로 `chromium-headless-shell`을 받아(`~/.cache/ms-playwright`, 약 120MB) 헤드리스 Chromium을 띄울 수 있다. 로그인이 필요한 실제 앱 화면은 못 열지만(운영과 같은 Supabase라 시험 계정을 만들지 않는다), **앱의 Tailwind 빌드 CSS(`.next/static/chunks/*.css`)와 같은 구조의 모의 그리드에 실제 클라이언트 컴포넌트를 올려 실제 마우스 입력으로 시험**할 수 있다(§14의 방법). 서버 전용 모듈과 서버 액션은 esbuild 플러그인으로 모의 구현에 바꿔 번들한다. 그 밖의 화면 확인은 여전히 사용자가 스크린샷을 저장해 주거나 직접 본다.
+- **(구) 브라우저 도구 없음**: Claude in Chrome은 WSL에서 지원되지 않는다. 화면을 보려면 사용자가 스크린샷을 저장하게 하고(`/mnt/c/Users/thdwj/Downloads` 또는 `Pictures/Screenshots`) `Read`로 이미지를 읽는다.
 - **임시 검증 방법**: 서버 전용 모듈(`import "server-only"`)은 일반 Node에서 못 불러서, 그 한 줄을 뺀 사본을 `mktemp -d`에 만들어 `node --input-type=module -e`로 돌리고 지운다(별칭 `@/…` import는 상대 경로로 바꿈). 가짜 `fetch`/`navigator`로 외부 호출과 브라우저 API를 검증한 사례가 `calendar-verification.md`에 많다. 로컬에 Postgres가 없어 **SQL은 실행해 보지 못한다**(적용 후 사용자 확인에 의존).
 - **Next.js 16 + cacheComponents 규칙**: 현재 시각·세션(`getUser`)을 읽는 서버 코드는 `await connection()`을 **먼저** 부르고 `<Suspense>` 안에서 실행한다. 빠뜨리면 `blocking-prerender-current-time` 오류가 난다(설정 페이지에서 실제로 겪음). `error.tsx`는 클라이언트 컴포넌트, 루트 레이아웃이 `[lang]`이라 맞지 않는 주소는 `app/[lang]/[...rest]/page.tsx`가 `notFound()`로 받는다.
 - `proxy.ts`(루트): `/api/cron/*`은 로그인 검사 없이 통과(라우트가 `CRON_SECRET`을 직접 검증), `/api/*`는 세션 갱신 후 비로그인 401, matcher가 `/auth/*`와 점(`.`)이 있는 경로를 제외(그 라우트는 스스로 로그인 확인), 잘못된 날짜 경로는 `NextResponse.rewrite`로 404. **인코딩이 깨진 경로(`/day/%ZZ`)는 rewrite하면 500이 나므로 건드리지 않는다.**
@@ -167,3 +169,27 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 - **롤백**: Vercel Instant Rollback(DB는 되돌리지 않음).
 - **AI**: Gemini 유료, 지출 한도 설정, 모델 `gemini-3.5-flash-lite`. 질문별 토큰은 Vercel Logs의 `[ai] usage` 줄과 `ai_usage` 표(서버만 쓰기, 90일 보관, 계정 삭제 시 `user_id`는 null)에 남는다. 스트리밍 요청에 `stream_options.include_usage`가 있어야 사용량이 오고, 사용량은 한 스트림 안에서 누적값이 반복되므로 호출마다 **마지막 값만** 쓴다. 답변 언어는 질문 언어를 따르고 불분명하면 화면 언어. 질문 시험 세트(검색·추가·모호한 날짜·수정·삭제·영어·주제 이탈·프롬프트 주입)로 13건을 돌려 `missing_usage=0` 확인.
 - **배포 순서 주의**: DB 마이그레이션이 필요한 코드는 **마이그레이션을 먼저 적용한 뒤 푸시**한다(예: `ai_usage`).
+
+## 14. 진행 중인 작업: 월간 그리드 편집(2026-10-29, **미커밋**)
+
+**커밋된 것**(푸시됨): 월간에서 날짜 칸을 끌어 기간 일정 만들기(`b0277e9`·`6795444`), 종일·여러 날 일정 사선 무늬 `event-hatch`(월간·주간, `214cba0`), 코드 리뷰 수정(`8ed9f2b`).
+
+**미커밋(작업 트리, `git status`로 확인)**: 월간에서 ① 일정 막대를 눌러 수정 입력창 열기, ② 막대를 끌어 통째로 이동·종일 막대 양 끝으로 시작일/종료일 변경, ③ 끄는 동안 막대가 칸에 맞춰 새 날짜 자리로 옮겨 그려짐(여러 주 막대는 모든 주에서), ④ 막대는 5px만 움직여도 바로 끌기 시작. 파일: `app/[lang]/(app)/page.tsx`, `components/calendar/{month-select.tsx, week-selection.tsx, event-chip.tsx, day-cell.tsx, event-side-panel.tsx, week-editor.tsx, range-select-session.ts}`, `lib/calendar/selection.ts`, 문서 3개(`PRD.md`·`ROADMAP.md`·`calendar-verification.md`). 같은 파일을 함께 고쳐서 **한 커밋 + 문서 커밋**으로 묶자고 제안해 둔 상태(`✨ feat: 월간에서 일정 막대를 눌러 수정하고 끌어서 이동·늘이기`, `📝 docs: …`). 사용자는 아직 커밋을 요청하지 않았다(화면 확인 뒤 알려 주기로 함).
+
+**사용자 결정**: 막대 클릭 수정은 **B 방식**(월간 조회가 `description`까지 가져옴, 자르지 않음), 끌기는 **통째로 이동 + 양 끝 늘이기**, 놓은 뒤 표시는 **서버 저장 후 갱신**(낙관적 업데이트 없음, 새 자리 막대 미리 보기가 서버 응답까지 유지됨).
+
+**구현 요점**
+- 월간 페이지가 `WeekEditorProvider`(+`hint`, `hintEdit=""`)와 `MonthSelect events={editableEvents}`로 감싼다. 막대는 서버 컴포넌트 링크이고 `data-event-id`·`data-handle`(종일 막대의 진짜 양 끝만)만 달며, `MonthSelect`가 포인터·클릭을 **이벤트 위임**으로 처리한다(`onClickCapture`: 끌기 직후 클릭 억제 → 일반 왼쪽 클릭이면 `openEdit`, Ctrl·⌘·Shift·Alt·가운데 버튼은 링크대로, 데이터 없으면 링크대로).
+- 끌기 세션 `range-select-session.ts`는 `startRangeSelect({pointerId, anchor|point, root, slopPx?, compute?, callbacks})`. 날짜 칸을 누르면 **다른 칸에 들어가야 시작**(한 칸 안 흔들림은 날짜 상세 이동), 막대는 `slopPx=5`. `compute`로 이동(`shiftSpan`)·시작일(`withStart`)·종료일(`withEnd`) 규칙을 넘긴다(`lib/calendar/selection.ts`). 칸 위치는 세션 시작 시 측정·캐시하고 스크롤·리사이즈에서 버린다. Esc(캡처, `stopPropagation`)·`blur`(끌기 중이면 클릭 억제)·`pointercancel`·`buttons===0` 처리.
+- 저장은 기존 `updateEvent(id, {...fromEvent(event), startDate, endDate})`. 새 서버 입구 없음. 끄는 동안·저장 중의 막대 미리 보기는 `MonthSelect`의 `PreviewContext`(`BarPreview`: 구간·제목·색·무늬·줄)로 내려 주고, 각 주의 `WeekSelection`이 칩 레이어와 같은 격자(`top-9`, 4줄)에 `z-20`으로 그린다(`data-slot="month-bar-preview"`, 줄은 칩의 `data-lane`). 원래 막대는 `data-dragging`으로 흐려진다.
+- 월간 종일·기간 막대에는 `event-hatch`(globals.css `@utility`), 주간 `EventBlock`도 같은 기준(`all_day || 시작날짜≠종료날짜`).
+
+**확인한 것**: `tsc`·`lint`·`build` 통과, 순수 함수·세션 상태 흐름 임시 스크립트, **진짜 Chromium**: 실제 컴포넌트 전체(제공자·`MonthSelect`·`MonthGrid`/`WeekRow`/`DayCell`/`EventChip`·`buildMonthLayout`, `next/link`·서버 동작만 모의)로 20건(여러 주 막대 이동·늘이기 미리 보기가 모든 주에 그려짐, 저장 값, 저장 중 유지 → 새 데이터 도착 시 사라짐, 3px 클릭 = 수정창, 8px 제자리 = 무동작, 날짜 칸 끌기 회귀 없음). **확인하지 못한 것**(사용자 확인 대기): 로그인한 실제 앱 화면에서의 끌기·새 자리 막대 미리 보기·막대 클릭 수정, 사선 무늬의 세기·가독성(8가지 색·다크 모드), 서버 응답까지의 지연 체감, 작은 화면, 수정 입력창 안내문 숨김, 키보드로 막대를 열었을 때 포커스. 사용자가 "복제 막대가 안 따라온다/하이라이트만 보인다", 이어서 "막대가 움직이지 않는다"고 보고함. Supabase 로그로 저장(`PATCH` 200)과 재조회는 정상임을 확인했고, 대상이 여러 주에 걸친 종일 일정이라 포인터를 따라다니던 복제 막대(한 주 조각 크기)가 원래 자리와 겹치거나 그리드 밖으로 삐져나와 움직이지 않는 것처럼 보였던 것으로 판단, 복제 막대를 없애고 칸에 맞춘 미리 보기로 바꿈(실제 앱에서 재확인 필요).
+
+**알려진 제한**: 양 끝 늘이기는 종일 막대만(여러 날 시간 일정은 이동만), 터치는 끌기 없음(막대를 눌러 연 입력창의 날짜 칸을 쓴다), 수정 중에 빈 칸을 끌면 새 일정 폼으로 교체, 월간 데이터가 커짐(설명 포함, 일정 상한 2,000건), 저장하지 않은 초안은 달 이동 시 남을 수도 사라질 수도 있음.
+
+**진짜 브라우저 시험 방법**(작업 폴더는 `$CLAUDE_JOB_DIR/tmp`, 세션이 끝나면 지워지므로 필요할 때 다시 만든다): ① 임시 폴더에 `npm i jsdom esbuild playwright-core`, `npx playwright-core install chromium-headless-shell`. ② `esbuild`로 `@/…` 별칭(프로젝트 `tsconfig.json` 사용)을 풀어 클라이언트 컴포넌트를 번들하되 `@/components/calendar/week-editor`와 `@/lib/events/actions`는 `onResolve` 플러그인으로 모의 구현(`useWeekEditor` 값, `updateEvent`)으로 교체. 더 정확하게는 `week-editor`는 실제 것을 쓰고 `next/link`(→ `<a>`)와 `@/lib/events/actions`만 모의해, 실제 `WeekEditorProvider`·`MonthSelect`·`MonthGrid`(서버 컴포넌트지만 순수 JSX라 브라우저에서 그려짐)·`buildMonthLayout`·`ko.json`으로 그린다(데이터 갱신은 `root.render`로 새 events를 다시 넣어 흉내). ③ CSS는 `grep -l event-hatch .next/dev/static/chunks/*.css`(개발 서버) 또는 `.next/static/chunks/*.css`(빌드)로 찾아 복사. ④ Playwright `page.mouse.move/down/up`으로 입력해 `[data-slot="month-bar-preview"]`·`[data-dragging]` 등을 검사. 실제 앱 로그인은 운영 DB를 공유해 시험 계정을 만들지 않으므로, 실제 동작 확인은 Supabase 로그(`edge_logs`의 `PATCH /rest/v1/events`와 직후 재조회)로 보조한다.
+
+**코딩 중 겪은 함정**: ESLint `react-hooks/refs`는 **렌더 중 ref 읽기를 금지**한다(끌고 있는 막대 정보는 상태로). `Write`로 파일을 덮어쓰기 전에 외부에서 바뀌었다면 "File has been modified since read"가 나므로 다시 `Read`한다. `getEventsForRange`는 `includeDescription`이 없으면 `description`을 주지 않는다. 서울 시간대 변환기(`Intl.DateTimeFormat`)는 `lib/calendar/date.ts` 모듈 상단에서 한 번만 만든다. `cn`은 tailwind-merge가 아니다(충돌 클래스는 직접 피한다).
+
+**다음 할 일**: 사용자가 실제 화면에서 끌기·새 자리 막대 미리 보기·막대 클릭 수정을 확인한 결과를 알려 주면 필요한 조정(미리 보기가 같은 줄의 다른 막대를 가리는 정도, 무늬 세기 `app/globals.css`의 `14%`·`5px`, 잡는 부분 폭 8px, `DRAG_SLOP_PX`)을 하고, 커밋을 요청하면 위 제안대로 묶어 커밋한다. 푸시는 사용자.
