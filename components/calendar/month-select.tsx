@@ -64,8 +64,7 @@ type Saving = { eventId: string; span: DateSpan; bar: BarLook; events: readonly 
 
 // 서버가 그린 월간 그리드를 감싸 마우스 끌기(기간 선택, 일정 막대 이동·늘이기)와 막대 클릭(수정)을 처리하고 상태를 나눠 준다.
 // 그리드(children)는 서버 렌더 결과 그대로라 선택이 바뀌어도 다시 그려지지 않고, 각 주의 하이라이트 레이어(WeekSelection)만 갱신된다.
-// 터치는 일정 막대를 길게 눌러야 끌 수 있고(아이폰 캘린더와 같은 방식), 날짜 칸 끌기(기간 만들기)는 지원하지 않는다(화면 스크롤과 겹침).
-// 터치에서 날짜 칸은 그대로 링크이고, 새 일정은 툴바의 "일정 추가"·막대를 눌러 연 입력창의 날짜 칸을 쓴다.
+// 터치는 일정 막대나 날짜 칸을 길게(약 0.4초) 눌러야 끌 수 있다(아이폰 캘린더와 같은 방식, 문지르면 스크롤·짧게 누르면 링크/수정).
 export function MonthSelect({ events, children }: { events: readonly EditableEvent[]; children: ReactNode }) {
   const { panel, labels, selectRange, openEdit, updateValues, reportError } = useWeekEditor();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -152,9 +151,10 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
       bar?: BarLook; // 일정 막대를 끌 때: 끄는 동안 이 모양의 막대를 새 날짜 자리에 그린다
       compute?: (origin: CalendarDate, current: CalendarDate) => DateSpan;
       slopPx?: number; // 이만큼 움직이면 바로 끌기(일정 막대)
+      startActive?: boolean; // 시작하자마자 끌기 상태(터치로 날짜 칸을 길게 눌렀을 때)
     },
   ) {
-    const { anchor, event, bar, compute, slopPx } = params;
+    const { anchor, event, bar, compute, slopPx, startActive } = params;
     setDragBar(bar ?? null);
     stop.current = startRangeSelect({
       pointerId: e.pointerId,
@@ -162,6 +162,7 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
       point: { x: e.clientX, y: e.clientY },
       root: e.currentTarget,
       slopPx,
+      startActive,
       compute,
       callbacks: {
         onChange: (range) => {
@@ -188,7 +189,7 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     suppressClick.current = false;
     if (stop.current) return;
-    // 마우스·펜의 왼쪽 버튼, 터치는 일정 막대를 길게 누를 때만(날짜 칸 끌기는 터치에서 지원하지 않는다: 화면 스크롤과 겹침).
+    // 마우스·펜의 왼쪽 버튼, 터치는 일정 막대·날짜 칸을 길게 눌렀을 때만(짧게 누르거나 문지르면 링크·스크롤 그대로).
     if (e.button !== 0 || !e.isPrimary) return;
     const isTouch = e.pointerType === "touch";
     const target = e.target as Element;
@@ -238,12 +239,26 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
       startSession(e, params);
       return;
     }
-    if (isTouch) return;
 
     // 날짜 칸: 끌어서 기간을 골라 새 일정 입력창을 연다.
     const cell = target.closest<HTMLElement>('[data-slot="day-cell"]');
     const date = cell?.dataset.date;
     if (!cell || !date) return;
+    if (isTouch) {
+      // 터치: 짧게 누르면 날짜 상세로 이동(링크), 문지르면 스크롤이고, 길게(약 0.4초) 누르면 그 칸이 선택되며 끌어서 기간을 고른다.
+      // 한 칸에서 그대로 떼면 그 하루짜리 새 일정 입력창이 열린다.
+      const root = e.currentTarget;
+      const pointerId = e.pointerId;
+      startLongPress(e, {
+        onActivate: (point) => {
+          startSession(
+            { pointerId, clientX: point.x, clientY: point.y, currentTarget: root },
+            { anchor: date, startActive: true },
+          );
+        },
+      });
+      return;
+    }
     startSession(e, { anchor: date });
   }
 

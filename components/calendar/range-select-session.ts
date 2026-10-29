@@ -19,6 +19,8 @@ export type StartRangeSelectParams = {
   // 이 거리(px) 이상 움직이면 다른 칸에 들어가지 않았어도 끌기로 본다. 일정 막대처럼 눌러서 바로 끌기 상태가 보여야 할 때 쓴다
   // (없으면 다른 날짜 칸에 들어가야 끌기가 시작된다. 날짜 칸을 눌러 기간을 고를 때는 한 칸 안의 흔들림을 클릭으로 두려고 쓰지 않는다).
   slopPx?: number;
+  // 시작하자마자 끌기 상태로 본다(터치로 길게 눌러 시작할 때: 이미 "누르고 있음"이 확인됐으므로 한 칸에서 그대로 떼어도 그 하루가 선택된다).
+  startActive?: boolean;
   // 누른 칸(origin)과 지금 칸(current)으로 하이라이트·커밋할 구간을 만든다. 기본은 두 날짜 사이(기간 선택).
   // 일정 막대 끌기는 이동·시작일·종료일 늘이기 규칙을 넘긴다.
   compute?: (origin: CalendarDate, current: CalendarDate) => DateSpan;
@@ -35,6 +37,7 @@ export function startRangeSelect({
   point,
   root,
   slopPx,
+  startActive,
   compute,
   callbacks,
 }: StartRangeSelectParams): (() => void) | null {
@@ -158,6 +161,11 @@ export function startRangeSelect({
   window.addEventListener("keydown", onKey, true);
   window.addEventListener("scroll", invalidate, true);
   window.addEventListener("resize", invalidate);
+
+  if (startActive) {
+    setActive();
+    callbacks.onChange(range());
+  }
 
   return () => {
     if (active) callbacks.onChange(null);
