@@ -2,6 +2,7 @@
 
 import { type ComponentProps, type ReactNode } from "react";
 import { COLOR_CLASS } from "@/components/calendar/event-colors";
+import { startLongPress } from "@/components/calendar/long-press";
 import { useWeekEditor } from "@/components/calendar/week-editor";
 import { eventDateSpan, toDayRange, GRID_START_HOUR, type DayRange, type EventColor } from "@/lib/calendar";
 import { fromEvent, type EditableEvent } from "@/lib/events/input";
@@ -28,6 +29,12 @@ function draggableRange(event: EditableEvent): DayRange | null {
   if (event.all_day) return null;
   const range = toDayRange(fromEvent(event));
   return range && range.startMin >= GRID_START_HOUR * 60 ? range : null;
+}
+
+// 휴대폰(sm 미만)의 터치: 한 화면에 맞추려고 시간 간격이 좁아 블록이 낮아서, 8px 크기 조절 핸들이 블록 대부분을 덮는다.
+// 그래서 휴대폰 터치에서는 핸들을 쓰지 않고(스크롤도 막지 않는다) 길게 눌러 옮기거나 수정 입력창에서 시각을 바꾼다.
+function isPhoneTouch(e: { pointerType: string }): boolean {
+  return e.pointerType === "touch" && window.matchMedia("(max-width: 639px)").matches;
 }
 
 // 일정 하나를 버튼으로 그린다. 누르면 사이드바에서 수정하고,
@@ -67,17 +74,34 @@ export function EventBlock({
       }}
       onPointerDown={(e) => {
         onPointerDown?.(e);
-        // 터치는 스크롤과 겹치므로 본체 끌기는 마우스·펜만. 터치는 눌러서 사이드바로 수정한다.
-        if (range && e.pointerType !== "touch") {
+        if (!range) return;
+        if (e.pointerType !== "touch") {
           editor.beginDrag(e, { kind: "event", event }, "move", range);
+          return;
         }
+        // 터치는 스크롤과 겹치므로 바로 끌지 않는다. 짧게 누르면 사이드바로 수정, 문지르면 스크롤이고,
+        // 길게(약 0.4초) 누르면 블록이 떠오르며 끌기가 시작된다(아이폰 캘린더와 같은 방식).
+        const el = e.currentTarget;
+        const pointerId = e.pointerId;
+        startLongPress(e, {
+          onActivate: (point) => {
+            el.setAttribute("data-lifted", "");
+            editor.beginDrag(
+              { button: 0, pointerId, clientX: point.x, clientY: point.y, currentTarget: el },
+              { kind: "event", event },
+              "move",
+              range,
+            );
+          },
+          onRelease: () => el.removeAttribute("data-lifted"),
+        });
       }}
       className={cn(
-        "group cursor-pointer outline-none duration-150 motion-reduce:transition-none hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 dark:hover:brightness-110",
+        "group cursor-pointer outline-none duration-150 motion-reduce:transition-none hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 dark:hover:brightness-110 data-[lifted]:scale-105 data-[lifted]:shadow-lg",
         VARIANT_CLASS[variant],
         COLOR_CLASS[color],
         dateBased && "event-hatch",
-        range && "cursor-grab select-none active:cursor-grabbing",
+        range && "cursor-grab select-none [-webkit-touch-callout:none] active:cursor-grabbing",
         dragging ? "opacity-30 transition-[filter,opacity]" : "transition-[filter]",
         className,
       )}
@@ -89,10 +113,11 @@ export function EventBlock({
             aria-hidden="true"
             data-slot="resize-handle"
             onPointerDown={(e) => {
+              if (isPhoneTouch(e)) return; // 블록 본체의 길게 누르기로 넘긴다
               e.stopPropagation();
               editor.beginDrag(e, { kind: "event", event }, "start", range);
             }}
-            className="absolute inset-x-0 top-0 z-10 h-2 cursor-ns-resize touch-none"
+            className="absolute inset-x-0 top-0 z-10 h-2 cursor-ns-resize sm:touch-none"
           >
             <span className="pointer-events-none absolute left-1/2 top-px h-[3px] w-7 -translate-x-1/2 rounded-full bg-current opacity-0 transition-opacity group-hover:opacity-40 group-focus-visible:opacity-40 motion-reduce:transition-none" />
           </span>
@@ -100,10 +125,11 @@ export function EventBlock({
             aria-hidden="true"
             data-slot="resize-handle"
             onPointerDown={(e) => {
+              if (isPhoneTouch(e)) return; // 블록 본체의 길게 누르기로 넘긴다
               e.stopPropagation();
               editor.beginDrag(e, { kind: "event", event }, "end", range);
             }}
-            className="absolute inset-x-0 bottom-0 z-10 h-2 cursor-ns-resize touch-none"
+            className="absolute inset-x-0 bottom-0 z-10 h-2 cursor-ns-resize sm:touch-none"
           >
             <span className="pointer-events-none absolute left-1/2 bottom-px h-[3px] w-7 -translate-x-1/2 rounded-full bg-current opacity-0 transition-opacity group-hover:opacity-40 group-focus-visible:opacity-40 motion-reduce:transition-none" />
           </span>

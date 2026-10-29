@@ -39,6 +39,7 @@ export function NowLine({ nowIso, weekDates, startHour, endHour, locale }: Props
     return null;
   }
   const top = ((minutes - rangeStart) / (rangeEnd - rangeStart)) * 100;
+  const clock24 = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 
   return (
     <div
@@ -50,10 +51,12 @@ export function NowLine({ nowIso, weekDates, startHour, endHour, locale }: Props
       <span
         data-slot="now-line-label"
         suppressHydrationWarning
-        className="sticky left-0 flex w-[var(--time-col)] -translate-y-1/2 items-center justify-end gap-1 bg-card py-0.5 text-[11px] leading-none font-medium whitespace-nowrap text-destructive"
+        className="sticky left-0 flex w-[var(--time-col)] -translate-y-1/2 items-center justify-end gap-1 bg-card py-0.5 text-[10px] leading-none font-medium whitespace-nowrap text-destructive sm:text-[11px]"
       >
-        {formatTime(iso, locale)}
-        <span data-slot="now-line-dot" className="-mr-[3px] size-1.5 shrink-0 rounded-full bg-destructive" />
+        {/* 눈금 열이 좁은 휴대폰(2rem)에서는 "오전 10:35"가 잘리므로 24시간제 "10:35"로 짧게 보인다(시간 눈금도 숫자만). */}
+        <span className="tabular-nums sm:hidden">{clock24}</span>
+        <span className="hidden sm:inline">{formatTime(iso, locale)}</span>
+        <span data-slot="now-line-dot" className="-mr-[3px] size-1.5 shrink-0 rounded-full bg-destructive max-sm:hidden" />
       </span>
       <div
         data-slot="now-line-rule"

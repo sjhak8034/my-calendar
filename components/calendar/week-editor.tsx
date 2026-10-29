@@ -8,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { DeleteDropZone } from "@/components/calendar/delete-drop-zone";
@@ -20,6 +19,7 @@ import {
   SETTLE_DONE_MS,
   startDragSession,
   type DragMode,
+  type DragPointer,
   type DragTarget,
 } from "@/components/calendar/drag-session";
 import {
@@ -92,7 +92,7 @@ type WeekEditorContext = {
   closeSession: (session: number) => void; // 이 세션의 패널일 때만 닫는다
   updateValues: (patch: Partial<EventInput>) => void;
   beginDrag: (
-    event: ReactPointerEvent,
+    event: DragPointer,
     target: DragTarget,
     mode: DragMode,
     range: DayRange,
@@ -273,7 +273,7 @@ export function WeekEditorProvider({ labels, hint, hintEdit, initialCreateDate, 
   }, []);
 
   const beginDrag = useCallback(
-    (e: ReactPointerEvent, target: DragTarget, mode: DragMode, range: DayRange) => {
+    (e: DragPointer, target: DragTarget, mode: DragMode, range: DayRange) => {
       if (e.button !== 0 || stopDrag.current) return;
       const original = target.kind === "draft" ? (panelRef.current?.values ?? null) : null;
 

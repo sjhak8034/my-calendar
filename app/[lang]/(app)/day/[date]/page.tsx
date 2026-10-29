@@ -28,7 +28,9 @@ export default function DayPage(props: PageProps<"/[lang]/day/[date]">) {
   );
 }
 
-const PAGE_CLASS = "mx-auto flex w-full max-w-[1600px] flex-col gap-4 p-4 pb-10 sm:gap-5 sm:p-6 sm:pb-12 lg:p-8 lg:pb-12";
+// 주간 화면 전용: 휴대폰은 상단 바(약 3.5625rem)를 뺀 화면 높이로 고정해 그리드가 남은 높이를 채우고 페이지 스크롤이 없게 한다(아래 여백도 줄임).
+const WEEK_PAGE_CLASS =
+  "mx-auto flex w-full max-w-[1600px] flex-col gap-4 p-4 pb-4 max-sm:h-[calc(100dvh-3.5625rem)] sm:gap-5 sm:p-6 sm:pb-12 lg:p-8 lg:pb-12";
 
 async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[date]">) {
   const { lang, date } = await params;
@@ -67,8 +69,9 @@ async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[dat
       labels={dict.eventForm}
       initialCreateDate={openNew === "1" ? date : undefined}
     >
-    <main className={PAGE_CLASS}>
-      <h1 className="text-2xl font-semibold tracking-tight sm:mb-1">
+    <main className={WEEK_PAGE_CLASS}>
+      {/* 휴대폰은 한 화면에 맞추려고 제목을 눈에는 숨기고(툴바가 기간을 보여 줌) 스크린리더용으로만 남긴다. */}
+      <h1 className="text-2xl font-semibold tracking-tight max-sm:sr-only sm:mb-1">
         {dict.week.title}
       </h1>
       <WeekToolbar
@@ -102,7 +105,10 @@ async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[dat
         nowIso={nowIso}
         dict={dict.week}
       />
-      <WeatherCredit />
+      {/* 출처 줄 자리를 휴대폰에서는 미리 잡아, 날씨가 늦게 도착해도 그리드 높이가 변하지 않게 한다. sm 이상은 박스를 만들지 않는다. */}
+      <div className="max-sm:min-h-4 sm:contents">
+        <WeatherCredit />
+      </div>
     </main>
     </WeekEditorProvider>
   );
@@ -110,12 +116,12 @@ async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[dat
 
 function WeekSkeleton() {
   return (
-    <main aria-busy="true" className={PAGE_CLASS}>
+    <main aria-busy="true" className={WEEK_PAGE_CLASS}>
       <div aria-hidden="true" className="h-8 w-32 animate-pulse rounded bg-muted" />
       <div aria-hidden="true" className="h-[4.75rem] animate-pulse rounded-xl border bg-card shadow-xs sm:h-[5.75rem]" />
       <div
         aria-hidden="true"
-        className="-mx-3 grid h-[min(26rem,55dvh)] grid-cols-[2rem_repeat(7,minmax(0,1fr))] grid-rows-[4.75rem_2rem_1fr] overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs sm:mx-0 sm:h-[max(24rem,calc(100dvh-7rem))] sm:grid-cols-[4rem_repeat(7,minmax(0,1fr))] sm:grid-rows-[3.5rem_2rem_1fr] sm:rounded-xl sm:border-x lg:h-[max(28rem,calc(100dvh-15rem))]"
+        className="-mx-3 grid grid-cols-[2rem_repeat(7,minmax(0,1fr))] grid-rows-[4.75rem_2rem_1fr] overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs max-sm:min-h-0 max-sm:flex-1 sm:mx-0 sm:h-[max(24rem,calc(100dvh-7rem))] sm:grid-cols-[4rem_repeat(7,minmax(0,1fr))] sm:grid-rows-[3.5rem_2rem_1fr] sm:rounded-xl sm:border-x lg:h-[max(28rem,calc(100dvh-15rem))]"
       >
         <div className="col-span-8 grid grid-cols-subgrid border-b">
           <div />

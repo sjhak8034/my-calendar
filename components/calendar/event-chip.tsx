@@ -40,7 +40,7 @@ export function EventChip({ lang, segment, allDayLabel }: Props) {
         gridRow: lane + 1,
       }}
       className={cn(
-        "pointer-events-auto relative z-10 flex data-[dragging]:opacity-40 min-w-0 items-center gap-1.5 border px-1 text-[11px] leading-none outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-2 sm:text-xs dark:hover:brightness-110",
+        "pointer-events-auto relative z-10 flex data-[dragging]:opacity-40 data-[lifted]:z-20 data-[lifted]:scale-105 data-[lifted]:shadow-lg [-webkit-touch-callout:none] min-w-0 items-center gap-1.5 border px-1 text-[11px] leading-none outline-none transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-ring/50 sm:px-2 sm:text-xs dark:hover:brightness-110",
         COLOR_CLASS[color],
         // 종일·여러 날 일정은 옅은 사선 무늬로 시간이 정해진 일정(무늬 없음)과 구분한다.
         isTimed ? "" : "event-hatch",

@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { COLOR_CLASS } from "@/components/calendar/event-colors";
+import { startLongPress } from "@/components/calendar/long-press";
 import { startRangeSelect } from "@/components/calendar/range-select-session";
 import { useWeekEditor } from "@/components/calendar/week-editor";
 import {
@@ -52,6 +53,9 @@ export function useMonthBarPreview(): BarPreview | null {
   return useContext(PreviewContext);
 }
 
+// 끌기를 시작하는 포인터 정보(눌린 순간의 포인터 이벤트, 또는 터치로 길게 눌렀을 때 손가락의 현재 위치로 만든 같은 모양의 값).
+type SessionPointer = { pointerId: number; clientX: number; clientY: number; currentTarget: HTMLElement };
+
 // 일정 막대를 눌러 이만큼(px) 움직이면 바로 끌기로 본다. 그보다 작은 흔들림은 클릭(수정 입력창 열기)이다.
 const DRAG_SLOP_PX = 5;
 
@@ -60,7 +64,8 @@ type Saving = { eventId: string; span: DateSpan; bar: BarLook; events: readonly 
 
 // 서버가 그린 월간 그리드를 감싸 마우스 끌기(기간 선택, 일정 막대 이동·늘이기)와 막대 클릭(수정)을 처리하고 상태를 나눠 준다.
 // 그리드(children)는 서버 렌더 결과 그대로라 선택이 바뀌어도 다시 그려지지 않고, 각 주의 하이라이트 레이어(WeekSelection)만 갱신된다.
-// 터치는 끌기를 지원하지 않는다(화면 스크롤과 겹침). 터치에서는 날짜 칸이 그대로 링크이고 툴바의 "일정 추가"·막대를 눌러 연 입력창의 날짜 칸을 쓴다.
+// 터치는 일정 막대를 길게 눌러야 끌 수 있고(아이폰 캘린더와 같은 방식), 날짜 칸 끌기(기간 만들기)는 지원하지 않는다(화면 스크롤과 겹침).
+// 터치에서 날짜 칸은 그대로 링크이고, 새 일정은 툴바의 "일정 추가"·막대를 눌러 연 입력창의 날짜 칸을 쓴다.
 export function MonthSelect({ events, children }: { events: readonly EditableEvent[]; children: ReactNode }) {
   const { panel, labels, selectRange, openEdit, updateValues, reportError } = useWeekEditor();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -140,7 +145,7 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
   }
 
   function startSession(
-    e: ReactPointerEvent<HTMLDivElement>,
+    e: SessionPointer,
     params: {
       anchor?: CalendarDate;
       event?: EditableEvent;
@@ -183,8 +188,9 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
   function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     suppressClick.current = false;
     if (stop.current) return;
-    // 마우스·펜의 왼쪽 버튼만.
-    if (e.button !== 0 || !e.isPrimary || e.pointerType === "touch") return;
+    // 마우스·펜의 왼쪽 버튼, 터치는 일정 막대를 길게 누를 때만(날짜 칸 끌기는 터치에서 지원하지 않는다: 화면 스크롤과 겹침).
+    if (e.button !== 0 || !e.isPrimary) return;
+    const isTouch = e.pointerType === "touch";
     const target = e.target as Element;
 
     // 일정 막대: 몸통을 끌면 통째로 옮기고, 종일 막대의 양 끝(data-handle)을 끌면 시작일·종료일을 바꾼다.
@@ -200,7 +206,7 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
         return;
       }
       const handle = target.closest<HTMLElement>("[data-handle]")?.dataset.handle;
-      startSession(e, {
+      const params: Parameters<typeof startSession>[1] = {
         event,
         slopPx: DRAG_SLOP_PX,
         bar: {
@@ -215,9 +221,24 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
             : handle === "end"
               ? (_origin, current) => withEnd(span, current)
               : (origin, current) => shiftSpan(span, diffDays(origin, current)),
-      });
+      };
+      if (isTouch) {
+        // 터치: 짧게 누르면 수정 입력창(클릭), 문지르면 스크롤이고, 길게(약 0.4초) 누르면 막대가 떠오르며 끌기가 시작된다(아이폰 캘린더와 같은 방식).
+        const root = e.currentTarget;
+        const pointerId = e.pointerId;
+        startLongPress(e, {
+          onActivate: (point) => {
+            chip.setAttribute("data-lifted", "");
+            startSession({ pointerId, clientX: point.x, clientY: point.y, currentTarget: root }, params);
+          },
+          onRelease: () => chip.removeAttribute("data-lifted"),
+        });
+        return;
+      }
+      startSession(e, params);
       return;
     }
+    if (isTouch) return;
 
     // 날짜 칸: 끌어서 기간을 골라 새 일정 입력창을 연다.
     const cell = target.closest<HTMLElement>('[data-slot="day-cell"]');

@@ -75,13 +75,14 @@ export function WeekToolbar({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div role="group" className="flex items-center">
+      {/* 휴대폰(sm 미만)은 [이전·오늘·다음] [월간 보기] [일정 추가] 세 컨트롤이 한 줄에 들어가도록 한다(월간·일정 추가가 남는 폭을 나눠 가짐). */}
+      <div className="flex w-full items-center gap-2 sm:w-auto sm:flex-wrap">
+        <div role="group" className="flex shrink-0 items-center">
           {inRange(prevWeek) ? (
             <Link
               href={`/${lang}/day/${prevWeek}`}
               aria-label={weekDict.previousWeek}
-              className={`${SEGMENT_CLASS} w-9 rounded-l-lg`}
+              className={`${SEGMENT_CLASS} w-8 rounded-l-lg sm:w-9`}
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
             </Link>
@@ -90,19 +91,19 @@ export function WeekToolbar({
               role="link"
               aria-disabled="true"
               aria-label={weekDict.previousWeek}
-              className={`${SEGMENT_CLASS} ${DISABLED_CLASS} w-9 rounded-l-lg`}
+              className={`${SEGMENT_CLASS} ${DISABLED_CLASS} w-8 rounded-l-lg sm:w-9`}
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
             </span>
           )}
-          <Link href={`/${lang}/day/${today}`} className={`${SEGMENT_CLASS} -ml-px px-4`}>
+          <Link href={`/${lang}/day/${today}`} className={`${SEGMENT_CLASS} -ml-px px-3 sm:px-4`}>
             {dict.today}
           </Link>
           {inRange(nextWeek) ? (
             <Link
               href={`/${lang}/day/${nextWeek}`}
               aria-label={weekDict.nextWeek}
-              className={`${SEGMENT_CLASS} -ml-px w-9 rounded-r-lg`}
+              className={`${SEGMENT_CLASS} -ml-px w-8 rounded-r-lg sm:w-9`}
             >
               <ChevronRight className="size-4" aria-hidden="true" />
             </Link>
@@ -111,7 +112,7 @@ export function WeekToolbar({
               role="link"
               aria-disabled="true"
               aria-label={weekDict.nextWeek}
-              className={`${SEGMENT_CLASS} ${DISABLED_CLASS} -ml-px w-9 rounded-r-lg`}
+              className={`${SEGMENT_CLASS} ${DISABLED_CLASS} -ml-px w-8 rounded-r-lg sm:w-9`}
             >
               <ChevronRight className="size-4" aria-hidden="true" />
             </span>
@@ -120,12 +121,12 @@ export function WeekToolbar({
         <Link
           href={monthHref}
           data-slot="month-view-link"
-          className={`${SEGMENT_CLASS} gap-1.5 rounded-lg px-3`}
+          className={`${SEGMENT_CLASS} min-w-0 gap-1.5 rounded-lg px-2 max-sm:flex-1 max-sm:text-[13px] sm:px-3`}
         >
-          <CalendarDays className="size-4" aria-hidden="true" />
+          <CalendarDays className="size-4 max-sm:hidden" aria-hidden="true" />
           {weekDict.monthView}
         </Link>
-        <NewEventButton date={selectedDate} label={dict.addEvent} />
+        <NewEventButton date={selectedDate} label={dict.addEvent} compact />
       </div>
     </div>
   );

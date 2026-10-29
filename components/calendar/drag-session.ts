@@ -17,6 +17,9 @@ import type { EditableEvent } from "@/lib/events/input";
 // 포인터 이벤트는 window에 걸어, 끄는 동안 블록이 다시 그려져도 끊기지 않게 한다.
 
 export type DragMode = "move" | "start" | "end";
+// 끌기를 시작하는 포인터 정보. 눌린 순간의 React 포인터 이벤트가 그대로 들어갈 수 있고,
+// 터치로 길게 눌러 시작할 때는 손가락의 현재 위치로 만든 같은 모양의 값이 들어간다.
+export type DragPointer = Pick<ReactPointerEvent, "button" | "pointerId" | "clientX" | "clientY" | "currentTarget">;
 export type DragTarget = { kind: "draft" } | { kind: "event"; event: EditableEvent };
 
 const CLICK_SLOP = 4; // 이 거리(px) 안의 이동은 클릭으로 본다
@@ -45,7 +48,7 @@ export type DragCallbacks = {
 };
 
 export type StartDragParams = {
-  event: ReactPointerEvent;
+  event: DragPointer;
   target: DragTarget;
   mode: DragMode;
   range: DayRange; // 드래그를 시작할 때의 구간

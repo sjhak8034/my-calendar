@@ -28,7 +28,9 @@ export function BlockText({
     >
       <span
         className={cn(
-          "block min-w-0 text-[10px] leading-snug font-semibold break-keep [overflow-wrap:anywhere] sm:text-xs sm:truncate",
+          // 일정 이름은 항상 한 줄이고 넘치면 …으로 줄인다(week-grid의 TimedBlock과 같은 규칙).
+          "block min-w-0 truncate text-[10px] leading-snug font-semibold sm:text-xs",
+          minutes < 60 && "max-sm:text-[9px] max-sm:leading-none",
           !twoLines && "flex-1",
         )}
       >
