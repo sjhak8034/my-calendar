@@ -1,11 +1,11 @@
 # 인수인계 (HANDOFF)
 
-최종 갱신: 2026-10-29(월간 편집 기능 진행 중, §14).
+최종 갱신: 2026-10-30(월간 편집 기능 푸시 완료 §14, 날씨 표시 구현·미커밋 §15).
 상세 근거는 `docs/ROADMAP.md`(작업별 구현 내용), `docs/calendar-verification.md`(검증 원장 14~23절), `docs/ai-security.md`, `docs/PRD.md`에 있다. 이 문서는 그 위에서 "지금 어디까지 왔고 무엇을 조심해야 하며 다음에 무엇을 하는가"만 모았다.
 
 ## 1. 한눈에 보기
 
-- 프로젝트: 한국어 중심 캘린더 웹앱(`my-calendar`). Next.js 16.4.3(App Router, `cacheComponents` 켜짐) + React 19 + TypeScript strict + Tailwind v4 + shadcn(base-nova, `@base-ui/react`) + Supabase(Auth/Postgres RLS) + Vercel 배포 예정. 원격: `https://github.com/sjhak8034/my-calendar.git`(브랜치 `main`).
+- 프로젝트: 한국어 중심 캘린더 웹앱(`my-calendar`). Next.js 16.4.3(App Router, `cacheComponents` 켜짐) + React 19 + TypeScript strict + Tailwind v4 + shadcn(base-nova, `@base-ui/react`) + Supabase(Auth/Postgres RLS) + Vercel(운영 배포됨, §13). 원격: `https://github.com/sjhak8034/my-calendar.git`(브랜치 `main`).
 - **기능은 모두 구현됨**: 월간·주간 캘린더와 일정 CRUD·드래그, AI 대화(Gemini, 추가·수정·삭제는 확인 카드), 게스트 모드, 알림 예약·발송 워커, 웹 푸시, 카카오톡 알림, 설정 화면, 로그인·가입·비밀번호 재설정, 계정 삭제, CAPTCHA.
 - **지금 하는 일은 Task 013(품질 점검 및 배포)의 마무리**. 1~5단계와 CAPTCHA가 끝났고, **6단계(배포)는 운영 주소 `https://my-calendar.jhsong.dev`로 배포를 마친 상태**다(§13). AI 비용 관리(지출 한도, 사용량 기록)와 favicon, 질문 언어 따라 답변까지 끝났다. 남은 것은 다른 카카오 계정 시험, 방침 공개 전 점검 등(§8).
 - 로드맵 표기: 11/13 Tasks 완료. Task 009(AI 대화)는 "마무리 점검 대기", Task 014b(게스트→정식 전환)는 "UI 검증 대기".
@@ -15,7 +15,7 @@
 
 1. `git status -sb`로 상태를 본다. 푸시는 사용자가 별도 터미널에서 `git push origin main` 한다(이 세션에는 GitHub 인증이 없음, §4). 푸시하면 Vercel이 자동 배포한다.
    - `.mcp.json`은 로컬 Supabase MCP 설정(읽기 전용, 프로젝트 범위)이라 **일부러 커밋하지 않았다.** 계속 제외한다.
-2. **미커밋 변경이 있으면 §14를 먼저 읽는다**(월간 일정 수정·끌기 작업이 코드·문서 모두 커밋 전이다).
+2. **날씨 표시 작업이 구현됐고 아직 커밋 전이다(§15).** 작업 트리에 변경이 보이면 §15의 파일 목록과 맞는지 확인한다. 그 앞 작업(월간 편집, §14)은 푸시까지 끝났다.
 3. 사용자가 **아직 결과를 알려 주지 않은 확인 항목**(§9)을 물어본다.
 4. §8의 남은 작업을 진행한다.
 
@@ -29,7 +29,7 @@
 
 ### 사용자와 일하는 방식
 - 답변은 **한국어**. 사용자가 "질문의 뜻이 불분명했다"고 한 적이 있다(ARIA, 보안 헤더 같은 용어를 풀지 않고 선택지로 물었을 때). **용어는 쉬운 말로 풀고, 선택지는 "그러면 무엇이 어떻게 달라지는지" 중심으로** 묻는다.
-- **커밋은 사용자가 요청할 때만** 한다. 지시한 파일만 `git add`하고(`.mcp.json` 제외), 메시지는 gitmoji + 한국어 + 끝에 `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. 기능과 문서 변경은 따로 커밋하는 편이다.
+- **커밋은 사용자가 요청할 때만** 한다. 지시한 파일만 `git add`하고(`.mcp.json` 제외), 메시지는 gitmoji + 한국어 + 끝에 `Co-Authored-By: Claude <그 세션의 모델> <noreply@anthropic.com>`(2026-10-29까지 `Sonnet 5.5`, `1f3bb24`부터 `Opus 5.5`). 기능과 문서 변경은 따로 커밋하는 편이다.
 - **확인하지 못한 것은 "확인하지 못한 것"으로 솔직히 적는다.** 브라우저를 직접 못 보고, DB·메일·카카오·Cloudflare 콘솔은 사용자만 만질 수 있다. 문서(`calendar-verification.md`)에 확인함/확인하지 못한 것을 나눠 적는 관례를 지킨다.
 - 큰 작업은 계획(plan mode) → 승인 → 단계별 구현·검증·커밋 순서로 했다. 사용자가 이미 정한 결정은 §7.
 - **비밀값을 대화에 붙여 넣게 하지 않는다.** 한 번 개발용 VAPID 키가 대화에 노출된 적이 있어, 운영 전에 새로 만들어야 한다(§8).
@@ -39,7 +39,7 @@
 - 새 라우트 폴더를 만들면 개발 서버가 못 알아볼 때가 있다(404). 파일을 `touch`하거나 재시작한다. `PageProps<"/[lang]/새경로">` 타입 오류가 나면 `npx next typegen`으로 타입을 다시 만든다.
 - **`.env`는 자동 모드가 읽기·쓰기를 거부한다.** 값은 읽지 않고 `grep -cE "^이름=" .env`와 `${#v}`로 **줄 수와 글자 수만** 확인하는 패턴을 쓴다. 값 입력과 수정은 사용자가 직접 한다. 사용자가 `.env`에 키를 붙이다 **줄바꿈 없이 이어 붙인 사고**(`SITE_URL=...NEXT_PUBLIC_TURNSTILE_SITE_KEY=...`)가 한 번 있었고 지금은 고쳐져 있다. `.env` 수정을 안내할 때는 "새 줄에 쓰세요"를 강조한다.
 - **GitHub 푸시 불가**: 원격이 HTTPS이고 이 세션에 `gh`·자격 증명이 없다. Windows의 Git 자격 증명 관리자를 빌려 쓰려는 시도는 보안 검사가 거부했다(우회하지 않는다).
-- **진짜 브라우저 시험이 가능하다(2026-10-29 발견)**: Claude in Chrome은 WSL에서 안 되지만 `playwright-core`로 `chromium-headless-shell`을 받아(`~/.cache/ms-playwright`, 약 120MB) 헤드리스 Chromium을 띄울 수 있다. 로그인이 필요한 실제 앱 화면은 못 열지만(운영과 같은 Supabase라 시험 계정을 만들지 않는다), **앱의 Tailwind 빌드 CSS(`.next/static/chunks/*.css`)와 같은 구조의 모의 그리드에 실제 클라이언트 컴포넌트를 올려 실제 마우스 입력으로 시험**할 수 있다(§14의 방법). 서버 전용 모듈과 서버 액션은 esbuild 플러그인으로 모의 구현에 바꿔 번들한다. 그 밖의 화면 확인은 여전히 사용자가 스크린샷을 저장해 주거나 직접 본다.
+- **진짜 브라우저 시험이 가능하다(2026-10-29 발견)**: Claude in Chrome은 WSL에서 안 되지만 `playwright-core`로 `chromium-headless-shell`을 받아(`~/.cache/ms-playwright`, 약 120MB) 헤드리스 Chromium을 띄울 수 있다. 로그인이 필요한 실제 앱 화면은 못 열지만(운영과 같은 Supabase라 시험 계정을 만들지 않는다), **실제 컴포넌트(클라이언트 컴포넌트와 순수 JSX인 서버 컴포넌트)를 개발 서버의 CSS와 함께 브라우저에 올려 실제 마우스 입력으로 시험**할 수 있다(§14의 방법). `next/link`와 서버 액션만 esbuild 플러그인으로 모의 구현에 바꿔 번들한다. 실제 앱에서의 동작은 Supabase 로그(요청 종류·상태)로 보조 확인한다. 그 밖의 화면 확인은 여전히 사용자가 스크린샷을 저장해 주거나 직접 본다.
 - **(구) 브라우저 도구 없음**: Claude in Chrome은 WSL에서 지원되지 않는다. 화면을 보려면 사용자가 스크린샷을 저장하게 하고(`/mnt/c/Users/thdwj/Downloads` 또는 `Pictures/Screenshots`) `Read`로 이미지를 읽는다.
 - **임시 검증 방법**: 서버 전용 모듈(`import "server-only"`)은 일반 Node에서 못 불러서, 그 한 줄을 뺀 사본을 `mktemp -d`에 만들어 `node --input-type=module -e`로 돌리고 지운다(별칭 `@/…` import는 상대 경로로 바꿈). 가짜 `fetch`/`navigator`로 외부 호출과 브라우저 API를 검증한 사례가 `calendar-verification.md`에 많다. 로컬에 Postgres가 없어 **SQL은 실행해 보지 못한다**(적용 후 사용자 확인에 의존).
 - **Next.js 16 + cacheComponents 규칙**: 현재 시각·세션(`getUser`)을 읽는 서버 코드는 `await connection()`을 **먼저** 부르고 `<Suspense>` 안에서 실행한다. 빠뜨리면 `blocking-prerender-current-time` 오류가 난다(설정 페이지에서 실제로 겪음). `error.tsx`는 클라이언트 컴포넌트, 루트 레이아웃이 `[lang]`이라 맞지 않는 주소는 `app/[lang]/[...rest]/page.tsx`가 `notFound()`로 받는다.
@@ -85,6 +85,8 @@
 | + | 개인정보처리방침: Gemini 유료 등급 문구, AI 사용 기록(토큰 수, 90일) | 완료 | `74d9d14`·`a46e1a7` |
 | + | favicon을 새 로고(`icon-512`)로 교체 | 완료 | `8d9dcc7` |
 | + | AI가 질문한 언어로 답변(화면 언어 고정 해제) | 완료 | `25796fe` |
+| + | 월간 그리드 편집: 날짜 칸을 끌어 기간 일정 만들기, 종일·여러 날 일정 사선 무늬, 막대 클릭 수정, 막대 끌어 이동·양 끝 늘이기(§14) | 완료(푸시됨) | `6795444`·`214cba0`·`8ed9f2b`·`1f3bb24` 외 |
+| + | 날짜별 날씨·기온 표시(월간 아이콘, 주간 아이콘+기온, 브라우저 위치, Open-Meteo, §15) | 구현됨(미커밋, 실제 화면 확인 대기) | - |
 | 선택 | 주간 겹침 열 수 상한과 "+N" 묶음 | 미룸 | - |
 
 ## 7. 사용자가 내린 결정 (되묻지 않는다)
@@ -93,6 +95,7 @@
 - 게스트는 카카오톡을 연결할 수 없고 "계정 만들기"(`/upgrade`) 안내 팝업을 본다(로그인 대신 계정 전환으로 보내는 이유: 게스트가 로그아웃하면 데이터가 즉시 삭제됨).
 - 푸시는 로그아웃 때 이 브라우저 구독을 해제하고, 같은 계정으로 다시 로그인하면(알림 권한이 이미 허용된 브라우저에서) **자동으로 다시 구독**한다(`user_metadata.push_enabled`). 설정에서 직접 끄면 복원되지 않는다.
 - 개인정보처리방침은 법률 자문이 아닌 **초안**으로 쓰고 화면에 그렇게 명시한다.
+- **날씨 표시(2026-10-30)**: 지역은 **브라우저 위치**(못 받으면 서울), 범위는 **오늘부터 약 2주 예보만**, 월간은 아이콘만(기온은 툴팁), 주간은 요일 앞 아이콘 + 머리글 한 줄 아래 작은 기온. 제3자 서비스는 Open-Meteo(결정 근거: 키 불필요·CORS 허용·16일 예보).
 - **DB 백업은 지금 설정하지 않는다**(2026-10-29 결정, 추후 개선사항). Supabase **Free 플랜에는 자동 백업이 없다**(Pro는 월 $25부터, 매일 백업 7일 보관, PITR은 월 $100 추가). 사용자 데이터를 본격적으로 받기 전에 다시 결정한다(§8의 "운영 개선").
 
 ## 8. 남은 작업 (우선순위 순)
@@ -120,6 +123,7 @@
 - 계정 삭제(**시험용 계정으로만**; 되돌릴 수 없음), 푸시의 로그아웃 해제·재로그인 자동 복원, 카카오 연결 해제·재연결·토큰 만료 후 갱신·재연결 필요 상태, 게스트가 주소로 `/auth/kakao/connect`를 직접 열었을 때의 팝업, 영어 화면 전체.
 - 구글로 가입한 계정이 "비밀번호 찾기"로 비밀번호를 설정할 수 있는지, 같은 이메일 가입 시 계정 연결 동작.
 - **운영에서의 계정 삭제**(시험용 계정으로만, 비밀번호+CAPTCHA 확인), 방침 문구 변경 뒤 푸시 테스트 알림(`VAPID_SUBJECT` 변경 반영 확인), 비밀번호 재설정 end-to-end(메일 발송은 성공함).
+- **월간 그리드 편집의 세부 항목**(끌기·막대 클릭 수정은 사용자가 확인함): 다크 모드와 8가지 색에서의 사선 무늬·미리 보기 막대, 작은 화면(아래 시트), 키보드로 막대를 열고 닫을 때 포커스, Ctrl/⌘ 클릭·가운데 버튼의 새 탭 열기, 저장 실패 알림(§14).
 - 처음 워커를 호출했을 때 사용자가 "0byte 파일도 왔다"고 한 일은 재현되지 않았고 원인 불명.
 
 ## 10. 환경변수 (이름과 상태. 값은 어디에도 적지 않는다)
@@ -167,14 +171,15 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 - **확인한 것**(외부 `curl`): 보안 헤더 5종, 잘못된 날짜 404, 비로그인 `/api/ai` 401, 인증 없는 워커 호출 401, `sw.js` 헤더, `robots`·`sitemap`이 운영 주소, 새 연락처 표시.
 - **하지 못한 것**: 로그인한 상태의 화면 속도 측정, 다른 카카오 계정 동의, 비밀번호 재설정 end-to-end(메일은 성공), 운영에서의 계정 삭제 시험.
 - **롤백**: Vercel Instant Rollback(DB는 되돌리지 않음).
+- **날씨(2026-10-30, 푸시 전)**: 브라우저가 `api.open-meteo.com`을 직접 호출한다(CSP가 없어 막히지 않음). 보안 헤더 `Permissions-Policy`가 `geolocation=(self)`로 바뀌어 **배포 뒤 헤더 확인**(`curl -I`)이 필요하다. 환경변수·DB 변경 없음. 방침 시행일이 2026-10-30으로 바뀜. Open-Meteo 무료는 비상업·출처 표기 조건(§15).
 - **AI**: Gemini 유료, 지출 한도 설정, 모델 `gemini-3.5-flash-lite`. 질문별 토큰은 Vercel Logs의 `[ai] usage` 줄과 `ai_usage` 표(서버만 쓰기, 90일 보관, 계정 삭제 시 `user_id`는 null)에 남는다. 스트리밍 요청에 `stream_options.include_usage`가 있어야 사용량이 오고, 사용량은 한 스트림 안에서 누적값이 반복되므로 호출마다 **마지막 값만** 쓴다. 답변 언어는 질문 언어를 따르고 불분명하면 화면 언어. 질문 시험 세트(검색·추가·모호한 날짜·수정·삭제·영어·주제 이탈·프롬프트 주입)로 13건을 돌려 `missing_usage=0` 확인.
 - **배포 순서 주의**: DB 마이그레이션이 필요한 코드는 **마이그레이션을 먼저 적용한 뒤 푸시**한다(예: `ai_usage`).
 
-## 14. 진행 중인 작업: 월간 그리드 편집(2026-10-29, **미커밋**)
+## 14. 최근 작업: 월간 그리드 편집(2026-10-29, 커밋·푸시 완료)
 
-**커밋된 것**(푸시됨): 월간에서 날짜 칸을 끌어 기간 일정 만들기(`b0277e9`·`6795444`), 종일·여러 날 일정 사선 무늬 `event-hatch`(월간·주간, `214cba0`), 코드 리뷰 수정(`8ed9f2b`).
+**커밋(모두 푸시됨, 2026-10-30에 `origin/main`과 같음을 확인)**: 월간에서 날짜 칸을 끌어 기간 일정 만들기(`b0277e9`·`6795444`), 종일·여러 날 일정 사선 무늬 `event-hatch`(월간·주간, `214cba0`), 코드 리뷰 수정(`8ed9f2b`), **막대 클릭 수정·끌어 이동·양 끝 늘이기**(`1f3bb24`, 문서 `fc8e06d`).
 
-**미커밋(작업 트리, `git status`로 확인)**: 월간에서 ① 일정 막대를 눌러 수정 입력창 열기, ② 막대를 끌어 통째로 이동·종일 막대 양 끝으로 시작일/종료일 변경, ③ 끄는 동안 막대가 칸에 맞춰 새 날짜 자리로 옮겨 그려짐(여러 주 막대는 모든 주에서), ④ 막대는 5px만 움직여도 바로 끌기 시작. 파일: `app/[lang]/(app)/page.tsx`, `components/calendar/{month-select.tsx, week-selection.tsx, event-chip.tsx, day-cell.tsx, event-side-panel.tsx, week-editor.tsx, range-select-session.ts}`, `lib/calendar/selection.ts`, 문서 3개(`PRD.md`·`ROADMAP.md`·`calendar-verification.md`). 같은 파일을 함께 고쳐서 **한 커밋 + 문서 커밋**으로 묶자고 제안해 둔 상태(`✨ feat: 월간에서 일정 막대를 눌러 수정하고 끌어서 이동·늘이기`, `📝 docs: …`). 사용자는 아직 커밋을 요청하지 않았다(화면 확인 뒤 알려 주기로 함).
+**`1f3bb24`의 내용**: 월간에서 ① 일정 막대를 눌러 수정 입력창 열기, ② 막대를 끌어 통째로 이동·종일 막대 양 끝으로 시작일/종료일 변경, ③ 끄는 동안 막대가 칸에 맞춰 새 날짜 자리로 옮겨 그려짐(여러 주 막대는 모든 주에서), ④ 막대는 5px만 움직여도 바로 끌기 시작. 파일: `app/[lang]/(app)/page.tsx`, `components/calendar/{month-select.tsx, week-selection.tsx, event-chip.tsx, day-cell.tsx, event-side-panel.tsx, week-editor.tsx, range-select-session.ts}`, `lib/calendar/selection.ts`.
 
 **사용자 결정**: 막대 클릭 수정은 **B 방식**(월간 조회가 `description`까지 가져옴, 자르지 않음), 끌기는 **통째로 이동 + 양 끝 늘이기**, 놓은 뒤 표시는 **서버 저장 후 갱신**(낙관적 업데이트 없음, 새 자리 막대 미리 보기가 서버 응답까지 유지됨).
 
@@ -184,7 +189,7 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 - 저장은 기존 `updateEvent(id, {...fromEvent(event), startDate, endDate})`. 새 서버 입구 없음. 끄는 동안·저장 중의 막대 미리 보기는 `MonthSelect`의 `PreviewContext`(`BarPreview`: 구간·제목·색·무늬·줄)로 내려 주고, 각 주의 `WeekSelection`이 칩 레이어와 같은 격자(`top-9`, 4줄)에 `z-20`으로 그린다(`data-slot="month-bar-preview"`, 줄은 칩의 `data-lane`). 원래 막대는 `data-dragging`으로 흐려진다.
 - 월간 종일·기간 막대에는 `event-hatch`(globals.css `@utility`), 주간 `EventBlock`도 같은 기준(`all_day || 시작날짜≠종료날짜`).
 
-**확인한 것**: `tsc`·`lint`·`build` 통과, 순수 함수·세션 상태 흐름 임시 스크립트, **진짜 Chromium**: 실제 컴포넌트 전체(제공자·`MonthSelect`·`MonthGrid`/`WeekRow`/`DayCell`/`EventChip`·`buildMonthLayout`, `next/link`·서버 동작만 모의)로 20건(여러 주 막대 이동·늘이기 미리 보기가 모든 주에 그려짐, 저장 값, 저장 중 유지 → 새 데이터 도착 시 사라짐, 3px 클릭 = 수정창, 8px 제자리 = 무동작, 날짜 칸 끌기 회귀 없음). **확인하지 못한 것**(사용자 확인 대기): 로그인한 실제 앱 화면에서의 끌기·새 자리 막대 미리 보기·막대 클릭 수정, 사선 무늬의 세기·가독성(8가지 색·다크 모드), 서버 응답까지의 지연 체감, 작은 화면, 수정 입력창 안내문 숨김, 키보드로 막대를 열었을 때 포커스. 사용자가 "복제 막대가 안 따라온다/하이라이트만 보인다", 이어서 "막대가 움직이지 않는다"고 보고함. Supabase 로그로 저장(`PATCH` 200)과 재조회는 정상임을 확인했고, 대상이 여러 주에 걸친 종일 일정이라 포인터를 따라다니던 복제 막대(한 주 조각 크기)가 원래 자리와 겹치거나 그리드 밖으로 삐져나와 움직이지 않는 것처럼 보였던 것으로 판단, 복제 막대를 없애고 칸에 맞춘 미리 보기로 바꿈(실제 앱에서 재확인 필요).
+**확인한 것**: `tsc`·`lint`·`build` 통과, 순수 함수·세션 상태 흐름 임시 스크립트, **진짜 Chromium**: 실제 컴포넌트 전체(제공자·`MonthSelect`·`MonthGrid`/`WeekRow`/`DayCell`/`EventChip`·`buildMonthLayout`, `next/link`·서버 동작만 모의)로 20건(여러 주 막대 이동·늘이기 미리 보기가 모든 주에 그려짐, 저장 값, 저장 중 유지 → 새 데이터 도착 시 사라짐, 3px 클릭 = 수정창, 8px 제자리 = 무동작, 날짜 칸 끌기 회귀 없음). **사용자 확인(2026-10-29)**: 사용자가 실제 앱 화면에서 확인했다고 알리고 커밋을 요청함(항목별 결과는 듣지 못함). **따로 확인하지 못한 것**: 사선 무늬의 세기·가독성(8가지 색·다크 모드), 서버 응답까지의 지연 체감, 작은 화면, 수정 입력창 안내문 숨김, 키보드로 막대를 열었을 때 포커스. 사용자가 "복제 막대가 안 따라온다/하이라이트만 보인다", 이어서 "막대가 움직이지 않는다"고 보고함. Supabase 로그로 저장(`PATCH` 200)과 재조회는 정상임을 확인했고, 대상이 여러 주에 걸친 종일 일정이라 포인터를 따라다니던 복제 막대(한 주 조각 크기)가 원래 자리와 겹치거나 그리드 밖으로 삐져나와 움직이지 않는 것처럼 보였던 것으로 판단, 복제 막대를 없애고 칸에 맞춘 미리 보기로 바꿈(이 수정 뒤 사용자 확인을 받고 커밋).
 
 **알려진 제한**: 양 끝 늘이기는 종일 막대만(여러 날 시간 일정은 이동만), 터치는 끌기 없음(막대를 눌러 연 입력창의 날짜 칸을 쓴다), 수정 중에 빈 칸을 끌면 새 일정 폼으로 교체, 월간 데이터가 커짐(설명 포함, 일정 상한 2,000건), 저장하지 않은 초안은 달 이동 시 남을 수도 사라질 수도 있음.
 
@@ -192,4 +197,24 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 
 **코딩 중 겪은 함정**: ESLint `react-hooks/refs`는 **렌더 중 ref 읽기를 금지**한다(끌고 있는 막대 정보는 상태로). `Write`로 파일을 덮어쓰기 전에 외부에서 바뀌었다면 "File has been modified since read"가 나므로 다시 `Read`한다. `getEventsForRange`는 `includeDescription`이 없으면 `description`을 주지 않는다. 서울 시간대 변환기(`Intl.DateTimeFormat`)는 `lib/calendar/date.ts` 모듈 상단에서 한 번만 만든다. `cn`은 tailwind-merge가 아니다(충돌 클래스는 직접 피한다).
 
-**다음 할 일**: 사용자가 실제 화면에서 끌기·새 자리 막대 미리 보기·막대 클릭 수정을 확인한 결과를 알려 주면 필요한 조정(미리 보기가 같은 줄의 다른 막대를 가리는 정도, 무늬 세기 `app/globals.css`의 `14%`·`5px`, 잡는 부분 폭 8px, `DRAG_SLOP_PX`)을 하고, 커밋을 요청하면 위 제안대로 묶어 커밋한다. 푸시는 사용자.
+**조정할 수 있는 값**(사용자가 요청하면): 미리 보기가 같은 줄의 다른 막대를 가리는 정도(`week-selection.tsx`의 `z-20`·`shadow-md`), 무늬 세기(`app/globals.css`의 `14%`·`5px`), 양 끝 잡는 부분 폭(`event-chip.tsx`의 `w-2`, 8px), 끌기 시작 거리(`month-select.tsx`의 `DRAG_SLOP_PX`). 후속 아이디어(요청 없음): 여러 날 시간 일정의 양 끝 늘이기, 터치 끌기.
+
+## 15. 최근 작업: 날짜별 날씨·기온 표시(2026-10-30, **미커밋**)
+
+**요청**: 월간 그리드 날짜 옆에 날씨 아이콘, 주간 그리드 요일 앞에 날씨와 그 아래 작게 기온. **사용자 결정**: 지역=브라우저 위치(못 받으면 서울), 범위=오늘부터 약 2주 예보, 주간 기온=머리글 한 줄 아래. 월간은 아이콘만(기온은 툴팁)으로 이해해 구현함(사용자가 따로 정정하지 않음).
+
+**미커밋 파일(`git status`로 확인)**: 새로 `lib/weather/{codes,forecast}.ts`, `components/weather/{weather-provider,weather-icon}.tsx`. 수정 `app/[lang]/(app)/{layout,page}.tsx`, `app/[lang]/(app)/day/[date]/page.tsx`(출처 표기, 스켈레톤 `3.5rem`), `components/calendar/{day-cell,week-grid}.tsx`, `next.config.ts`(`geolocation=(self)`), `lib/i18n/dictionaries/{ko,en}.json`(`weather` 섹션, 방침 3곳+시행일), 문서 4개. 제안 커밋: `✨ feat: 월간·주간 그리드에 날짜별 날씨 아이콘과 기온 표시`(코드) + `📝 docs: …`.
+
+**구현 요점**
+- 데이터: `https://api.open-meteo.com/v1/forecast?daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul&forecast_days=16`. 응답의 **마지막 날은 값이 null**이라 `parseForecast`가 날짜별로 건너뛴다. 좌표는 `roundCoord`로 소수 둘째 자리.
+- `WeatherProvider`(`(app)/layout.tsx`)가 마운트 뒤 한 번만 받는다: `localStorage` 캐시(`weather:forecast`, 3시간, `isForecast`로 재검증) → 없으면 `navigator.geolocation`(거부는 `weather:geo-denied`에 7일 기록) → 서울 폴백 → `fetch`(8초). 실패하면 아이콘만 안 보임. 서버·DB는 위치를 모른다.
+- 표시: `WeatherIcon`(lucide 8종, 색 `TONES`)은 데이터가 없으면 `null`. 월간 `DayCell`(서버 컴포넌트)에 클라이언트 잎으로 들어가며 `pointer-events-none`(칸 전체 링크를 가리지 않음, 시험으로 확인). 주간은 `WeekHeaderLink`(week-grid.tsx 안)로 머리글 칸을 빼고 기온 줄(`h-3`)을 항상 예약.
+- 날씨 문구는 최상위 `weather` 사전 키(레이아웃이 `WeatherProvider labels`로 내림).
+
+**확인한 것**: `tsc`·`lint`·`build`, 순수 함수 44건, 진짜 Chromium 28건(실제 컴포넌트, Open-Meteo 응답만 모의: 부산/서울 좌표, 월간·주간 표시, 캐시, 실패·이상한 응답, 높이 안정, 아이콘 위 클릭), 실제 Open-Meteo 응답 모양·CORS, 빌드 결과의 `Permissions-Policy` 헤더. 상세는 `calendar-verification.md` 27절. **확인하지 못한 것**(사용자 확인 대기): 실제 위치 허용 창과 내 지역 날씨, 다크 모드, 작은 화면 주간 머리글 폭, Safari·Firefox, 방침 문구.
+
+**주의·제한**
+- **개발 서버를 재시작해야** `Permissions-Policy` 변경이 반영된다(`next.config.ts`). 재시작 전에는 위치 요청이 차단돼 서울 날씨만 보인다.
+- **Open-Meteo 무료 이용은 비상업 용도·출처 표기 조건**이다(그리드 아래 "날씨 제공: Open-Meteo" 링크로 충족). 앱이 수익을 내면 유료 플랜이 필요하다. 서비스를 바꾸려면 `lib/weather/forecast.ts`(URL·파서)만 고치면 된다.
+- 하루 단위 예보(시간대별 없음), 날씨 끄기 설정 없음, 첫 방문에 위치 허용 창이 뜸. 후속 아이디어(요청 없음): 설정에서 도시 선택·끄기, 섭씨/화씨.
+- 조정 값: 아이콘 색·크기(`weather-icon.tsx`), 캐시 시간(`CACHE_TTL_MS`), 거부 기억 기간(`DENIED_TTL_MS`).
