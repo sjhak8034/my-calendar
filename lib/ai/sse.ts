@@ -26,7 +26,30 @@ export type ChatDelta =
   | { kind: "text"; text: string }
   | { kind: "tool"; parts: ToolCallPart[] }
   | { kind: "finish"; reason: string }
+  | { kind: "usage"; usage: TokenUsage }
   | { kind: "done" };
+
+// 모델 호출 한 번의 토큰 사용량. 비용 계산용이라 숫자만 담는다(질문·답변 내용은 담지 않는다).
+export type TokenUsage = { prompt: number; completion: number; reasoning: number; total: number };
+
+// 마지막 조각의 usage 필드를 읽는다. 없거나 모양이 다르면 null.
+function readUsage(json: unknown): TokenUsage | null {
+  const raw = (json as { usage?: unknown })?.usage;
+  if (typeof raw !== "object" || raw === null) return null;
+  const u = raw as {
+    prompt_tokens?: unknown;
+    completion_tokens?: unknown;
+    total_tokens?: unknown;
+    completion_tokens_details?: { reasoning_tokens?: unknown };
+  };
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  return {
+    prompt: num(u.prompt_tokens),
+    completion: num(u.completion_tokens),
+    reasoning: num(u.completion_tokens_details?.reasoning_tokens),
+    total: num(u.total_tokens),
+  };
+}
 
 // data 한 줄(JSON 또는 [DONE])을 해석한다. 모르는 모양은 무시한다.
 export function parseChatData(data: string): ChatDelta[] {
@@ -37,15 +60,18 @@ export function parseChatData(data: string): ChatDelta[] {
   } catch {
     return [];
   }
+  const out: ChatDelta[] = [];
+  // 사용량은 choices가 비어 있는 마지막 조각에 오기도 하므로 choices 검사보다 먼저 읽는다.
+  const usage = readUsage(json);
+  if (usage) out.push({ kind: "usage", usage });
   const choices = (json as { choices?: unknown })?.choices;
   if (!Array.isArray(choices) || typeof choices[0] !== "object" || choices[0] === null) {
-    return [];
+    return out;
   }
   const first = choices[0] as {
     delta?: { content?: unknown; tool_calls?: unknown };
     finish_reason?: unknown;
   };
-  const out: ChatDelta[] = [];
   const text = first.delta?.content;
   if (typeof text === "string" && text.length > 0) out.push({ kind: "text", text });
 

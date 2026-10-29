@@ -3,6 +3,7 @@ import { todayInSeoul } from "@/lib/calendar";
 import { parseAiRequest } from "@/lib/ai/input";
 import {
   AI_DAILY_LIMIT,
+  AI_DEFAULT_MODEL,
   AI_GUEST_LIMIT,
   AI_HOURLY_LIMIT,
   AI_HISTORY_MESSAGES,
@@ -165,6 +166,8 @@ export async function POST(request: Request) {
   const encoder = new TextEncoder();
   let answer = "";
   let finish = "stop";
+  // 질문 1건 동안의 모델 호출 수와 토큰 합계(비용 확인용 로그). usageRounds가 rounds보다 작으면 일부 호출의 사용량이 오지 않은 것이다.
+  const tally = { rounds: 0, usageRounds: 0, prompt: 0, completion: 0, reasoning: 0, total: 0 };
   let finished!: () => void;
   const streamEnded = new Promise<void>((resolve) => (finished = resolve));
 
@@ -206,6 +209,12 @@ export async function POST(request: Request) {
                 for (const part of delta.parts) assembler.push(part);
               } else if (delta.kind === "finish") {
                 finish = delta.reason;
+              } else if (delta.kind === "usage") {
+                tally.usageRounds += 1;
+                tally.prompt += delta.usage.prompt;
+                tally.completion += delta.usage.completion;
+                tally.reasoning += delta.usage.reasoning;
+                tally.total += delta.usage.total;
               } else {
                 done = true;
               }
@@ -220,6 +229,7 @@ export async function POST(request: Request) {
         let stream = upstream;
         let drafts = 0;
         for (let round = 1; ; round++) {
+          tally.rounds += 1;
           const { text, calls } = await readRound(stream);
           if (calls.length === 0) break;
 
@@ -272,6 +282,8 @@ export async function POST(request: Request) {
           } catch {}
         }
       } finally {
+        // 토큰 수와 호출 수만 남긴다(질문·답변·사용자 식별 정보는 남기지 않는다).
+        console.info("[ai] usage", JSON.stringify({ model: process.env.GEMINI_MODEL || AI_DEFAULT_MODEL, ...tally }));
         try {
           controller.close();
         } catch {}

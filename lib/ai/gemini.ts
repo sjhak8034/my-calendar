@@ -31,6 +31,8 @@ export async function openChatStream(params: {
       model: process.env.GEMINI_MODEL || AI_DEFAULT_MODEL,
       messages: params.messages,
       stream: true,
+      // 이 옵션이 있어야 마지막 조각에 토큰 사용량이 온다(없으면 오지 않음을 확인함). 비용 확인용 로그에 쓴다.
+      stream_options: { include_usage: true },
       max_completion_tokens: AI_MAX_OUTPUT_TOKENS,
       reasoning_effort: AI_REASONING_EFFORT,
       ...(params.tools ? { tools: params.tools, tool_choice: "auto" } : {}),
