@@ -5,6 +5,7 @@ import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { MonthGrid } from "@/components/calendar/month-grid";
 import { MonthSelect } from "@/components/calendar/month-select";
 import { WeekEditorProvider } from "@/components/calendar/week-editor";
+import { WeatherCredit } from "@/components/weather/weather-icon";
 import {
   endOfMonth,
   formatDate,
@@ -97,6 +98,7 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
       <MonthSelect events={editableEvents}>
         <MonthGrid lang={lang} grid={grid} weeks={weeks} today={today} dict={dict.calendar} />
       </MonthSelect>
+      <WeatherCredit />
     </main>
     </WeekEditorProvider>
   );

@@ -10,8 +10,8 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   // HTTPS로만 접속하게 한다(로컬 HTTP에서는 무시된다). preload는 되돌리기 어려워 넣지 않는다.
   { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-  // 쓰지 않는 기기 기능을 막는다. 알림(푸시)은 이 정책의 대상이 아니다.
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  // 쓰지 않는 기기 기능을 막는다. 알림(푸시)은 이 정책의 대상이 아니다. 위치는 날씨 표시에만 우리 화면에서 쓰므로 (self)만 허용한다(다른 사이트가 넣은 프레임은 못 쓴다).
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self), payment=()" },
 ];
 
 const nextConfig: NextConfig = {

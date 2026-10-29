@@ -28,6 +28,8 @@ import { SlotCreate } from "@/components/calendar/slot-create";
 import { NowLine } from "@/components/calendar/now-line";
 import { ScrollToSelected } from "@/components/calendar/scroll-to-selected";
 import { useWeekEditor } from "@/components/calendar/week-editor";
+import { WeatherIcon } from "@/components/weather/weather-icon";
+import { useDayWeather } from "@/components/weather/weather-provider";
 import { applyRange, type EditableEvent } from "@/lib/events/input";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
@@ -54,6 +56,57 @@ const GUTTER = "sticky left-0 z-30 bg-card text-right text-[11px] text-muted-for
 const GUTTER_LABEL = "flex items-start justify-end pt-2.5 pr-2 leading-tight";
 // 선택한 날짜 열의 옅은 배경
 const SELECTED_BG = "data-selected:bg-muted/60";
+
+// 요일 머리글 링크의 id(날짜 열이 aria-labelledby로 가리킨다).
+const headerId = (date: CalendarDate) => `week-day-${date}`;
+
+// 요일 머리글 한 칸: 윗줄은 "날씨 아이콘 요일 날짜", 아랫줄은 작은 기온(최저 / 최고).
+// 날씨가 없는 칸도 아랫줄 높이를 비워 두어, 날씨가 늦게 도착해도 머리글 높이가 변하지 않는다.
+function WeekHeaderLink({
+  lang,
+  date,
+  isToday,
+  isSelected,
+  selectedDayLabel,
+}: {
+  lang: Locale;
+  date: CalendarDate;
+  isToday: boolean;
+  isSelected: boolean;
+  selectedDayLabel: string;
+}) {
+  const weather = useDayWeather(date);
+  const [weekday, dayNumber] = formatWeekdayDay(date).split(" ");
+  const full = formatFullDate(date, lang);
+  const name = isSelected ? `${full}, ${selectedDayLabel}` : full;
+  return (
+    <Link
+      id={headerId(date)}
+      data-today={isToday || undefined}
+      href={`/${lang}/day/${date}`}
+      aria-label={weather ? `${name}, ${weather.description}` : name}
+      aria-current={isToday ? "date" : undefined}
+      className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
+    >
+      <span aria-hidden="true" className="flex items-center gap-1.5">
+        <WeatherIcon date={date} className="size-4" />
+        <span className="text-xs font-medium text-muted-foreground sm:text-[13px]">{weekday}</span>
+        <span
+          data-slot="day-number"
+          className={cn(
+            "flex size-7 items-center justify-center rounded-full text-sm font-semibold",
+            isToday && "bg-foreground text-background",
+          )}
+        >
+          {dayNumber}
+        </span>
+      </span>
+      <span data-slot="week-temps" aria-hidden="true" className="h-3 text-[10px] leading-3 whitespace-nowrap text-muted-foreground">
+        {weather?.temps}
+      </span>
+    </Link>
+  );
+}
 
 // 주간 시간표. 카드 자체가 가로·세로 스크롤 컨테이너이고, 헤더/종일/6시 이전 줄은 위에 sticky로 붙는다.
 // CSS 변수: --hour-h(시간당 높이), --time-col(시간 눈금 열 너비), --day-min(날짜 열 최소 너비)
@@ -86,7 +139,6 @@ export function WeekGrid({
 
   const hasEarly = timeline.days.some((day) => day.earlyEvents.length > 0);
   const hasAllDay = timeline.allDay.bars.length > 0;
-  const headerId = (date: CalendarDate) => `week-day-${date}`;
 
   // 위/아래로 이어지는 일정은 스크린리더에도 알린다.
   const ariaLabel = (title: string, time: string, from = false, to = false) =>
@@ -121,7 +173,6 @@ export function WeekGrid({
               <div data-slot="time-gutter" className={GUTTER} aria-hidden="true" />
               {weekDays.map((date) => {
                 const isToday = date === today;
-                const [weekday, dayNumber] = formatWeekdayDay(date).split(" ");
                 return (
                   <div
                     key={date}
@@ -133,33 +184,13 @@ export function WeekGrid({
                       SELECTED_BG,
                     )}
                   >
-                    <Link
-                      id={headerId(date)}
-                      data-today={isToday || undefined}
-                      href={`/${lang}/day/${date}`}
-                      aria-label={
-                        date === selectedDate
-                          ? `${formatFullDate(date, lang)}, ${dict.selectedDay}`
-                          : formatFullDate(date, lang)
-                      }
-                      aria-current={isToday ? "date" : undefined}
-                      className="flex min-h-12 w-full items-center justify-center outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
-                    >
-                      <span aria-hidden="true" className="flex items-center gap-1.5">
-                        <span className="text-xs font-medium text-muted-foreground sm:text-[13px]">
-                          {weekday}
-                        </span>
-                        <span
-                          data-slot="day-number"
-                          className={cn(
-                            "flex size-7 items-center justify-center rounded-full text-sm font-semibold",
-                            isToday && "bg-foreground text-background",
-                          )}
-                        >
-                          {dayNumber}
-                        </span>
-                      </span>
-                    </Link>
+                    <WeekHeaderLink
+                      lang={lang}
+                      date={date}
+                      isToday={isToday}
+                      isSelected={date === selectedDate}
+                      selectedDayLabel={dict.selectedDay}
+                    />
                   </div>
                 );
               })}

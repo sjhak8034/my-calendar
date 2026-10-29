@@ -79,7 +79,7 @@
     "title": "Privacy Policy",
     "backToLogin": "Back to sign in",
     "draftNotice": "This document is a draft that has not had legal review. It must be reviewed by a professional before the service is made public.",
-    "effective": "Effective date: October 29, 2026",
+    "effective": "Effective date: October 30, 2026",
     "intro": "my-calendar (the \"Service\") processes only the personal information it needs to manage your events and send reminders. This policy explains what we process and why, how long we keep it, and how you can delete it.",
     "contactLabel": "Privacy contact",
     "sections": [
@@ -94,6 +94,7 @@
           "AI usage records: when you ask a question and how many tokens it used (no question or answer content). Used for cost control and abuse prevention.",
           "Web push: this browser's push subscription (endpoint and encryption keys) and your language.",
           "KakaoTalk reminders: if you connect, the access and refresh tokens issued by Kakao, stored encrypted. We don't receive your Kakao profile or friends.",
+          "Weather location (optional): to show the weather, we ask for this browser's location permission. The location is used only on your device and is not stored on the Service's servers. Only rounded coordinates (about 1 km) are sent to the weather provider. If you don't allow it, we show the weather for Seoul.",
           "Notification history: the event title, type, channel, result, and time of reminders we sent.",
           "Access logs: hosting and authentication providers may automatically record your IP address and device or browser details."
         ]
@@ -131,6 +132,7 @@
           "Google: Google sign-in and AI chat (Gemini). Your questions and event details are sent. The AI runs on a paid service, and Google states that it does not use this content to improve its products. It may still be retained for a limited time under Google's policies, for example to prevent abuse.",
           "Kakao: sending KakaoTalk \"Send to me\" reminders and disconnecting.",
           "Cloudflare: security check on sign-up and sign-in (Turnstile), which uses browser information.",
+          "Open-Meteo: weather forecasts. Your browser sends rounded coordinates directly to receive the weather (no account or event information is sent). Its servers are overseas.",
           "Browser push services (Google, Mozilla, Apple, Microsoft): delivering web push notifications."
         ]
       },
@@ -140,6 +142,7 @@
           "An authentication cookie that keeps you signed in (required).",
           "A NEXT_LOCALE cookie that remembers your language (1 year).",
           "A temporary cookie that protects against forgery while connecting KakaoTalk (10 minutes).",
+          "The weather forecast we receive and a record of a declined location permission are kept briefly in this browser (forecast 3 hours, declined record 7 days).",
           "We don't use cookies for advertising or analytics."
         ]
       },
@@ -189,6 +192,21 @@
     "passwordMismatch": "The two passwords don't match.",
     "rateLimited": "Too many requests. Please try again in a moment.",
     "captchaFailed": "The security check (CAPTCHA) failed. Please refresh the page and try again."
+  },
+  "weather": {
+    "kinds": {
+      "clear": "Clear",
+      "partly": "Partly cloudy",
+      "cloudy": "Cloudy",
+      "fog": "Fog",
+      "drizzle": "Drizzle",
+      "rain": "Rain",
+      "snow": "Snow",
+      "thunder": "Thunderstorm"
+    },
+    "low": "low",
+    "high": "high",
+    "credit": "Weather by"
   },
   "week": {
     "title": "Weekly schedule",

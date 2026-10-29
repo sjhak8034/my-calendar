@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { WeekEditorProvider } from "@/components/calendar/week-editor";
 import { WeekGrid } from "@/components/calendar/week-grid";
+import { WeatherCredit } from "@/components/weather/weather-icon";
 import { WeekToolbar } from "@/components/calendar/week-toolbar";
 import {
   CALENDAR_MAX_YEAR,
@@ -101,6 +102,7 @@ async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[dat
         nowIso={nowIso}
         dict={dict.week}
       />
+      <WeatherCredit />
     </main>
     </WeekEditorProvider>
   );
@@ -113,7 +115,7 @@ function WeekSkeleton() {
       <div aria-hidden="true" className="h-[4.75rem] animate-pulse rounded-xl border bg-card shadow-xs sm:h-[5.75rem]" />
       <div
         aria-hidden="true"
-        className="grid h-[max(24rem,calc(100dvh-7rem))] grid-cols-[4rem_repeat(7,minmax(0,1fr))] grid-rows-[3rem_2rem_1fr] overflow-hidden rounded-xl border bg-card shadow-xs lg:h-[max(28rem,calc(100dvh-15rem))]"
+        className="grid h-[max(24rem,calc(100dvh-7rem))] grid-cols-[4rem_repeat(7,minmax(0,1fr))] grid-rows-[3.5rem_2rem_1fr] overflow-hidden rounded-xl border bg-card shadow-xs lg:h-[max(28rem,calc(100dvh-15rem))]"
       >
         <div className="col-span-8 grid grid-cols-subgrid border-b">
           <div />
