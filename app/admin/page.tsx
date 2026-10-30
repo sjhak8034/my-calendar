@@ -33,7 +33,7 @@ const PLANNED: { title: string; note: string; items: PlannedItem[] }[] = [
     items: [
       { name: "사용자 목록과 상태", description: "가입일, 마지막 로그인, 로그인 방식(이메일·Google·게스트), 카카오 연결 여부. 이메일은 일부만 가려서 표시.", status: "done" },
       { name: "AI 사용 제한 조정", description: "모든 사용자 공통 하루 사용 금액(원) 한도를 대시보드 상단 슬라이더로 조절(사용자별 한도·계정 차단은 아직 없음).", status: "done" },
-      { name: "정리 작업 현황", description: "30일 지난 게스트·AI 대화가 실제로 지워졌는지, 마지막 실행 시각(보관 기간 준수 확인).", status: "planned" },
+      { name: "정리 작업 현황", description: "30일 지난 게스트·AI 대화가 실제로 지워졌는지, 마지막 실행 시각(보관 기간 준수 확인).", status: "done" },
       { name: "오류 모음", description: "서버 로그에서 최근 오류를 모아 보기(모니터링 서비스 도입 전 임시 대안).", status: "planned" },
     ],
   },
