@@ -22,15 +22,13 @@ export type WeekLayout<T extends LaneInput = LaneInput> = {
   laneCount: number; // 보이는 레인 수
 };
 
-const isBar = (s: LaneInput) => s.allDay || s.spanDays > 1;
 const length = (s: LaneInput) => s.endCol - s.startCol;
 
+// 위아래 순서: 종일(월간) 일정이 항상 위, 시간 일정(주간)은 그 아래.
+// 종일끼리는 시작 열 → 긴 것 우선, 시간 일정끼리는 시작 열 → 시작 시각 순이다.
 function compare(a: LaneInput, b: LaneInput): number {
-  const barA = isBar(a);
-  const barB = isBar(b);
-  if (barA !== barB) return barA ? -1 : 1;
-  if (barA) {
-    // 시작 열 → 긴 것 우선
+  if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+  if (a.allDay) {
     if (a.startCol !== b.startCol) return a.startCol - b.startCol;
     if (length(a) !== length(b)) return length(b) - length(a);
     if (a.spanDays !== b.spanDays) return b.spanDays - a.spanDays;
@@ -51,17 +49,33 @@ export function layoutWeek<T extends LaneInput>(
   const lanes: T[][] = [];
   const hiddenByDay = Array<number>(DAYS_PER_WEEK).fill(0);
 
+  // 열(날짜)마다 종일 일정이 차지한 가장 아래 줄 + 1. 시간 일정은 이 줄보다 아래에만 놓아서,
+  // 어느 날짜 칸에서도 종일 일정이 시간 일정보다 위에 오게 한다(종일 일정이 쓰지 않는 빈 줄이 중간에 있어도 올라가지 않는다).
+  const allDayBottom = Array<number>(DAYS_PER_WEEK).fill(0);
+
   const placed = sorted.map((segment) => {
-    let lane = lanes.findIndex((items) =>
-      items.every(
-        (o) => segment.endCol < o.startCol || segment.startCol > o.endCol,
-      ),
+    let minLane = 0;
+    if (!segment.allDay) {
+      for (let col = segment.startCol; col <= segment.endCol; col++) {
+        minLane = Math.max(minLane, allDayBottom[col]);
+      }
+    }
+    while (lanes.length <= minLane) lanes.push([]);
+    let lane = lanes.findIndex(
+      (items, index) =>
+        index >= minLane &&
+        items.every((o) => segment.endCol < o.startCol || segment.startCol > o.endCol),
     );
     if (lane === -1) {
       lane = lanes.length;
       lanes.push([]);
     }
     lanes[lane].push(segment);
+    if (segment.allDay) {
+      for (let col = segment.startCol; col <= segment.endCol; col++) {
+        allDayBottom[col] = Math.max(allDayBottom[col], lane + 1);
+      }
+    }
 
     const visible = lane < maxLanes;
     if (!visible) {
