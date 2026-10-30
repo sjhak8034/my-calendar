@@ -33,7 +33,9 @@ type KakaoResult = {
   y: string;
   place_name?: string; // 키워드 검색 결과에만 있다.
   address_name?: string;
-  road_address_name?: string;
+  road_address_name?: string; // 키워드 검색 결과의 도로명 주소
+  road_address?: { address_name: string } | null; // 주소 검색 결과의 도로명 주소
+  address?: { address_name: string } | null; // 주소 검색 결과의 지번 주소
 };
 declare global {
   interface Window {
@@ -83,7 +85,15 @@ export function search(maps: KakaoMaps, query: string): Promise<KakaoResult | nu
   });
 }
 
-export type PlaceCandidate = { label: string; address: string; x: number; y: number };
+// address·road·jibun은 주소 정보(address는 화면 표시용). 장소 이름이 있는 후보는 이름만 저장한다(이름에 주소를 덧붙이면 지도에서 다시 찾지 못한다).
+export type PlaceCandidate = { label: string; address: string; road: string; jibun: string; x: number; y: number };
+
+// 후보를 골랐을 때 입력칸에 저장할 글자: 가게·건물 이름 후보는 이름만, 주소 후보는 지번 주소(없으면 도로명).
+export function pickedLocationText(c: PlaceCandidate): string {
+  // address는 이름 후보일 때만 채워진다(주소 후보는 label이 곧 주소).
+  if (c.address) return c.label.trim();
+  return (c.jibun || c.road || c.label).trim();
+}
 
 // 입력 중 보여 줄 후보. 가게·건물 이름 검색을 먼저 하고, 결과가 없으면 주소 검색으로 찾는다.
 export async function searchCandidates(query: string, max = 5): Promise<PlaceCandidate[]> {
@@ -91,7 +101,14 @@ export async function searchCandidates(query: string, max = 5): Promise<PlaceCan
   const { Status, Geocoder, Places } = maps.services;
   const toCandidate = (r: KakaoResult): PlaceCandidate => {
     const address = r.road_address_name || r.address_name || "";
-    return { label: r.place_name || address, address: r.place_name ? address : "", x: Number(r.x), y: Number(r.y) };
+    return {
+      label: r.place_name || address,
+      address: r.place_name ? address : "",
+      road: r.road_address_name || r.road_address?.address_name || "",
+      jibun: r.address?.address_name || (r.place_name ? r.address_name || "" : ""),
+      x: Number(r.x),
+      y: Number(r.y),
+    };
   };
   const places = await new Promise<KakaoResult[]>((resolve) =>
     new Places().keywordSearch(query, (r, status) => resolve(status === Status.OK ? r : [])),

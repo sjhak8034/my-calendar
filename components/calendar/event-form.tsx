@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink } from "lucide-react";
 import { DOT_CLASS } from "@/components/calendar/event-colors";
-import { EventMap } from "@/components/calendar/event-map";
-import type { PlaceCandidate } from "@/components/calendar/event-map";
+import { EventMap, pickedLocationText } from "@/components/calendar/event-map";
 import { PlaceInput } from "@/components/calendar/place-input";
 import { EVENT_COLORS, type EventColor } from "@/lib/calendar";
 import {
@@ -30,9 +29,6 @@ import {
 } from "@/lib/events/input";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
-
-const pickedText = (c: PlaceCandidate) =>
-  (c.address ? `${c.label} (${c.address})` : c.label).trim();
 
 export type EventFormLabels = Dictionary["eventForm"];
 
@@ -264,7 +260,7 @@ export function EventForm({
             invalid={!!errors.location}
             describedBy={errors.location ? id("location-error") : undefined}
             onChange={(value) => set("location", value)}
-            onPick={(c) => setPicked({ text: pickedText(c), x: c.x, y: c.y })}
+            onPick={(c) => setPicked({ text: pickedLocationText(c), x: c.x, y: c.y })}
           />
         </Field>
         {values.location.trim() && (

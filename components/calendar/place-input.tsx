@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { searchCandidates, type PlaceCandidate } from "@/components/calendar/event-map";
+import { pickedLocationText, searchCandidates, type PlaceCandidate } from "@/components/calendar/event-map";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -34,12 +34,14 @@ export function PlaceInput({
   const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
+  // 입력칸을 누르고(포커스) 있을 때만 검색하고 목록을 보인다. 일정을 열 때 저장된 값만으로 목록이 뜨지 않게 한다.
+  const [focused, setFocused] = useState(false);
   // 후보를 골라 값이 바뀐 직후에는 그 값으로 다시 검색하지 않는다.
   const skip = useRef<string | null>(null);
 
   useEffect(() => {
     const query = value.trim();
-    if (!query || skip.current === query) return;
+    if (!focused || !query || skip.current === query) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
@@ -56,11 +58,11 @@ export function PlaceInput({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [value]);
+  }, [value, focused]);
 
   function pick(candidate: PlaceCandidate) {
-    const text = candidate.address ? `${candidate.label} (${candidate.address})` : candidate.label;
-    skip.current = text.trim();
+    const text = pickedLocationText(candidate);
+    skip.current = text;
     onChange(text);
     onPick(candidate);
     setOpen(false);
@@ -104,8 +106,14 @@ export function PlaceInput({
           onChange(e.target.value);
         }}
         onKeyDown={handleKeyDown}
-        onFocus={() => candidates.length > 0 && setOpen(true)}
-        onBlur={() => setOpen(false)}
+        onFocus={() => {
+          setFocused(true);
+          if (candidates.length > 0) setOpen(true);
+        }}
+        onBlur={() => {
+          setFocused(false);
+          setOpen(false);
+        }}
       />
       {open && (
         <ul
