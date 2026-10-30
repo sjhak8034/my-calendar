@@ -196,6 +196,7 @@ AI는 일정을 직접 바꾸지 못하고 "초안"만 만듭니다. 사용자�
 | 도메인 | 기능 | 함수 | 권한 |
 | --- | --- | --- | --- |
 | 일정 | 생성·수정·이동·삭제 | `createEvent` · `updateEvent` · `moveEvent` · `deleteEvent` | 로그인 |
+| 날짜 메모 | 저장(내용을 비우면 삭제) | `saveDayNote` | 로그인 |
 | AI | 최근 대화 불러오기 / 전체 삭제 / 오늘 사용량 비율 | `loadLatestConversation` · `deleteAllConversations` · `getUsageStatus` | 로그인 |
 | 푸시 | 구독 / 해제 / 끄기 / 테스트 | `subscribePush` · `unsubscribePush` · `disablePush` · `sendTestPush` | 로그인 |
 | 관리자 | AI 요금 단가 저장 / 사용 금액 한도 저장 | `savePricing` · `saveCostLimit` | 관리자 |
@@ -220,6 +221,7 @@ erDiagram
   AUTH_USERS ||--o| PROFILES : has
   AUTH_USERS ||--o{ EVENTS : owns
   AUTH_USERS ||--o{ DAILY_LOGINS : logs
+  AUTH_USERS ||--o{ DAY_NOTES : writes
   AUTH_USERS ||--o{ PUSH_SUBSCRIPTIONS : has
   AUTH_USERS ||--o{ AI_CONVERSATIONS : has
   AUTH_USERS ||--o{ AI_USAGE : "기록(탈퇴 시 null)"
@@ -282,9 +284,14 @@ erDiagram
     date day PK
     int count
   }
+  DAY_NOTES {
+    uuid user_id PK
+    date day PK
+    text content "1~1000자"
+  }
 ```
 
-그 밖에 관리자 설정 저장용 `app_settings(key, value)`가 있습니다(AI 요금 단가, 사용 금액 한도). 스키마 전체는 [`supabase/migrations/`](supabase/migrations/)의 마이그레이션 16개로 관리합니다.
+그 밖에 관리자 설정 저장용 `app_settings(key, value)`가 있습니다(AI 요금 단가, 사용 금액 한도). 스키마 전체는 [`supabase/migrations/`](supabase/migrations/)의 마이그레이션 17개로 관리합니다.
 
 ---
 
