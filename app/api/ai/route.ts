@@ -14,6 +14,7 @@ import { GeminiError, openChatStream } from "@/lib/ai/gemini";
 import { buildMessages, systemPrompt, type ChatMessage, type ModelMessage } from "@/lib/ai/prompt";
 import { ToolCallAssembler, feedSse, parseChatData, type TokenUsage } from "@/lib/ai/sse";
 import { AI_TOOLS, runTool } from "@/lib/ai/tools";
+import { isOverDailyCostLimit } from "@/lib/ai/cost-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/supabase/require-user";
 
@@ -25,6 +26,7 @@ type ErrorCode =
   | "notFound"
   | "rateLimited"
   | "guestLimited"
+  | "usageLimited"
   | "notConfigured"
   | "upstream"
   | "failed";
@@ -77,6 +79,9 @@ export async function POST(request: Request) {
   // API 키는 서버 환경변수에만 둔다. 없으면 한도를 쓰기 전에 알린다.
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return fail(503, "notConfigured");
+
+  // 관리자가 정한 하루 사용 금액 한도(모든 사용자 공통)를 넘었으면 질문 횟수 한도를 쓰기 전에 막는다.
+  if (await isOverDailyCostLimit(user.id)) return fail(429, "usageLimited");
 
   // 기존 대화면 본인 대화인지 확인한다(RLS가 남의 대화를 걸러 낸다).
   if (conversationId) {

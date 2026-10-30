@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { Notice, Panel, Section, Tile, Tiles } from "./parts";
 import { StatCard, deltaText } from "./stat-card";
 import { PricingForm } from "./pricing-form";
+import { CostLimitBar } from "./cost-limit-bar";
+import { getDailyCostLimit } from "@/lib/ai/cost-limit";
 
 const PERIODS = [7, 14, 30] as const;
 type Period = (typeof PERIODS)[number];
@@ -41,10 +43,11 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
   const days = readPeriod((await searchParams).days);
   // 사용자 목록은 AI 사용자별 표의 이메일 조회에도 쓰므로 먼저 읽는다.
   const users = await getUserStats(days);
-  const [ai, notif, pricingResult] = await Promise.all([
+  const [ai, notif, pricingResult, costLimit] = await Promise.all([
     getAiStats(days, users.ok ? users.data.idOwners : null),
     getNotificationStats(days),
     getPricing(),
+    getDailyCostLimit(),
   ]);
   const pricing = pricingResult.pricing;
 
@@ -77,6 +80,15 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
 
   return (
     <div className="flex flex-col gap-8">
+      {/* 가장 위 고정 바: 사용자당 하루 AI 사용 금액 한도(모든 사용자 공통)를 슬라이더로 조절 */}
+      <CostLimitBar
+        initialLimit={costLimit.limit}
+        todayMaxUserKrw={ai.ok ? Math.max(0, ...ai.data.today_users.map((u) => estimateCost(u, pricing)?.krw ?? 0)) : 0}
+        avgKrwPerQuestion={aiCost && aiTotals && aiTotals.questions ? aiCost.krw / aiTotals.questions : 0}
+        hasPricing={pricing !== null}
+        readError={costLimit.error}
+      />
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">통계 대시보드</h1>

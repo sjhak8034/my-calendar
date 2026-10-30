@@ -321,6 +321,7 @@
       "question": "Enter a message between 1 and 200 characters.",
       "notFound": "The chat was not found. It may have been deleted or passed its retention period.",
       "rateLimited": "You've reached the question limit (20 per hour, 100 per day). Please try again later.",
+      "usageLimited": "You've used up today's AI usage. Please try again tomorrow.",
       "notConfigured": "AI chat is not set up yet.",
       "upstream": "Could not get an AI response. Please try again later.",
       "failed": "Something went wrong. Please try again later.",

@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAll, PAGE } from "@/lib/admin/fetch-all";
 
 // 관리자 대시보드 집계. DB 함수 없이 service role로 행을 읽어 서버에서 센다(날짜는 서울 시간 기준).
 // 반드시 getAdmin() 확인을 마친 뒤에만 부른다.
@@ -34,6 +35,8 @@ export type AiStats = {
     reasoning: number;
   }[];
   models: { model: string; questions: number }[];
+  // 오늘(서울) 사용자별 토큰. 하루 사용 금액 한도 막대에서 가장 많이 쓴 사용자의 금액을 계산하는 데 쓴다.
+  today_users: { prompt: number; completion: number; reasoning: number }[];
 };
 
 export type NotificationStats = {
@@ -44,9 +47,6 @@ export type NotificationStats = {
   errors: { channel: string; reason: string; n: number }[];
 };
 
-const PAGE = 1000;
-// 한 번의 집계에서 읽는 최대 행 수(과도한 읽기 방지). 넘으면 오래된 쪽이 빠진다.
-const MAX_ROWS = 20_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const kstFormat = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" });
@@ -66,18 +66,6 @@ const sinceIso = (days: number) => new Date(Date.now() - days * DAY_MS).toISOStr
 
 type Client = NonNullable<ReturnType<typeof createAdminClient>>;
 const noKey = { ok: false, message: "SUPABASE_SERVICE_ROLE_KEY가 설정되어 있지 않습니다." } as const;
-
-// PostgREST는 한 번에 가져오는 행 수가 제한돼 있어 페이지를 나눠 모은다.
-async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) {
-  const rows: T[] = [];
-  for (let from = 0; from < MAX_ROWS; from += PAGE) {
-    const { data, error } = await build(from, from + PAGE - 1);
-    if (error) return { rows, error: error.message };
-    rows.push(...(data ?? []));
-    if (!data || data.length < PAGE) break;
-  }
-  return { rows, error: null as string | null };
-}
 
 async function listAllUsers(admin: Client) {
   const users: { id: string; email: string | null; isGuest: boolean; createdAt: string; lastSignInAt: string | null }[] = [];
@@ -211,10 +199,19 @@ export async function getAiStats(days: number, owners: UserStats["idOwners"] | n
   const perUser = new Map<string, AiStats["top_users"][number]>();
   const perModel = new Map<string, number>();
   const cutoff = Date.now() - days * DAY_MS;
+  const todayKey = dayList[dayList.length - 1];
+  const todayByUser = new Map<string, { prompt: number; completion: number; reasoning: number }>();
 
   for (const r of rows) {
     const i = idx.get(kstDay(r.created_at));
     if (i !== undefined) {
+      if (dayList[i] === todayKey && r.user_id) {
+        const t = todayByUser.get(r.user_id) ?? { prompt: 0, completion: 0, reasoning: 0 };
+        t.prompt += r.prompt_tokens;
+        t.completion += r.completion_tokens;
+        t.reasoning += r.reasoning_tokens;
+        todayByUser.set(r.user_id, t);
+      }
       daily[i].questions++;
       daily[i].prompt += r.prompt_tokens;
       daily[i].completion += r.completion_tokens;
@@ -241,6 +238,7 @@ export async function getAiStats(days: number, owners: UserStats["idOwners"] | n
       daily,
       top_users: [...perUser.values()].sort((a, b) => total(b) - total(a)).slice(0, 10),
       models: [...perModel.entries()].map(([model, questions]) => ({ model, questions })),
+      today_users: [...todayByUser.values()],
     },
   };
 }

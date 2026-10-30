@@ -5,6 +5,11 @@ export const AI_DAILY_LIMIT = 100; // 사용자당 최근 24시간 질문 수
 export const AI_HISTORY_MESSAGES = 10; // 모델에 이어 보내는 이전 메시지 수
 export const AI_HISTORY_CHARS = 8000; // 이전 메시지 글자 합계(넘으면 오래된 것부터 뺀다)
 export const AI_GUEST_LIMIT = 3; // 게스트(익명 로그인) 사용자의 시간당·하루 질문 수. 20261028000000_guest_mode.sql의 값과 함께 바꾼다.
+// 사용자당 하루(서울 0시 기준) AI 사용 금액 상한(원). 입력·출력 토큰의 단가가 달라 토큰 수가 아니라 금액으로 제한한다.
+// 관리자가 대시보드 슬라이더로 정해 app_settings('ai_cost_limit')에 저장한다(없으면 제한 없음). 슬라이더 범위·간격만 여기에 둔다(값 자체는 DB).
+export const AI_COST_LIMIT_MIN = 10;
+export const AI_COST_LIMIT_MAX = 2_000;
+export const AI_COST_LIMIT_STEP = 10;
 export const AI_MAX_TOOL_ROUNDS = 5; // 질문 1건당 도구 호출을 거치는 모델 호출 상한(마지막 한 번은 도구 없이 답하게 한다)
 export const AI_MAX_DRAFTS = 3; // 질문 1건당 일정 초안 수
 export const AI_SEARCH_MAX_DAYS = 366; // search_events 한 번에 조회할 수 있는 최대 일수

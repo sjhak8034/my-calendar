@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getAdmin } from "@/lib/admin/require-admin";
 import { PRICING_KEY, PRICING_MAX, parsePricing } from "@/lib/admin/pricing";
+import { AI_COST_LIMIT_MAX, AI_COST_LIMIT_MIN } from "@/lib/ai/limits";
+import { COST_LIMIT_KEY } from "@/lib/ai/cost-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PricingState = { ok?: boolean; error?: string };
@@ -39,4 +41,37 @@ export async function savePricing(_prev: PricingState, formData: FormData): Prom
   }
   revalidatePath("/admin/dashboard");
   return { ok: true };
+}
+
+export type CostLimitState = { ok?: boolean; error?: string; saved?: number | null };
+
+// 사용자당 하루 AI 사용 금액 한도(원) 저장(모든 사용자 공통). 값이 비어 있으면 '제한 없음'. 슬라이더 값이지만 직접 호출될 수 있어 서버에서 다시 검증한다.
+export async function saveCostLimit(_prev: CostLimitState, formData: FormData): Promise<CostLimitState> {
+  const admin = await getAdmin();
+  if (!admin.ok) return { error: "권한이 없습니다." };
+
+  const raw = formData.get("limit");
+  let limit: number | null = null;
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < AI_COST_LIMIT_MIN || n > AI_COST_LIMIT_MAX) {
+      return { error: `한도는 ${AI_COST_LIMIT_MIN.toLocaleString()}원 ~ ${AI_COST_LIMIT_MAX.toLocaleString()}원 사이여야 합니다.` };
+    }
+    limit = n;
+  }
+
+  const client = createAdminClient();
+  if (!client) return { error: "서버 설정(service role 키)이 없어 저장할 수 없습니다." };
+  const { error } = await client
+    .from("app_settings")
+    .upsert(
+      { key: COST_LIMIT_KEY, value: { dailyKrwPerUser: limit }, updated_at: new Date().toISOString(), updated_by: admin.userId },
+      { onConflict: "key" },
+    );
+  if (error) {
+    console.error("[admin] saveCostLimit failed:", error.code ?? "unknown");
+    return { error: "저장하지 못했습니다." };
+  }
+  revalidatePath("/admin/dashboard");
+  return { ok: true, saved: limit };
 }
