@@ -2,6 +2,7 @@ import { getWeekdayNames, type CalendarDate, type MonthGrid as Grid } from "@/li
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import type { WeekData } from "@/lib/events/month-layout";
+import type { HolidayMap } from "@/lib/holidays/ics";
 import { WeekRow } from "./week-row";
 
 type Props = {
@@ -10,11 +11,12 @@ type Props = {
   weeks: WeekData[];
   today: CalendarDate;
   dict: Dictionary["calendar"];
+  holidays: HolidayMap;
 };
 
 // 요일 헤더 + 6주
-export function MonthGrid({ lang, grid, weeks, today, dict }: Props) {
-  const weekdays = getWeekdayNames();
+export function MonthGrid({ lang, grid, weeks, today, dict, holidays }: Props) {
+  const weekdays = getWeekdayNames(lang);
 
   return (
     <div
@@ -42,6 +44,7 @@ export function MonthGrid({ lang, grid, weeks, today, dict }: Props) {
           today={today}
           data={weeks[i]}
           dict={dict}
+          holidays={holidays}
         />
       ))}
     </div>

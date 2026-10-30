@@ -17,7 +17,7 @@ export type YearMonth = { year: number; month: number };
 export const CALENDAR_MIN_YEAR = 1900;
 export const CALENDAR_MAX_YEAR = 2200;
 
-// 항상 6주 × 7일. 첫 칸은 그 달 1일이 속한 주의 시작일(월요일).
+// 항상 6주 × 7일. 첫 칸은 그 달 1일이 속한 주의 시작일(일요일).
 export function getMonthGrid(year: number, month: number): MonthGrid {
   const first = startOfWeek(formatDate({ year, month, day: 1 }));
   const grid: MonthGrid = [];

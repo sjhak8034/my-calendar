@@ -72,11 +72,11 @@ export function formatMonthShort(month: number) {
   });
 }
 
-// WEEK_START부터 7개: Mon Tue Wed Thu Fri Sat Sun (로케일과 무관)
-export function getWeekdayNames(): string[] {
-  // 2024-01-01은 월요일
+// WEEK_START(일요일)부터 7개. 한국어 화면은 "일 월 화 수 목 금 토", 영어 화면은 "Sun Mon Tue …".
+export function getWeekdayNames(locale: Locale): string[] {
+  // 2024-01-07은 일요일
   return Array.from({ length: 7 }, (_, i) =>
-    formatCalendar(addDays("2024-01-01", WEEK_START - 1 + i), DATE_LOCALE, {
+    formatCalendar(addDays("2024-01-07", WEEK_START + i), locale, {
       weekday: "short",
     }),
   );
@@ -163,9 +163,9 @@ export function formatTimeRange(
   return `${monthDay(startIso)}${join}${start} – ${monthDay(endIso)}${join}${end}`;
 }
 
-// 주 헤더용: "Mon 19" (로케일과 무관)
-export function formatWeekdayDay(date: CalendarDate) {
-  return `${getWeekdayNames()[weekdayIndex(date)]} ${Number(date.slice(8, 10))}`;
+// 주 헤더용: 한국어 "월 19", 영어 "Mon 19"
+export function formatWeekdayDay(date: CalendarDate, locale: Locale) {
+  return `${getWeekdayNames(locale)[weekdayIndex(date)]} ${Number(date.slice(8, 10))}`;
 }
 
 // 사전 문자열의 {key} 자리표시자 치환

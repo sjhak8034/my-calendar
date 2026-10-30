@@ -16,6 +16,7 @@ import {
 } from "@/lib/calendar";
 import type { EditableEvent } from "@/lib/events/input";
 import { getEventsForRange } from "@/lib/events/queries";
+import { getHolidaysForDates } from "@/lib/holidays";
 import { hasLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
@@ -50,9 +51,10 @@ async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[dat
   const weekStart = weekDays[0];
   const weekEnd = weekDays[weekDays.length - 1];
 
-  const result = await getEventsForRange(weekStart, weekEnd, {
-    includeDescription: true,
-  });
+  const [result, holidays] = await Promise.all([
+    getEventsForRange(weekStart, weekEnd, { includeDescription: true }),
+    getHolidaysForDates([weekStart, weekEnd], lang),
+  ]);
   const events: EditableEvent[] = (result.ok ? result.events : []).map((event) => ({
     ...event,
     description: event.description ?? null,
@@ -103,6 +105,7 @@ async function WeekContent({ params, searchParams }: PageProps<"/[lang]/day/[dat
         today={today}
         selectedDate={date}
         nowIso={nowIso}
+        holidays={holidays}
         dict={dict.week}
       />
       {/* 출처 줄 자리를 휴대폰에서는 미리 잡아, 날씨가 늦게 도착해도 그리드 높이가 변하지 않게 한다. sm 이상은 박스를 만들지 않는다. */}

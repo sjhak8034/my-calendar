@@ -12,6 +12,7 @@ import {
   formatTime,
   formatTimeRange,
   formatWeekdayDay,
+  isWeekend,
   normalizeEventColor,
   type CalendarDate,
   type DayTimeline,
@@ -29,6 +30,7 @@ import { useWeekEditor } from "@/components/calendar/week-editor";
 import { WeatherIcon } from "@/components/weather/weather-icon";
 import { useDayWeather } from "@/components/weather/weather-provider";
 import { applyRange, type EditableEvent } from "@/lib/events/input";
+import type { Holiday, HolidayMap } from "@/lib/holidays/ics";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
@@ -45,6 +47,7 @@ type Props = {
   today: CalendarDate;
   selectedDate: CalendarDate;
   nowIso: string;
+  holidays: HolidayMap; // 이 주의 휴일(날짜 → 이름·종류)
   dict: Dictionary["week"];
 };
 
@@ -66,17 +69,20 @@ function WeekHeaderLink({
   isToday,
   isSelected,
   selectedDayLabel,
+  holiday,
 }: {
   lang: Locale;
   date: CalendarDate;
   isToday: boolean;
   isSelected: boolean;
   selectedDayLabel: string;
+  holiday?: Holiday;
 }) {
   const weather = useDayWeather(date);
-  const [weekday, dayNumber] = formatWeekdayDay(date).split(" ");
+  const [weekday, dayNumber] = formatWeekdayDay(date, lang).split(" ");
   const full = formatFullDate(date, lang);
-  const name = isSelected ? `${full}, ${selectedDayLabel}` : full;
+  const withHoliday = holiday ? `${full}, ${holiday.name}` : full;
+  const name = isSelected ? `${withHoliday}, ${selectedDayLabel}` : withHoliday;
   return (
     <Link
       id={headerId(date)}
@@ -97,17 +103,34 @@ function WeekHeaderLink({
           className={cn(
             "flex size-6 items-center justify-center rounded-full text-xs font-semibold sm:size-7 sm:text-sm",
             isToday && "bg-foreground text-background",
+            !isToday && (isWeekend(date) || holiday?.kind === "holiday") && "text-destructive",
           )}
         >
           {dayNumber}
         </span>
       </span>
-      <span data-slot="week-temps" aria-hidden="true" className="h-3 text-[10px] leading-3 whitespace-nowrap text-muted-foreground">
+      {/* 아랫줄: 기온 + (sm부터) 휴일 이름. 줄 높이를 늘리지 않으려고 한 줄 안에 같이 두고 넘치면 말줄임한다. */}
+      <span
+        data-slot="week-temps"
+        aria-hidden="true"
+        className="flex h-3 max-w-full items-center justify-center gap-1 px-1 text-[10px] leading-3 whitespace-nowrap text-muted-foreground"
+      >
         {weather && (
           <>
             <span className="tracking-tighter sm:hidden">{`${weather.tempMin}°/${weather.tempMax}°`}</span>
-            <span className="hidden sm:inline">{weather.temps}</span>
+            <span className="hidden shrink-0 sm:inline">{weather.temps}</span>
           </>
+        )}
+        {holiday && (
+          <span
+            data-slot="holiday-name"
+            className={cn(
+              "hidden min-w-0 truncate sm:inline",
+              holiday.kind === "holiday" && "font-medium text-destructive",
+            )}
+          >
+            {holiday.name}
+          </span>
         )}
       </span>
     </Link>
@@ -123,6 +146,7 @@ export function WeekGrid({
   today,
   selectedDate,
   nowIso,
+  holidays,
   dict,
 }: Props) {
   // 낙관적 업데이트: 아직 서버에 반영 중인 새 위치를 덮어쓴 일정으로 배치를 계산한다.
@@ -199,6 +223,7 @@ export function WeekGrid({
                       isToday={isToday}
                       isSelected={date === selectedDate}
                       selectedDayLabel={dict.selectedDay}
+                      holiday={holidays[date]}
                     />
                   </div>
                 );

@@ -13,8 +13,8 @@ export function toSeoulIso(date: CalendarDate, time: string): string {
   return `${date}T${time}:00${SEOUL_OFFSET}`;
 }
 
-// 주 시작 요일(0=일 … 6=토). 월요일 시작.
-export const WEEK_START = 1;
+// 주 시작 요일(0=일 … 6=토). 일요일 시작. 월간 그리드·주간 범위·요일 머리글이 모두 이 값에서 나온다.
+export const WEEK_START = 0;
 
 const MS_PER_DAY = 86_400_000;
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -99,10 +99,16 @@ export function compareDates(a: CalendarDate, b: CalendarDate): number {
   return diff === 0 ? 0 : diff < 0 ? -1 : 1;
 }
 
-// WEEK_START(월요일)이 0, 일요일이 6
+// 주의 첫 요일(WEEK_START)이 0
 export function weekdayIndex(date: CalendarDate): number {
   const day = new Date(toMs(date)).getUTCDay();
   return (day - WEEK_START + 7) % 7;
+}
+
+// 토요일·일요일. 주 시작 요일과 무관하게 실제 요일(0=일, 6=토)로 판별한다. 날짜 숫자를 붉게 칠하는 데 쓴다.
+export function isWeekend(date: CalendarDate): boolean {
+  const day = new Date(toMs(date)).getUTCDay();
+  return day === 0 || day === 6;
 }
 
 export function startOfWeek(date: CalendarDate): CalendarDate {

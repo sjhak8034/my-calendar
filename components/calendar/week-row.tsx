@@ -2,6 +2,7 @@ import { fillTemplate, type GridDay, type CalendarDate } from "@/lib/calendar";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import type { WeekData } from "@/lib/events/month-layout";
+import type { HolidayMap } from "@/lib/holidays/ics";
 import { DayCell } from "./day-cell";
 import { EventChip } from "./event-chip";
 import { ExpandableWeek, WeekCollapseButton, WeekMoreButton } from "./expandable-week";
@@ -13,12 +14,13 @@ type Props = {
   today: CalendarDate;
   data: WeekData;
   dict: Dictionary["calendar"];
+  holidays: HolidayMap;
 };
 
 // 한 주: 7열 날짜 칸 배경 + 그 위에 pointer-events-none 오버레이 grid(일정 조각).
 // 오버레이 행 높이는 고정(3줄 + "더 보기" 1줄)이라 lane → grid-row가 그대로 대응한다.
 // 일정이 3줄을 넘으면 "+N" 버튼이 나오고, 누르면 이 주만 모든 일정이 보일 만큼 펼쳐진다(ExpandableWeek: 일정 줄 수 + 접기 줄).
-export function WeekRow({ lang, days, today, data, dict }: Props) {
+export function WeekRow({ lang, days, today, data, dict, holidays }: Props) {
   const { layout, eventCounts } = data;
   // 가려진 일정까지 포함한 전체 줄 수. 펼치면 이만큼 + 접기 버튼 줄이 필요하다.
   const totalLanes = layout.placed.reduce((max, segment) => Math.max(max, segment.lane + 1), 0);
@@ -35,6 +37,7 @@ export function WeekRow({ lang, days, today, data, dict }: Props) {
             date={day.date}
             inMonth={day.inMonth}
             isToday={day.date === today}
+            holiday={holidays[day.date]}
             eventCount={eventCounts[col]}
             eventCountTemplate={
               eventCounts[col] === 1 ? dict.eventCountOne : dict.eventCountOther
