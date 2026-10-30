@@ -9,7 +9,9 @@ export type CalendarEvent = {
   end_at: string;
   all_day: boolean;
   color: string | null;
-  description?: string | null; // includeDescription 옵션을 켠 조회에만 있다.
+  description?: string | null; // includeDescription 옵션을 켠 조회에만 있다(장소·링크도 함께).
+  location?: string | null;
+  url?: string | null;
 };
 
 export type EventsResult =
@@ -33,7 +35,7 @@ export async function getEventsForRange(
   const query = supabase.from("events");
   // select 문자열을 리터럴로 유지해야 반환 타입이 추론된다.
   const { data, error } = await (options.includeDescription
-    ? query.select("id, title, start_at, end_at, all_day, color, description")
+    ? query.select("id, title, start_at, end_at, all_day, color, description, location, url")
     : query.select("id, title, start_at, end_at, all_day, color")
   )
     .lt("start_at", rangeEnd)

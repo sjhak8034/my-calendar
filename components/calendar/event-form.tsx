@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ExternalLink } from "lucide-react";
 import { DOT_CLASS } from "@/components/calendar/event-colors";
+import { EventMap } from "@/components/calendar/event-map";
 import { EVENT_COLORS, type EventColor } from "@/lib/calendar";
 import {
   createEvent,
@@ -18,6 +20,9 @@ import {
   ALL_DAY_END_TIME,
   ALL_DAY_START_TIME,
   DESCRIPTION_INPUT_LIMIT,
+  LOCATION_INPUT_LIMIT,
+  URL_INPUT_LIMIT,
+  normalizeUrl,
   TITLE_INPUT_LIMIT,
   toPayload,
   type EventErrorCode,
@@ -137,6 +142,9 @@ export function EventForm({
   // 새 종일 일정(월간에서 만듦)은 시각이 없어서 시각 입력을 숨긴다. 수정에서는 기존처럼 항상 보인다.
   const showTimes = !(mode === "create" && values.allDay);
 
+  // 화면에는 http(s)로 확인된 링크만 그린다(javascript: 등 차단).
+  const safeUrl = normalizeUrl(values.url);
+
   const err = (field: keyof EventErrors) => {
     const code = errors[field];
     return code ? message(code) : null;
@@ -255,6 +263,58 @@ export function EventForm({
           </div>
           {errors.color && <FieldError>{err("color")}</FieldError>}
         </fieldset>
+
+        <Field
+          label={labels.location}
+          htmlFor={id("location")}
+          error={err("location")}
+          errorId={id("location-error")}
+        >
+          <Input
+            id={id("location")}
+            value={values.location}
+            maxLength={LOCATION_INPUT_LIMIT}
+            placeholder={labels.locationPlaceholder}
+            autoComplete="off"
+            aria-invalid={!!errors.location}
+            aria-describedby={errors.location ? id("location-error") : undefined}
+            onChange={(e) => set("location", e.target.value)}
+          />
+        </Field>
+        {values.location.trim() && (
+          <EventMap query={values.location.trim()} labels={labels} />
+        )}
+
+        <Field
+          label={labels.url}
+          htmlFor={id("url")}
+          error={err("url")}
+          errorId={id("url-error")}
+        >
+          <Input
+            id={id("url")}
+            type="url"
+            inputMode="url"
+            value={values.url}
+            maxLength={URL_INPUT_LIMIT}
+            placeholder={labels.urlPlaceholder}
+            autoComplete="off"
+            aria-invalid={!!errors.url}
+            aria-describedby={errors.url ? id("url-error") : undefined}
+            onChange={(e) => set("url", e.target.value)}
+          />
+        </Field>
+        {safeUrl && (
+          <a
+            href={safeUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="-mt-2 inline-flex items-center gap-1 self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+          >
+            <ExternalLink aria-hidden="true" className="size-3" />
+            {labels.openLink}
+          </a>
+        )}
 
         <Field
           label={labels.description}

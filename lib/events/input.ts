@@ -18,6 +18,8 @@ import {
 export type EventInput = {
   title: string;
   description: string;
+  location: string;
+  url: string;
   allDay: boolean;
   startDate: string;
   startTime: string;
@@ -29,18 +31,30 @@ export type EventInput = {
 export type EventPayload = {
   title: string;
   description: string | null;
+  location: string | null;
+  url: string | null;
   all_day: boolean;
   start_at: string;
   end_at: string;
   color: string;
 };
 
-export type EventField = "title" | "description" | "start" | "end" | "color";
+export type EventField =
+  | "title"
+  | "description"
+  | "location"
+  | "url"
+  | "start"
+  | "end"
+  | "color";
 
 export type EventErrorCode =
   | "titleRequired"
   | "titleTooLong"
   | "descriptionTooLong"
+  | "locationTooLong"
+  | "urlTooLong"
+  | "urlInvalid"
   | "invalidStart"
   | "invalidEnd"
   | "endBeforeStart"
@@ -54,10 +68,30 @@ export type ParseResult =
 
 export const TITLE_MAX = 100;
 export const DESCRIPTION_MAX = 2000;
+export const LOCATION_MAX = 200;
+export const URL_MAX = 2000;
 
 // 입력 칸의 maxLength: 한도를 조금 넘겨 입력할 수 있게 두어 검증 메시지를 보여 준다.
 export const TITLE_INPUT_LIMIT = TITLE_MAX + 50;
 export const DESCRIPTION_INPUT_LIMIT = DESCRIPTION_MAX + 200;
+export const LOCATION_INPUT_LIMIT = LOCATION_MAX + 50;
+export const URL_INPUT_LIMIT = URL_MAX + 200;
+
+// 링크는 http(s)만 허용한다. javascript: 같은 스킴이 <a href>로 실행되는 것을 막기 위해
+// 저장할 때와 화면에 그릴 때 모두 이 함수를 거친다. 스킴 없이 쓴 주소(example.com)는 https로 보정한다.
+export function normalizeUrl(raw: string): string | null {
+  const text = raw.trim();
+  if (!text) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(text) && !/^[^/]+:\d+(\/|$)/.test(text)
+    ? text
+    : `https://${text}`;
+  try {
+    const url = new URL(withScheme);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
 
 export const ALL_DAY_START_TIME = "00:00";
 export const ALL_DAY_END_TIME = "23:59";
@@ -79,6 +113,8 @@ export function isEventInput(value: unknown): value is EventInput {
   return (
     typeof v.title === "string" &&
     typeof v.description === "string" &&
+    typeof v.location === "string" &&
+    typeof v.url === "string" &&
     typeof v.allDay === "boolean" &&
     typeof v.startDate === "string" &&
     typeof v.startTime === "string" &&
@@ -99,6 +135,18 @@ export function toPayload(input: EventInput): ParseResult {
   const description = input.description.trim();
   if (description.length > DESCRIPTION_MAX) errors.description = "descriptionTooLong";
 
+  const location = input.location.trim();
+  if (location.length > LOCATION_MAX) errors.location = "locationTooLong";
+
+  const rawUrl = input.url.trim();
+  let url: string | null = null;
+  if (rawUrl.length > URL_MAX) errors.url = "urlTooLong";
+  else if (rawUrl) {
+    url = normalizeUrl(rawUrl);
+    if (!url) errors.url = "urlInvalid";
+    else if (url.length > URL_MAX) errors.url = "urlTooLong";
+  }
+
   if (!(EVENT_COLORS as readonly string[]).includes(input.color)) {
     errors.color = "invalidColor";
   }
@@ -116,6 +164,8 @@ export function toPayload(input: EventInput): ParseResult {
     payload: {
       title,
       description: description || null,
+      location: location || null,
+      url,
       all_day: input.allDay,
       start_at: toSeoulIso(input.startDate, input.startTime),
       end_at: toSeoulIso(input.endDate, input.endTime),
@@ -130,6 +180,8 @@ export function defaultInput(date: CalendarDate, minutes = 9 * 60): EventInput {
   return {
     title: "",
     description: "",
+    location: "",
+    url: "",
     allDay: false,
     startDate: date,
     startTime: formatClock(minutes),
@@ -144,6 +196,8 @@ export function defaultRangeInput(startDate: CalendarDate, endDate: CalendarDate
   return {
     title: "",
     description: "",
+    location: "",
+    url: "",
     allDay: true,
     startDate,
     startTime: ALL_DAY_START_TIME,
@@ -156,6 +210,8 @@ export function defaultRangeInput(startDate: CalendarDate, endDate: CalendarDate
 export type StoredEvent = {
   title: string;
   description: string | null;
+  location?: string | null; // 조회에 포함하지 않은 곳(AI 등)에서는 없을 수 있다.
+  url?: string | null;
   all_day: boolean;
   start_at: string;
   end_at: string;
@@ -172,6 +228,8 @@ export function fromEvent(event: StoredEvent): EventInput {
   return {
     title: event.title,
     description: event.description ?? "",
+    location: event.location ?? "",
+    url: event.url ?? "",
     allDay: event.all_day,
     startDate: start.date,
     startTime: formatClock(start.minutes),

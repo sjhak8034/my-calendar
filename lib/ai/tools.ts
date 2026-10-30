@@ -257,6 +257,8 @@ function finishDraft(
   const input: EventInput = {
     title: str(a.title) ?? "",
     description: str(a.description) ?? "",
+    location: "",
+    url: "",
     allDay,
     startDate,
     startTime,
@@ -280,7 +282,7 @@ function finishDraft(
 
 export type ToolResult = { content: string; draft?: AiDraft };
 
-const EVENT_COLUMNS = "id, title, start_at, end_at, all_day, color, description";
+const EVENT_COLUMNS = "id, title, start_at, end_at, all_day, color, description, location, url";
 
 // 변경·삭제 대상 일정을 읽는다. RLS가 본인 일정만 돌려주므로 남의 id를 줘도 "없음"이 된다.
 async function loadEvent(
@@ -350,6 +352,9 @@ async function updateEventDraft(supabase: SupabaseClient, args: unknown): Promis
   const input: EventInput = {
     title: a.title !== undefined ? str(a.title) ?? "" : before.title,
     description: a.description !== undefined ? str(a.description) ?? "" : before.description,
+    // AI는 장소·링크를 다루지 않으므로 기존 값을 그대로 유지한다.
+    location: before.location,
+    url: before.url,
     allDay,
     startDate,
     startTime,
