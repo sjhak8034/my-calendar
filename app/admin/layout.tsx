@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
+import "./admin-theme.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// 관리자 테마(modern-minimal)의 폰트. admin-theme.css가 --font-geist-* 변수를 이 두 변수로 연결한다.
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"] });
 
 // 일반 앱(app/[lang])과 따로 두는 두 번째 루트 레이아웃. 언어 접두사·사이드바·환영 인트로가 없다.
 // 관리자 화면은 한국어만 쓴다(사전 파일을 쓰지 않는다). 검색 엔진에는 알리지 않는다.
@@ -17,7 +19,7 @@ export default function AdminRootLayout({ children }: LayoutProps<"/admin">) {
     // admin-theme: 나중에 관리자 전용 테마(색·반경)를 이 클래스 범위에만 적용하기 위한 자리다.
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} admin-theme h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} admin-theme h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <header className="border-b bg-card">
