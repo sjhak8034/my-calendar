@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { defaultLocale, hasLocale, type Locale } from "@/lib/i18n/config";
 import { checkPassword, type PasswordIssue } from "@/lib/auth/password";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { ensureProfile } from "@/lib/profile/ensure-profile";
 import { requireUser } from "@/lib/supabase/require-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -99,7 +100,7 @@ export async function signInWithPassword(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
     options: { captchaToken: readCaptchaToken(formData) },
@@ -112,6 +113,8 @@ export async function signInWithPassword(
     };
   }
 
+  // 가입 때 행을 못 만든 계정(오류·이전 가입자)도 로그인하면 채워 둔다.
+  await ensureProfile(data.user);
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
 
@@ -148,6 +151,8 @@ export async function signUp(
   if (data.user?.identities?.length === 0) {
     return { error: dict.errors.emailTaken, email };
   }
+  // 확인 메일 대기 중인 계정도 가입 시점에 행을 만든다(역할 기본값 user/free).
+  await ensureProfile(data.user);
   // 세션이 없으면 이메일 확인이 켜져 있어 확인 메일을 보낸 상태다. 오류가 아니라 안내를 보여 준다.
   if (!data.session) return { notice: dict.login.checkEmail, email, needsConfirmation: true };
 
@@ -192,6 +197,7 @@ export async function signInAsGuest(
     return { error: error?.code === "captcha_failed" ? dict.errors.captchaFailed : dict.errors.guestFailed };
   }
 
+  await ensureProfile(data.user);
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
 
@@ -221,6 +227,8 @@ export async function upgradeWithEmail(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  // 전환 후 이메일을 프로필에 반영한다(이메일 확인이 켜져 있으면 확인 뒤 첫 로그인·콜백에서 다시 맞춰진다).
+  await ensureProfile(user);
   // 이메일 확인이 켜진 프로젝트에서는 확인 전까지 게스트로 남는다.
   if (user?.is_anonymous) return { notice: dict.upgrade.checkEmail, email };
 
