@@ -440,7 +440,7 @@ export function WeekEditorProvider({ labels, hint, hintEdit, initialCreateDate, 
       <div
         data-slot="week-editor"
         data-panel-open={panel ? "" : undefined}
-        className="transition-[padding] duration-150 lg:data-panel-open:pr-[22.5rem] max-lg:data-panel-open:pb-[52dvh]"
+        className="transition-[padding] duration-150 lg:data-panel-open:pr-[22.5rem] max-lg:data-panel-open:pb-[60dvh]"
       >
         {children}
       </div>

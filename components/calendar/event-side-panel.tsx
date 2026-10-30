@@ -13,9 +13,9 @@ export function EventSidePanel() {
     <aside
       data-slot="event-side-panel"
       aria-label={labels.panelLabel}
-      className="animate-in fade-in-0 slide-in-from-bottom-6 duration-200 ease-out motion-reduce:animate-none lg:slide-in-from-right-8 lg:slide-in-from-bottom-0 fixed inset-x-0 bottom-0 z-40 flex max-h-[50dvh] flex-col border-t bg-popover text-popover-foreground shadow-2xl lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:max-h-none lg:w-[22rem] lg:border-t-0 lg:border-l"
+      className="animate-in fade-in-0 slide-in-from-bottom-6 duration-200 ease-out motion-reduce:animate-none lg:slide-in-from-right-8 lg:slide-in-from-bottom-0 fixed inset-x-0 bottom-0 z-40 flex max-h-[58dvh] flex-col border-t bg-popover text-popover-foreground shadow-2xl lg:inset-x-auto lg:inset-y-0 lg:right-0 lg:max-h-none lg:w-[22rem] lg:border-t-0 lg:border-l"
     >
-      <div className="flex items-center justify-between gap-2 px-5 pt-4 pb-1">
+      <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-1 sm:px-5 sm:pt-4">
         <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         <button
           type="button"
@@ -26,7 +26,7 @@ export function EventSidePanel() {
           <X className="size-4" aria-hidden="true" />
         </button>
       </div>
-      {hint && <p className="px-5 pb-2 text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="px-4 pb-2 text-xs sm:px-5 text-muted-foreground">{hint}</p>}
       <EventForm
         key={panel.session}
         mode={panel.mode}

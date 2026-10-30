@@ -162,6 +162,8 @@ export function AiWidget({ lang, labels }: { lang: Locale; labels: Labels }) {
           // 휴대폰(sm 미만): 오른쪽 아래에 두면 주간 그리드 버튼을 가리므로 상단 바의 빈 공간(로고와 메뉴 버튼 사이, 메뉴 버튼 왼쪽)에 작게 둔다.
           // sm 이상: 오른쪽 아래 둥근 버튼.
           "fixed top-2.5 right-[3.75rem] z-50 flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg outline-none transition-transform hover:scale-105 focus-visible:ring-3 focus-visible:ring-ring/50 max-sm:[&_svg]:size-5 sm:top-auto sm:right-6 sm:bottom-6 sm:size-14",
+          // 일정 입력창(아래 시트·오른쪽 사이드바)이 열려 있는 동안은 버튼이 그 위(저장 버튼 등)를 가리지 않게 숨긴다. 끌어서 옮긴 위치에서도 같다.
+          "[body:has([data-slot=event-side-panel])_&]:hidden",
           // 작은 화면에서는 팝업이 전체 화면이므로 열려 있는 동안 버튼은 숨긴다(닫기는 팝업의 X).
           open && "max-sm:hidden",
         )}

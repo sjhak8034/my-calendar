@@ -164,7 +164,7 @@ export function EventForm({
       onSubmit={handleSubmit}
       className="flex min-h-0 flex-1 flex-col"
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
         <Field label={labels.title} htmlFor={id("title")} error={err("title")} errorId={id("title-error")}>
           <Input
             id={id("title")}
@@ -337,7 +337,7 @@ export function EventForm({
           <Textarea
             id={id("description")}
             value={values.description}
-            rows={4}
+            rows={3}
             maxLength={DESCRIPTION_INPUT_LIMIT}
             placeholder={labels.descriptionPlaceholder}
             aria-invalid={!!errors.description}
@@ -347,8 +347,10 @@ export function EventForm({
         </Field>
 
         {formError && <FieldError>{message(formError)}</FieldError>}
+      </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+      {/* 저장·삭제 줄은 스크롤 영역 밖에 고정한다: 작은 화면의 아래 시트에서 항목이 많아도 항상 보이게. */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t px-4 py-2.5 sm:px-5 sm:py-3">
           {confirmingDelete ? (
             <>
               <p role="alert" className="min-w-0 flex-1 basis-full text-sm text-destructive sm:basis-auto">
@@ -400,7 +402,6 @@ export function EventForm({
               </div>
             </>
           )}
-        </div>
       </div>
     </form>
   );
