@@ -4,7 +4,6 @@ import { useEffect, useId, useRef, useState, useTransition, type ReactNode } fro
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink } from "lucide-react";
 import { DOT_CLASS } from "@/components/calendar/event-colors";
@@ -19,8 +18,6 @@ import {
   type ActionResult,
 } from "@/lib/events/actions";
 import {
-  ALL_DAY_END_TIME,
-  ALL_DAY_START_TIME,
   DESCRIPTION_INPUT_LIMIT,
   LOCATION_INPUT_LIMIT,
   URL_INPUT_LIMIT,
@@ -91,13 +88,6 @@ export function EventForm({
     });
   }
 
-  function setAllDay(checked: boolean) {
-    onChange({
-      allDay: checked,
-      ...(checked ? { startTime: ALL_DAY_START_TIME, endTime: ALL_DAY_END_TIME } : {}),
-    });
-  }
-
   function handleResult(result: ActionResult) {
     if (result.ok) {
       onDone();
@@ -146,8 +136,8 @@ export function EventForm({
     });
   }
 
-  // 새 종일 일정(월간에서 만듦)은 시각이 없어서 시각 입력을 숨긴다. 수정에서는 기존처럼 항상 보인다.
-  const showTimes = !(mode === "create" && values.allDay);
+  // 종일 여부는 고르지 않는다: 주간에서 만든 일정은 시간 일정, 월간에서 만든 일정은 종일(일 단위) 일정이고, 수정해도 그대로다. 종일 일정은 시각 입력을 숨긴다.
+  const showTimes = !values.allDay;
 
   // 화면에는 http(s)로 확인된 링크만 그린다(javascript: 등 차단).
   const safeUrl = normalizeUrl(values.url);
@@ -178,18 +168,6 @@ export function EventForm({
             onChange={(e) => set("title", e.target.value)}
           />
         </Field>
-
-        {/* 새 일정에는 종일 스위치를 두지 않는다: 주간에서 만들면 시간 일정, 월간에서 만들면 종일 일정(시각 없음)으로 정해진다. 기존 일정 수정에서는 바꿀 수 있다. */}
-        {mode === "edit" && (
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor={id("all-day")}>{labels.allDay}</Label>
-            <Switch
-              id={id("all-day")}
-              checked={values.allDay}
-              onCheckedChange={setAllDay}
-            />
-          </div>
-        )}
 
         <div
           className={cn(
