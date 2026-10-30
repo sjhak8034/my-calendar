@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getAdmin, type AdminReason } from "@/lib/admin/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { maskEmail } from "@/lib/admin/format";
 import { cn } from "@/lib/utils";
 
 const REASON_TEXT: Record<AdminReason, string> = {
@@ -55,13 +56,6 @@ const PLANNED: { title: string; note: string; items: PlannedItem[] }[] = [
     ],
   },
 ];
-
-// 이메일은 앞 두 글자만 보여 주고 나머지는 가린다.
-function maskEmail(email: string) {
-  const [name, domain] = email.split("@");
-  if (!domain) return email || "(이메일 없음)";
-  return `${name.slice(0, 2)}${"*".repeat(Math.max(1, name.length - 2))}@${domain}`;
-}
 
 export default function AdminPage() {
   // 로그인 사용자는 요청 시점 데이터라 Suspense 안에서 읽는다(cacheComponents).

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
 import "./admin-theme.css";
@@ -24,9 +25,17 @@ export default function AdminRootLayout({ children }: LayoutProps<"/admin">) {
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <header className="border-b bg-card">
           <div className="mx-auto flex h-12 w-full max-w-5xl items-center justify-between gap-3 px-4">
-            <span className="text-sm font-semibold tracking-tight">
-              my-calendar <span className="text-muted-foreground">관리자</span>
-            </span>
+            <nav aria-label="관리자 메뉴" className="flex items-center gap-4 text-sm">
+              <span className="font-semibold tracking-tight">
+                my-calendar <span className="text-muted-foreground">관리자</span>
+              </span>
+              <Link href="/admin" className="text-muted-foreground hover:text-foreground">
+                점검
+              </Link>
+              <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">
+                대시보드
+              </Link>
+            </nav>
             {/* 일반 앱은 별도 루트 레이아웃이라 일반 링크(전체 새로 불러오기)로 이동한다. */}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/" className="text-xs text-muted-foreground underline-offset-2 hover:underline">
