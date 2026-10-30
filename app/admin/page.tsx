@@ -14,6 +14,48 @@ const REASON_TEXT: Record<AdminReason, string> = {
     "이 계정은 관리자가 아닙니다. Supabase SQL 편집기에서 profiles 행을 추가해 관리자로 지정하세요(마이그레이션 파일 위쪽 주석 참고).",
 };
 
+// 구현 예정인 관리자 기능 목록(점검 페이지에서 진행 상황을 한눈에 보려는 용도). 구현하면 status를 "done"으로 바꾼다.
+type PlannedItem = { name: string; description: string; status: "planned" | "done" };
+const PLANNED: { title: string; note: string; items: PlannedItem[] }[] = [
+  {
+    title: "먼저 하면 좋은 것",
+    note: "가치가 크고 위험이 낮음",
+    items: [
+      { name: "AI 사용량·비용 대시보드", description: "일별 질문 수, 토큰 수, 예상 비용, 사용자별 상위 순위(ai_usage 테이블 사용). 비용 급증을 가장 먼저 알아채는 화면.", status: "planned" },
+      { name: "가입·활동 현황", description: "일별 가입 수, 정식 계정과 게스트 비율, 최근 7일 활동 사용자 수, 전체 일정 수 추이. 일정 내용은 보지 않고 숫자만.", status: "planned" },
+      { name: "알림 발송 현황", description: "웹 푸시·카카오 알림의 성공·실패 건수와 실패 사유 모음(만료된 구독, 카카오 재연결 필요 등). 알림 워커 점검용.", status: "planned" },
+    ],
+  },
+  {
+    title: "운영에 도움 되는 것",
+    note: "중간",
+    items: [
+      { name: "사용자 목록과 상태", description: "가입일, 마지막 로그인, 로그인 방식(이메일·Google·게스트), 카카오 연결 여부. 이메일은 일부만 가려서 표시.", status: "planned" },
+      { name: "AI 사용 제한 조정", description: "사용자별 한도를 일시적으로 올리거나 내리기, 남용 계정의 AI 차단.", status: "planned" },
+      { name: "정리 작업 현황", description: "30일 지난 게스트·AI 대화가 실제로 지워졌는지, 마지막 실행 시각(보관 기간 준수 확인).", status: "planned" },
+      { name: "오류 모음", description: "서버 로그에서 최근 오류를 모아 보기(모니터링 서비스 도입 전 임시 대안).", status: "planned" },
+    ],
+  },
+  {
+    title: "신중해야 하는 것",
+    note: "민감하거나 되돌리기 어려움",
+    items: [
+      { name: "사용자 계정 정지·삭제", description: "남용 계정 차단. 복구가 안 되므로 확인 단계와 변경 기록이 필요(DB 백업도 아직 없음).", status: "planned" },
+      { name: "다른 사용자의 일정·AI 대화 열람", description: "문의 대응용. 개인정보 방침에 운영자 열람 고지가 필요하고 법적 부담이 커서 처음에는 넣지 않는 편이 안전.", status: "planned" },
+      { name: "공지·점검 안내 배너", description: "앱 상단에 공지 표시. 별도 테이블과 표시 영역이 필요.", status: "planned" },
+    ],
+  },
+  {
+    title: "나중에 고려",
+    note: "",
+    items: [
+      { name: "문의·신고 접수함", description: "", status: "planned" },
+      { name: "기능 플래그", description: "실험 기능 켜고 끄기.", status: "planned" },
+      { name: "시스템 설정 편집", description: "모델 이름, 한도 등을 화면에서 편집.", status: "planned" },
+    ],
+  },
+];
+
 // 이메일은 앞 두 글자만 보여 주고 나머지는 가린다.
 function maskEmail(email: string) {
   const [name, domain] = email.split("@");
@@ -104,6 +146,38 @@ async function AdminContent() {
           <Section title="환경">
             <Row label="실행 모드" ok value={process.env.NODE_ENV ?? "-"} mono />
           </Section>
+
+          <section className="flex flex-col gap-4">
+            <h2 className="text-sm font-semibold">구현 예정 기능</h2>
+            {PLANNED.map((group) => (
+              <div key={group.title} className="flex flex-col gap-2">
+                <h3 className="text-xs font-medium text-muted-foreground">
+                  {group.title}
+                  {group.note && ` · ${group.note}`}
+                </h3>
+                <ul className="divide-y rounded-lg border bg-card">
+                  {group.items.map((item) => (
+                    <li key={item.name} className="flex items-start justify-between gap-4 px-3 py-2.5 text-sm">
+                      <div className="min-w-0">
+                        <p className="font-medium">{item.name}</p>
+                        {item.description && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-xs",
+                          item.status === "done" ? "bg-green-600/15 text-green-700 dark:text-green-400" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {item.status === "done" ? "완료" : "예정"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
         </>
       )}
     </div>
