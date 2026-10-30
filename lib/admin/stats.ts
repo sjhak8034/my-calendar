@@ -54,6 +54,7 @@ const kstFormat = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" });
 export const kstDay = (iso: string | Date) => kstFormat.format(typeof iso === "string" ? new Date(iso) : iso);
 
 // 서울 기준 오늘부터 거꾸로 days일의 날짜 목록(오래된 날 → 오늘).
+// 대시보드는 '이전 기간 대비'를 보여 주려고 일별 배열을 선택 기간의 2배(이전 기간 + 현재 기간)로 만든다: 앞 절반이 이전 기간이다.
 function lastDays(days: number): string[] {
   const out: string[] = [];
   const now = Date.now();
@@ -107,17 +108,17 @@ export async function getUserStats(days: number): Promise<StatsResult<UserStats>
     listAllUsers(admin),
     admin.from("events").select("id", { count: "exact", head: true }),
     fetchAll<{ created_at: string }>((from, to) =>
-      admin.from("events").select("created_at").gte("created_at", sinceIso(days + 1)).order("created_at").range(from, to),
+      admin.from("events").select("created_at").gte("created_at", sinceIso(days * 2 + 1)).order("created_at").range(from, to),
     ),
     fetchAll<{ user_id: string; day: string; count: number }>((from, to) =>
-      admin.from("daily_logins").select("user_id, day, count").gte("day", kstDay(new Date(Date.now() - days * DAY_MS))).order("day").range(from, to),
+      admin.from("daily_logins").select("user_id, day, count").gte("day", kstDay(new Date(Date.now() - days * 2 * DAY_MS))).order("day").range(from, to),
     ),
   ]);
   if (listed.error) return { ok: false, message: `계정 목록을 읽지 못했습니다: ${listed.error}` };
   if (eventsCount.error) return { ok: false, message: eventsCount.error.message };
   if (eventRows.error) return { ok: false, message: eventRows.error };
 
-  const dayList = lastDays(days);
+  const dayList = lastDays(days * 2);
   const today = dayList[dayList.length - 1];
   const idx = new Map(dayList.map((d, i) => [d, i]));
   const daily = dayList.map((day) => ({ day, signups: 0, guests: 0, logins: 0, login_users: 0, events: 0 }));
@@ -198,13 +199,13 @@ export async function getAiStats(days: number, owners: UserStats["idOwners"] | n
     admin
       .from("ai_usage")
       .select("user_id, is_guest, model, prompt_tokens, completion_tokens, reasoning_tokens, created_at")
-      .gte("created_at", sinceIso(days + 1))
+      .gte("created_at", sinceIso(days * 2 + 1))
       .order("created_at")
       .range(from, to),
   );
   if (error) return { ok: false, message: error };
 
-  const dayList = lastDays(days);
+  const dayList = lastDays(days * 2);
   const idx = new Map(dayList.map((d, i) => [d, i]));
   const daily = dayList.map((day) => ({ day, questions: 0, prompt: 0, completion: 0, reasoning: 0 }));
   const perUser = new Map<string, AiStats["top_users"][number]>();
@@ -276,7 +277,7 @@ export async function getNotificationStats(days: number): Promise<StatsResult<No
         .from("notifications")
         .select("channel, status, send_at, sent_at, error")
         .in("status", ["sent", "failed", "skipped"])
-        .gte("send_at", sinceIso(days + 1))
+        .gte("send_at", sinceIso(days * 2 + 1))
         .order("send_at")
         .range(from, to),
     ),
@@ -285,7 +286,7 @@ export async function getNotificationStats(days: number): Promise<StatsResult<No
   if (overdue.error) return { ok: false, message: overdue.error.message };
   if (periodRows.error) return { ok: false, message: periodRows.error };
 
-  const dayList = lastDays(days);
+  const dayList = lastDays(days * 2);
   const idx = new Map(dayList.map((d, i) => [d, i]));
   const daily = dayList.map((day) => ({ day, sent: 0, failed: 0, skipped: 0 }));
   const reasons = new Map<string, { channel: string; reason: string; n: number }>();

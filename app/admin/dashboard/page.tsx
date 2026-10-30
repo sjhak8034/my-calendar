@@ -7,7 +7,8 @@ import { estimateCost, getPricing } from "@/lib/admin/pricing";
 import { getAiStats, getNotificationStats, getUserStats } from "@/lib/admin/stats";
 import { formatKrw, formatNumber, formatUsd, maskEmail, shortDay } from "@/lib/admin/format";
 import { cn } from "@/lib/utils";
-import { BarList, Notice, Panel, Section, Tile, Tiles } from "./parts";
+import { Notice, Panel, Section, Tile, Tiles } from "./parts";
+import { StatCard, deltaText } from "./stat-card";
 import { PricingForm } from "./pricing-form";
 
 const PERIODS = [7, 14, 30] as const;
@@ -47,12 +48,20 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
   ]);
   const pricing = pricingResult.pricing;
 
-  // 서울 기준 오늘(마지막 행). 일별 배열은 오래된 날부터 오늘까지다.
+  // 일별 배열은 선택 기간의 2배(앞 절반 = 이전 기간, 뒤 절반 = 현재 기간)다. 카드는 현재 기간 합계와 이전 기간 대비 증감을 보여 준다.
+  const halves = <T,>(rows: T[]) => ({ cur: rows.slice(-days), prev: rows.slice(0, Math.max(0, rows.length - days)) });
+  const sum = (rows: number[]) => rows.reduce((a, b) => a + b, 0);
+  const line = <T extends { day: string }>(rows: T[], pick: (r: T) => number) =>
+    rows.map((r) => ({ label: shortDay(r.day), value: pick(r) }));
+  const tokens = (d: { prompt: number; completion: number; reasoning: number }) => d.prompt + d.completion + d.reasoning;
+
+  // 서울 기준 오늘(마지막 행).
   const todayAi = ai.ok ? ai.data.daily.at(-1) : undefined;
   const todayNotif = notif.ok ? notif.data.daily.at(-1) : undefined;
 
-  const aiTotals = ai.ok
-    ? ai.data.daily.reduce(
+  const aiHalves = ai.ok ? halves(ai.data.daily) : null;
+  const aiTotals = aiHalves
+    ? aiHalves.cur.reduce(
         (a, d) => ({
           questions: a.questions + d.questions,
           prompt: a.prompt + d.prompt,
@@ -64,6 +73,7 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
     : null;
   const aiCost = aiTotals ? estimateCost(aiTotals, pricing) : null;
   const todayCost = todayAi ? estimateCost(todayAi, pricing) : null;
+  const dayCost = (d: { prompt: number; completion: number; reasoning: number }) => estimateCost(d, pricing)?.krw ?? 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -118,26 +128,40 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
               <Tile label="전체 계정" value={formatNumber(users.data.total)} sub={`정식 ${users.data.formal} · 게스트 ${users.data.guest}`} />
               <Tile label="최근 7일 로그인 사용자" value={formatNumber(users.data.logged_in_7d)} sub="7일 안에 로그인한 계정 수" />
               <Tile label="전체 일정 수" value={formatNumber(users.data.events_total)} sub="내용은 보지 않고 개수만" />
-              <Tile
-                label={`${days}일간 가입`}
-                value={formatNumber(users.data.daily.reduce((a, d) => a + d.signups + d.guests, 0))}
-                sub={`정식 ${users.data.daily.reduce((a, d) => a + d.signups, 0)} · 게스트 ${users.data.daily.reduce((a, d) => a + d.guests, 0)}`}
-              />
             </Tiles>
-            <div className="grid gap-3 lg:grid-cols-2">
-              <Panel title="일별 가입 (정식+게스트)">
-                <BarList rows={users.data.daily.map((d) => ({ label: shortDay(d.day), value: d.signups + d.guests }))} />
-              </Panel>
-              <Panel title="일별 로그인 횟수">
-                <BarList rows={users.data.daily.map((d) => ({ label: shortDay(d.day), value: d.logins }))} />
-              </Panel>
-              <Panel title="일별 로그인한 사용자">
-                <BarList rows={users.data.daily.map((d) => ({ label: shortDay(d.day), value: d.login_users }))} />
-              </Panel>
-              <Panel title="일별 새로 만든 일정">
-                <BarList rows={users.data.daily.map((d) => ({ label: shortDay(d.day), value: d.events }))} />
-              </Panel>
-            </div>
+            {(() => {
+              const h = halves(users.data.daily);
+              const signups = (d: (typeof h.cur)[number]) => d.signups + d.guests;
+              const avgUsers = (rows: typeof h.cur) => (rows.length ? sum(rows.map((d) => d.login_users)) / rows.length : 0);
+              return (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <StatCard
+                    label={`가입 (최근 ${days}일)`}
+                    value={formatNumber(sum(h.cur.map(signups)))}
+                    note={deltaText(sum(h.cur.map(signups)), sum(h.prev.map(signups)))}
+                    points={line(h.cur, signups)}
+                  />
+                  <StatCard
+                    label={`로그인 횟수 (최근 ${days}일)`}
+                    value={users.data.login_log.available ? formatNumber(sum(h.cur.map((d) => d.logins))) : "-"}
+                    note={users.data.login_log.available ? deltaText(sum(h.cur.map((d) => d.logins)), sum(h.prev.map((d) => d.logins))) : "로그인 기록 테이블이 없습니다"}
+                    points={line(h.cur, (d) => d.logins)}
+                  />
+                  <StatCard
+                    label="하루 평균 로그인 사용자"
+                    value={avgUsers(h.cur).toFixed(1)}
+                    note={deltaText(Math.round(avgUsers(h.cur) * 10) / 10, Math.round(avgUsers(h.prev) * 10) / 10)}
+                    points={line(h.cur, (d) => d.login_users)}
+                  />
+                  <StatCard
+                    label={`새로 만든 일정 (최근 ${days}일)`}
+                    value={formatNumber(sum(h.cur.map((d) => d.events)))}
+                    note={deltaText(sum(h.cur.map((d) => d.events)), sum(h.prev.map((d) => d.events)))}
+                    points={line(h.cur, (d) => d.events)}
+                  />
+                </div>
+              );
+            })()}
           </>
         ) : (
           <Notice tone="warn">가입·활동 통계를 불러오지 못했습니다: {users.message}</Notice>
@@ -145,34 +169,38 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
       </Section>
 
       {/* AI */}
-      <Section title="AI 사용량·비용" note={`최근 ${days}일 · 사용 기록은 90일만 보관됩니다`}>
+      <Section
+        title="AI 사용량·비용"
+        note={`최근 ${days}일 · 사용 기록은 90일만 보관됩니다${ai.ok && ai.data.models.length ? ` · 모델 ${ai.data.models.map((m) => `${m.model} ${m.questions}건`).join(", ")}` : ""}`}
+      >
         {ai.ok && aiTotals ? (
           <>
-            <Tiles>
-              <Tile label="질문 수" value={formatNumber(aiTotals.questions)} sub={ai.data.models.map((m) => `${m.model} ${m.questions}`).join(" · ") || undefined} />
-              <Tile label="입력 토큰" value={formatNumber(aiTotals.prompt)} />
-              <Tile label="출력 토큰" value={formatNumber(aiTotals.completion + aiTotals.reasoning)} sub={aiTotals.reasoning ? `추론 ${formatNumber(aiTotals.reasoning)} 포함` : undefined} />
-              <Tile
-                label="예상 비용"
-                value={aiCost ? formatKrw(aiCost.krw) : "단가 미설정"}
-                sub={aiCost ? `${formatUsd(aiCost.usd)} · 질문당 ${aiTotals.questions ? formatKrw(aiCost.krw / aiTotals.questions) : "-"}` : "아래에서 단가를 저장하세요"}
-              />
-            </Tiles>
-            <div className="grid gap-3 lg:grid-cols-2">
-              <Panel title="일별 질문 수">
-                <BarList rows={ai.data.daily.map((d) => ({ label: shortDay(d.day), value: d.questions }))} />
-              </Panel>
-              <Panel title={pricing ? "일별 예상 비용 (원)" : "일별 토큰 수 (입력+출력)"}>
-                <BarList
-                  rows={ai.data.daily.map((d) => {
-                    const cost = estimateCost(d, pricing);
-                    return cost
-                      ? { label: shortDay(d.day), value: cost.krw, display: formatKrw(cost.krw) }
-                      : { label: shortDay(d.day), value: d.prompt + d.completion + d.reasoning };
-                  })}
+            {aiHalves && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <StatCard
+                  label={`질문 수 (최근 ${days}일)`}
+                  value={formatNumber(aiTotals.questions)}
+                  note={deltaText(aiTotals.questions, sum(aiHalves.prev.map((d) => d.questions)))}
+                  points={line(aiHalves.cur, (d) => d.questions)}
                 />
-              </Panel>
-            </div>
+                <StatCard
+                  label="토큰 수 (입력+출력)"
+                  value={formatNumber(tokens(aiTotals))}
+                  note={`입력 ${formatNumber(aiTotals.prompt)} · 출력 ${formatNumber(aiTotals.completion + aiTotals.reasoning)}`}
+                  points={line(aiHalves.cur, tokens)}
+                />
+                <StatCard
+                  label="예상 비용"
+                  value={aiCost ? formatKrw(aiCost.krw) : "단가 미설정"}
+                  note={
+                    aiCost
+                      ? `${formatUsd(aiCost.usd)} · 질문당 ${aiTotals.questions ? formatKrw(aiCost.krw / aiTotals.questions) : "-"} · ${deltaText(aiCost.krw, sum(aiHalves.prev.map(dayCost)))}`
+                      : "아래에서 단가를 저장하세요"
+                  }
+                  points={line(aiHalves.cur, pricing ? dayCost : tokens)}
+                />
+              </div>
+            )}
             <Panel title="사용자별 상위 10명 (토큰 기준)">
               {ai.data.top_users.length === 0 ? (
                 <p className="text-xs text-muted-foreground">이 기간에 AI 질문이 없습니다.</p>
@@ -225,6 +253,26 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
                 발송 시각이 10분 넘게 지났는데 대기 중인 알림 {notif.data.overdue_pending}건, 10분 넘게 &apos;발송 중&apos;인 알림 {notif.data.stuck_sending}건이 있습니다. 알림 워커(pg_cron)가 도는지 확인하세요.
               </Notice>
             )}
+            {(() => {
+              const h = halves(notif.data.daily);
+              return (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <StatCard
+                    label={`발송 성공 (최근 ${days}일)`}
+                    value={formatNumber(sum(h.cur.map((d) => d.sent)))}
+                    note={deltaText(sum(h.cur.map((d) => d.sent)), sum(h.prev.map((d) => d.sent)))}
+                    points={line(h.cur, (d) => d.sent)}
+                  />
+                  <StatCard
+                    label={`발송 실패 (최근 ${days}일)`}
+                    value={formatNumber(sum(h.cur.map((d) => d.failed)))}
+                    note={deltaText(sum(h.cur.map((d) => d.failed)), sum(h.prev.map((d) => d.failed)))}
+                    points={line(h.cur, (d) => d.failed)}
+                    warn={sum(h.cur.map((d) => d.failed)) > 0}
+                  />
+                </div>
+              );
+            })()}
             <div className="grid gap-3 lg:grid-cols-2">
               <Panel title="상태별 건수 (전체)">
                 {notif.data.by_status.length === 0 ? (
@@ -249,12 +297,6 @@ async function DashboardContent({ searchParams }: { searchParams: SearchParams }
                     </tbody>
                   </table>
                 )}
-              </Panel>
-              <Panel title="일별 발송 성공">
-                <BarList rows={notif.data.daily.map((d) => ({ label: shortDay(d.day), value: d.sent }))} />
-              </Panel>
-              <Panel title="일별 실패">
-                <BarList rows={notif.data.daily.map((d) => ({ label: shortDay(d.day), value: d.failed }))} />
               </Panel>
               <Panel title="실패·건너뜀 사유 (상위 10)">
                 {notif.data.errors.length === 0 ? (
