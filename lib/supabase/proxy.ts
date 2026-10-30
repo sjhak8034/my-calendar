@@ -34,5 +34,5 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims ?? null;
 
   // supabaseResponse는 setAll로 교체될 수 있으므로 호출 시점의 최신 값을 반환한다.
-  return { user, response: supabaseResponse };
+  return { user, response: supabaseResponse, supabase };
 }

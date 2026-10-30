@@ -58,6 +58,31 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // 관리자 영역(/admin): 언어 접두사 없이 별도 레이아웃을 쓴다. 관리자가 아니면 이 경로가 있다는 것도 알리지 않도록 404로 돌려보낸다.
+  // 여기 확인은 첫 방어선이고(세션 서명 + profiles 역할), 페이지·Server Action이 getAdmin()으로 다시 확인한다.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const { user, response, supabase } = await updateSession(request);
+    let isAdmin = false;
+    if (user && user.is_anonymous !== true) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("user_id", user.sub)
+        .maybeSingle();
+      isAdmin = data?.role === "admin";
+    }
+    // 개발 서버에서는 통과시켜 페이지가 원인(역할 테이블 없음 등)을 보여 준다. 운영은 항상 404.
+    if (!isAdmin && process.env.NODE_ENV === "production") {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${defaultLocale}/404`;
+      url.search = "";
+      return NextResponse.rewrite(url);
+    }
+    response.headers.set("cache-control", "no-store");
+    response.headers.set("x-robots-tag", "noindex, nofollow");
+    return response;
+  }
+
   const segments = pathname.split("/");
   const rawLang = segments[1];
   const urlLang = rawLang.toLowerCase();
