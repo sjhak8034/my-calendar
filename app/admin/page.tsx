@@ -22,17 +22,17 @@ const PLANNED: { title: string; note: string; items: PlannedItem[] }[] = [
     title: "먼저 하면 좋은 것",
     note: "가치가 크고 위험이 낮음",
     items: [
-      { name: "AI 사용량·비용 대시보드", description: "일별 질문 수, 토큰 수, 예상 비용, 사용자별 상위 순위(ai_usage 테이블 사용). 비용 급증을 가장 먼저 알아채는 화면.", status: "planned" },
-      { name: "가입·활동 현황", description: "일별 가입 수, 정식 계정과 게스트 비율, 최근 7일 활동 사용자 수, 전체 일정 수 추이. 일정 내용은 보지 않고 숫자만.", status: "planned" },
-      { name: "알림 발송 현황", description: "웹 푸시·카카오 알림의 성공·실패 건수와 실패 사유 모음(만료된 구독, 카카오 재연결 필요 등). 알림 워커 점검용.", status: "planned" },
+      { name: "AI 사용량·비용 대시보드", description: "일별 질문 수, 토큰 수, 예상 비용, 사용자별 상위 순위(ai_usage 테이블 사용). 비용 급증을 가장 먼저 알아채는 화면.", status: "done" },
+      { name: "가입·활동 현황", description: "일별 가입 수, 정식 계정과 게스트 비율, 최근 7일 활동 사용자 수, 전체 일정 수 추이. 일정 내용은 보지 않고 숫자만.", status: "done" },
+      { name: "알림 발송 현황", description: "웹 푸시·카카오 알림의 성공·실패 건수와 실패 사유 모음(만료된 구독, 카카오 재연결 필요 등). 알림 워커 점검용.", status: "done" },
     ],
   },
   {
     title: "운영에 도움 되는 것",
     note: "중간",
     items: [
-      { name: "사용자 목록과 상태", description: "가입일, 마지막 로그인, 로그인 방식(이메일·Google·게스트), 카카오 연결 여부. 이메일은 일부만 가려서 표시.", status: "planned" },
-      { name: "AI 사용 제한 조정", description: "사용자별 한도를 일시적으로 올리거나 내리기, 남용 계정의 AI 차단.", status: "planned" },
+      { name: "사용자 목록과 상태", description: "가입일, 마지막 로그인, 로그인 방식(이메일·Google·게스트), 카카오 연결 여부. 이메일은 일부만 가려서 표시.", status: "done" },
+      { name: "AI 사용 제한 조정", description: "모든 사용자 공통 하루 사용 금액(원) 한도를 대시보드 상단 슬라이더로 조절(사용자별 한도·계정 차단은 아직 없음).", status: "done" },
       { name: "정리 작업 현황", description: "30일 지난 게스트·AI 대화가 실제로 지워졌는지, 마지막 실행 시각(보관 기간 준수 확인).", status: "planned" },
       { name: "오류 모음", description: "서버 로그에서 최근 오류를 모아 보기(모니터링 서비스 도입 전 임시 대안).", status: "planned" },
     ],
