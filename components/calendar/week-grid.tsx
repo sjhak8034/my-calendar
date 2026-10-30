@@ -158,10 +158,11 @@ export function WeekGrid({
   return (
     <div
       data-slot="week-grid"
-      // 휴대폰은 7일·06~24시가 스크롤 없이 한 화면에 보이게 한다: 열 최소 너비를 없애고, 눈금 열을 좁히고, 카드를 화면 가장자리까지 넓히고,
+      // 휴대폰의 시간당 높이(--hour-h)는 "한 화면에 딱 맞는 높이"(화면 높이 - 위쪽 고정 영역 23.375rem을 18시간으로 나눔)의 2배다(사용자 요청). 그래서 그리드 안에서 세로로 스크롤하고, 머리글은 sticky로 남는다. 23.375rem·18은 상단 바·툴바·머리글 높이와 HOURS에서 온 값이라 그 높이가 바뀌면 함께 고친다.
+      // (아래 설명은 이전의 한 화면 맞춤 방식) 휴대폰은 7일·06~24시가 스크롤 없이 한 화면에 보이게 했다: 열 최소 너비를 없애고, 눈금 열을 좁히고, 카드를 화면 가장자리까지 넓히고,
       // 페이지가 정해 준 남은 높이를 카드가 flex로 채우며 시간 눈금 본문(week-body)이 머리글·6시 이전 줄을 뺀 나머지를 모두 차지한다(시간 간격이 자동으로 맞춰지고, 최소 0.875rem이라 아주 작은 화면에서 6시 이전 줄이 있을 때만 그리드 안이 스크롤).
       // sm부터는 열 최소 6rem(가로 스크롤)·시간당 3.5rem·안쪽 세로 스크롤.
-      className="isolate -mx-3 overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs [--day-min:0px] [--hour-h:0.875rem] [--time-col:2rem] max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col sm:mx-0 sm:rounded-xl sm:border-x sm:[--day-min:6rem] sm:[--hour-h:3.5rem] sm:[--time-col:4rem]"
+      className="isolate -mx-3 overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs [--day-min:0px] [--hour-h:max(1.75rem,calc((100dvh-23.375rem)*2/18))] [--time-col:2rem] max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col sm:mx-0 sm:rounded-xl sm:border-x sm:[--day-min:6rem] sm:[--hour-h:3.5rem] sm:[--time-col:4rem]"
     >
       {/* 스크롤 영역 자체에 이름을 둔다. 안에 포커스 가능한 링크·버튼이 항상 있어 tabIndex는 두지 않는다.
           scroll-padding: 가로는 고정 눈금 열, 세로는 sticky 영역(상한 기준 폴백, 실제 높이는 ScrollToSelected가 갱신) */}
