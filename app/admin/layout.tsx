@@ -35,6 +35,9 @@ export default function AdminRootLayout({ children }: LayoutProps<"/admin">) {
               <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">
                 대시보드
               </Link>
+              <Link href="/admin/users" className="text-muted-foreground hover:text-foreground">
+                사용자
+              </Link>
             </nav>
             {/* 일반 앱은 별도 루트 레이아웃이라 일반 링크(전체 새로 불러오기)로 이동한다. */}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
