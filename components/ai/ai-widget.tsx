@@ -38,6 +38,31 @@ type StreamEvent =
   | { t: "error"; code: string }
   | { t: "done"; finish: string };
 
+const POS_KEY = "ai-button-pos";
+const DRAG_THRESHOLD = 5; // 이만큼(px) 움직여야 끌기로 본다: 그보다 작으면 그냥 누르기(열기·닫기)
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+// 저장해 둔 위치(화면 안의 비율 0~1)를 버튼에 적용한다. 비율로 저장해야 휴대폰·PC처럼 화면 크기가 달라도 화면 밖으로 나가지 않는다.
+function placeButton(el: HTMLElement, rx: number, ry: number) {
+  const maxX = Math.max(0, document.documentElement.clientWidth - el.offsetWidth);
+  const maxY = Math.max(0, window.innerHeight - el.offsetHeight);
+  el.style.left = `${clamp01(rx) * maxX}px`;
+  el.style.top = `${clamp01(ry) * maxY}px`;
+  el.style.right = "auto";
+  el.style.bottom = "auto";
+}
+
+function readSavedPosition(): { rx: number; ry: number } | null {
+  try {
+    const value = JSON.parse(localStorage.getItem(POS_KEY) ?? "null");
+    if (value && Number.isFinite(value.rx) && Number.isFinite(value.ry)) return value;
+  } catch {
+    // 저장소를 못 쓰는 환경(사생활 보호 모드 등)에서는 기본 위치를 쓴다.
+  }
+  return null;
+}
+
 // 오른쪽 아래 둥근 버튼과, 누르면 열리는 채팅 팝업. 앱 공통 레이아웃에 한 번만 둔다.
 // 버튼 아이콘은 나중에 받을 이미지로 교체한다(아래 ToggleIcon 한 곳만 바꾸면 된다).
 export function AiWidget({ lang, labels }: { lang: Locale; labels: Labels }) {
@@ -45,6 +70,64 @@ export function AiWidget({ lang, labels }: { lang: Locale; labels: Labels }) {
   // 팝업을 닫아도 답변 스트림과 대화가 유지되도록, 한 번 열린 뒤에는 계속 마운트해 둔다.
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // 끌어서 옮긴 위치. 기본 위치(null)는 CSS가 정하고, 옮긴 뒤에는 버튼의 style(left/top)로 덮어쓴다.
+  // 직접 DOM에 쓰는 이유: 끄는 동안 매 움직임마다 다시 그리지 않고, React가 그리는 style과 겹치지 않게 하려는 것이다.
+  const position = useRef<{ rx: number; ry: number } | null>(null);
+  const drag = useRef<{ id: number; startX: number; startY: number; left: number; top: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+
+  useEffect(() => {
+    const el = buttonRef.current;
+    if (!el) return;
+    position.current = readSavedPosition();
+    if (position.current) placeButton(el, position.current.rx, position.current.ry);
+    const onResize = () => {
+      if (position.current) placeButton(el, position.current.rx, position.current.ry);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  function onPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    if (e.button !== 0) return;
+    // 처음부터 포인터를 붙잡아야 빠르게 끌어 버튼 밖으로 나가도 움직임을 계속 받는다.
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    drag.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, left: rect.left, top: rect.top, moved: false };
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    const d = drag.current;
+    const el = buttonRef.current;
+    if (!d || !el || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      d.moved = true;
+    }
+    const maxX = Math.max(0, document.documentElement.clientWidth - el.offsetWidth);
+    const maxY = Math.max(0, window.innerHeight - el.offsetHeight);
+    const left = Math.min(maxX, Math.max(0, d.left + dx));
+    const top = Math.min(maxY, Math.max(0, d.top + dy));
+    position.current = { rx: maxX ? left / maxX : 0, ry: maxY ? top / maxY : 0 };
+    placeButton(el, position.current.rx, position.current.ry);
+  }
+
+  function onPointerEnd(e: React.PointerEvent<HTMLButtonElement>) {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    if (!d.moved) return;
+    // 끌고 놓은 뒤에 따라오는 click은 열기·닫기로 처리하지 않는다.
+    suppressClick.current = true;
+    setTimeout(() => (suppressClick.current = false), 0);
+    try {
+      localStorage.setItem(POS_KEY, JSON.stringify(position.current));
+    } catch {
+      // 저장하지 못해도 이번 방문에서는 옮긴 위치가 유지된다.
+    }
+  }
 
   function toggle(next: boolean) {
     if (next && !mounted) {
@@ -66,8 +149,16 @@ export function AiWidget({ lang, labels }: { lang: Locale; labels: Labels }) {
         aria-label={open ? labels.close : labels.open}
         aria-expanded={open}
         aria-controls="ai-chat-panel"
-        onClick={() => toggle(!open)}
+        onClick={() => {
+          if (!suppressClick.current) toggle(!open);
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
         className={cn(
+          // 터치로 끌 때 화면이 스크롤되지 않게 한다(이 버튼 위에서만).
+          "touch-none",
           // 휴대폰(sm 미만): 오른쪽 아래에 두면 주간 그리드 버튼을 가리므로 상단 바의 빈 공간(로고와 메뉴 버튼 사이, 메뉴 버튼 왼쪽)에 작게 둔다.
           // sm 이상: 오른쪽 아래 둥근 버튼.
           "fixed top-2.5 right-[3.75rem] z-50 flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg outline-none transition-transform hover:scale-105 focus-visible:ring-3 focus-visible:ring-ring/50 max-sm:[&_svg]:size-5 sm:top-auto sm:right-6 sm:bottom-6 sm:size-14",
