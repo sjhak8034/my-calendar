@@ -477,6 +477,12 @@
 
 **확인하지 못한 것**(사용자 확인): 실제 휴대폰에서의 글자 크기·터치 느낌·한눈에 보이는지, 실제 일정 제목 길이에서의 가독성, **막대 글자 윗부분이 더는 잘리지 않는지(실제 폰트·기기에서)**, 목록 항목을 눌러 열리는 입력창(아래 시트)의 모양, 세로로 쌓은 머리글의 높이감, Safari(iOS)의 `dvh` 높이, 태블릿 폭(640~800px, 가로 스크롤 그대로).
 
+## 29. 일정 장소·링크 + 카카오맵 (2026-11-02)
+
+**확인함**: `tsc`·`lint`·`build` 통과. 임시 스크립트로 `normalizeUrl`(`example.com`→`https://example.com/`, `http://a.b/c?d=1` 유지, `javascript:`·`data:`·`ftp:`·빈 값·`https://`는 null)과 `toPayload`(장소 앞뒤 공백 제거, 빈 값 null, 201자 장소 `locationTooLong`, 링크 보정) 확인.
+
+**확인하지 못한 것**: 실제 카카오 키로 지도 표시(키·도메인 등록 전), 한국 주소·가게 이름 검색 정확도, 입력 폼과 지도의 실제 화면(브라우저 시험 안 함), 휴대폰 시트(`max-h-[50dvh]`) 안 지도 스크롤 간섭, 키 없음·SDK 실패 때 안내 문구 화면, 마이그레이션 SQL 실행과 제약 동작(Supabase MCP 읽기 전용), 월간 날짜 이동(`month-select.tsx`의 `updateEvent(fromEvent)`)이 장소·링크를 보존하는지(코드상 `fromEvent`에 포함).
+
 ## 실행 방법
 
 테스트 러너는 없다. 일회성 스크립트(저장소에 두지 않음)로 `lib/calendar/*.ts`를 `typescript`의 `transpileModule`로 CJS 변환한 뒤, 위 표를 `TZ=UTC`, `TZ=Asia/Seoul`, `TZ=America/Los_Angeles`에서 각각 실행한다(주간 화면 절은 `TZ=Pacific/Auckland`도 포함).

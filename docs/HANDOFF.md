@@ -64,7 +64,7 @@
 - `app/[lang]/` — 로케일 라우트. `(app)/`(사이드바 레이아웃: 월간 `page.tsx`, `day/[date]`, `settings`, `upgrade`), `login`, `forgot-password`, `reset-password`, `privacy`, `welcome`, `[...rest]`(404), `not-found.tsx`, `error.tsx`. `app/global-error.tsx`, `app/manifest.ts`·`robots.ts`·`sitemap.ts`, `app/api/ai`·`api/cron/notify`, `app/auth/callback`·`auth/kakao/connect|callback`.
 - `lib/` — `calendar/`(순수 날짜·배치·드래그 계산), `events/`(입력 검증·조회·액션), `ai/`(Gemini·도구·프롬프트), `notify/`(발송: `dispatch.ts`→`web-push.ts`·`kakao.ts`, 문구 `message.ts`, 기록 `history.ts`), `push/`(구독 검증·액션·브라우저 도우미 `client.ts`), `kakao/`(OAuth·토큰·암호화·클라이언트), `account/`(계정 삭제), `auth/password.ts`(비밀번호 규칙), `supabase/`(server/client/admin/proxy/require-user/current-user), `i18n/`, `rate-limit.ts`, `site.ts`.
 - `components/` — `calendar/`, `app-shell/`(사이드바, 로그아웃 폼, 푸시 자동 복원), `settings/`(푸시·카카오·삭제 카드, 발송 기록), `auth/`(로그인·비밀번호 폼, `captcha.tsx`), `ai/`, `ui/`(shadcn).
-- `supabase/migrations/`(11개, 마지막 `20261101000000_ai_usage.sql`), `supabase/cron/schedule.sql`(배포 후 수동 실행), `public/sw.js`(서비스 워커), `public/icon-*.png`.
+- `supabase/migrations/`(12개, 마지막 `20261102000000_event_location_url.sql` — ⚠️ 운영 DB에 적용 전), `supabase/cron/schedule.sql`(배포 후 수동 실행), `public/sw.js`(서비스 워커), `public/icon-*.png`.
 
 ## 6. Task 013 단계별 현황
 
@@ -140,6 +140,7 @@
 | `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`, `KAKAO_TOKEN_ENCRYPTION_KEY` | 서버 | 카카오 OAuth·토큰 암호화(32바이트 base64, 바꾸면 모든 연결이 풀림) |
 | `SITE_URL` | 서버 | 경로·끝 슬래시 없는 origin. 카카오 Redirect URI·메시지 링크·metadata |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | 공개 | Turnstile 사이트 키(비우면 위젯·토큰 없음). **비밀 키는 Supabase 대시보드에만** |
+| `NEXT_PUBLIC_KAKAO_MAP_KEY` | 공개 | 카카오맵 JavaScript 키(2026-11-02 추가, `.env.example`에만 이름 있음). 브라우저가 쓰는 값이라 접두사를 빼면 안 된다(Vercel의 "공개 접두사" 경고는 무시). 콘솔 Web 플랫폼에 도메인 등록이 보안 장치. 비어 있으면 지도 대신 "카카오맵에서 보기" 링크만 |
 
 ## 11. 자주 쓰는 명령
 
@@ -241,3 +242,16 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 
 **제한·후속 아이디어(요청 없음)**: 열이 약 45~50px라 블록 제목은 3~4글자, 태블릿 폭(640~800px)은 여전히 가로 스크롤(`--day-min`을 중간값으로), 목록 선택을 클라이언트 상태로 즉시 전환, 월간도 휴대폰에서 일정 목록 제공.
 
+## 17. 최근 작업: 일정 장소·링크 + 카카오맵(2026-11-02, 커밋 완료·푸시 전)
+
+**요청**: 주간·월간 모두 일정에 주소를 저장하고, 일정을 누르면 지도로 장소를 보여 주고, 링크도 저장. **사용자 결정**: 지도는 **카카오맵**, 표시는 **기존 수정 창 안**(읽기 전용 상세 창 없음).
+
+**구현**: 마이그레이션 `20261102000000_event_location_url.sql`(`events.location`·`url`, null 허용, 길이 200/2000·`url ~* '^https?://'` CHECK `not valid`, 롤백 SQL 주석). `lib/events/input.ts`(`location`·`url` 필드, `LOCATION_MAX`·`URL_MAX`, `normalizeUrl`: 스킴 없으면 `https://`, `http(s)`만 허용, 새 오류 코드 `locationTooLong`·`urlTooLong`·`urlInvalid`), `queries.ts`(select에 두 컬럼; `includeDescription` 조회에만), `event-form.tsx`(장소·링크 입력, 링크 열기 `rel="noreferrer noopener"`, 표시도 `normalizeUrl` 통과분만), 새 `components/calendar/event-map.tsx`(카카오 SDK를 지도가 필요할 때 한 번만 동적 로드, 주소 검색 → 실패 시 키워드 검색, 0.5초 지연, 실패·키 없음·못 찾음은 안내 + "카카오맵에서 보기" 링크), 사전 `eventForm` 키·방침(수집 항목 "장소, 링크", 위탁 목록 "Kakao 지도").
+
+**AI**: `lib/ai/tools.ts`는 장소·링크를 다루지 않는다. 새 초안은 빈 값, 수정 초안은 `before` 값 유지(`EVENT_COLUMNS`에 두 컬럼 추가).
+
+**⚠️ 배포 순서**: ① 카카오 콘솔 Web 플랫폼에 `http://localhost:3000`·운영 주소 등록 + 카카오맵 사용 설정 + JavaScript 키 확인 ② 키를 `.env`·Vercel에 `NEXT_PUBLIC_KAKAO_MAP_KEY`로 입력(사용자가 직접) ③ **마이그레이션을 Supabase SQL 편집기에서 먼저 실행** ④ 푸시. 마이그레이션 전에 새 코드가 뜨면 일정 조회·저장이 실패한다(운영·개발 DB 공유).
+
+**확인한 것/못 한 것**: `tsc`·`lint`·`build` 통과, `normalizeUrl`·`toPayload` 임시 스크립트(`example.com`→`https://example.com/`, `javascript:`·`data:`·`ftp:` 거절, 200자 초과 거절, 빈 값→null). **못 한 것**: 실제 카카오 키로 지도 표시와 한국 주소·가게 이름 검색 정확도, 입력 폼의 실제 화면(Playwright 시험 안 함), 휴대폰 하단 시트 안 지도 스크롤 간섭, 마이그레이션 SQL 실행(MCP 읽기 전용).
+
+**제한·후속**: 좌표를 저장하지 않아 열 때마다 검색 1회(첫 결과 사용), 장소 검색 결과 고르기 버튼 없음, 주간 블록·월간 칩에는 장소 표시·`aria-label` 없음, AI 일정 생성은 장소·링크 미지원, CSP 도입 시 `dapi.kakao.com`·지도 타일 도메인을 열어야 함. 알려진 사소한 점: `javascript:1`처럼 포트 모양이면 `https://javascript:1`로 보정됨(안전하나 의미 없는 주소).

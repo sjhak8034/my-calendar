@@ -147,6 +147,7 @@
   - ✅ 로그인 확인 왕복 줄이기: `proxy.ts`가 `getClaims`(토큰 서명 검증)를 쓰고 `requireUser`는 React `cache`로 요청당 한 번만 `getUser`(`3eda7a2`). 취소된 세션의 읽기 화면은 토큰 만료까지 열릴 수 있으나 데이터 접근은 RLS와 서버 액션의 `getUser`가 막는다.
   - ✅ AI 비용 관리: Gemini 유료 등급, 지출 한도, 운영 모델 `gemini-3.5-flash-lite`(질문 1건 평균 약 2원), 질문별 토큰 사용량을 서버 로그 `[ai] usage`와 DB `ai_usage`(마이그레이션 `20261101000000_ai_usage.sql`, 서버만 쓰기, 90일 보관)에 기록, AI가 질문한 언어로 답변. Claude Haiku 5.5 전환은 절감액이 작아 보류. 자세한 수치는 `docs/calendar-verification.md` 25절.
   - ✅ favicon을 새 로고로 교체(`8d9dcc7`).
+  - ✅ 일정 장소·링크 + 카카오맵(2026-11-02): 마이그레이션 `20261102000000_event_location_url.sql`, 수정 창의 장소·링크 입력과 지도 미리보기(`event-map.tsx`), 환경변수 `NEXT_PUBLIC_KAKAO_MAP_KEY`. ⚠️ 적용 필요: 카카오 콘솔 도메인 등록·키 입력, 마이그레이션 실행 후 푸시. 후속: 장소 검색 결과 고르기, 좌표 저장, AI 연동.
   - **공개 전 남은 점검**: 앱 소유자 외 계정의 카카오 `talk_message` 동의 가능 여부(안 되면 일반 사용자는 웹 푸시만), DB 백업·복구 확인과 개발·운영 DB 분리 재검토, 오류·장애 모니터링, 전체 `code-reviewer` 리뷰와 모바일 실기기·반응형 점검, 방침의 Gemini API 약관 원문 확인과 전문가 검토, 운영용 Gemini 키 분리(선택), 보안 후속(`ai_messages` 위조 방지, 익명 권한 회수, CSP, 가입 응답의 계정 존재 노출, 푸시 구독 상한 경쟁).
 
 ## 운영 개선 (추후)
