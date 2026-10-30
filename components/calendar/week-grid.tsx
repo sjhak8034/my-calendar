@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import Link from "next/link";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, StickyNote } from "lucide-react";
 import {
   GRID_END_HOUR,
   GRID_START_HOUR,
@@ -21,6 +20,7 @@ import {
   buildWeekTimeline,
 } from "@/lib/calendar";
 import { isTwoLine } from "@/components/calendar/block-text";
+import { DayNoteDialog, type DayNoteLabels } from "@/components/calendar/day-note";
 import { DayOverlay } from "@/components/calendar/day-overlay";
 import { EventBlock } from "@/components/calendar/event-block";
 import { SlotCreate } from "@/components/calendar/slot-create";
@@ -31,6 +31,7 @@ import { WeatherIcon } from "@/components/weather/weather-icon";
 import { useDayWeather } from "@/components/weather/weather-provider";
 import { applyRange, type EditableEvent } from "@/lib/events/input";
 import type { Holiday, HolidayMap } from "@/lib/holidays/ics";
+import type { NoteMap } from "@/lib/notes/input";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,9 @@ type Props = {
   selectedDate: CalendarDate;
   nowIso: string;
   holidays: HolidayMap; // 이 주의 휴일(날짜 → 이름·종류)
+  notes: NoteMap; // 이 주의 날짜별 메모
+  notesFailed: boolean; // 메모를 못 읽음(있던 메모를 덮어쓰지 않도록 팝업 수정을 막는다)
+  noteLabels: DayNoteLabels;
   dict: Dictionary["week"];
 };
 
@@ -70,6 +74,9 @@ function WeekHeaderLink({
   isSelected,
   selectedDayLabel,
   holiday,
+  note,
+  noteLabels,
+  onOpenNote,
 }: {
   lang: Locale;
   date: CalendarDate;
@@ -77,20 +84,27 @@ function WeekHeaderLink({
   isSelected: boolean;
   selectedDayLabel: string;
   holiday?: Holiday;
+  note?: string; // 이 날짜의 메모(없으면 undefined)
+  noteLabels: DayNoteLabels;
+  onOpenNote: (date: CalendarDate) => void;
 }) {
   const weather = useDayWeather(date);
   const [weekday, dayNumber] = formatWeekdayDay(date, lang).split(" ");
   const full = formatFullDate(date, lang);
   const withHoliday = holiday ? `${full}, ${holiday.name}` : full;
-  const name = isSelected ? `${withHoliday}, ${selectedDayLabel}` : withHoliday;
+  const base = isSelected ? `${withHoliday}, ${selectedDayLabel}` : withHoliday;
+  const name = note ? `${base}, ${noteLabels.hasNote}` : base;
+  // 머리글을 누르면 그 날짜의 메모 팝업이 열린다(날짜 이동 링크가 아니다).
   return (
-    <Link
+    <button
+      type="button"
       id={headerId(date)}
       data-today={isToday || undefined}
-      href={`/${lang}/day/${date}`}
-      aria-label={weather ? `${name}, ${weather.description}` : name}
+      aria-haspopup="dialog"
+      aria-label={`${weather ? `${name}, ${weather.description}` : name}, ${noteLabels.open}`}
       aria-current={isToday ? "date" : undefined}
-      className="flex min-h-[4.75rem] w-full flex-col items-center justify-start gap-0.5 pt-1.5 outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset sm:min-h-14 sm:justify-center sm:pt-0"
+      onClick={() => onOpenNote(date)}
+      className="relative flex min-h-[4.75rem] w-full cursor-pointer flex-col items-center justify-start gap-0.5 pt-1.5 outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset sm:min-h-14 sm:justify-center sm:pt-0"
     >
       {/* 휴대폰(열이 좁음)은 세로로 쌓는다: 요일, 날짜, 날씨 아이콘, 붙여 쓴 최저/최고 기온("7°/18°"). sm부터는 한 줄 + 아래 "7° / 18°". */}
       <span aria-hidden="true" className="flex flex-col items-center gap-0.5 sm:flex-row sm:gap-1.5">
@@ -133,7 +147,15 @@ function WeekHeaderLink({
           </span>
         )}
       </span>
-    </Link>
+      {/* 메모를 적은 날짜에는 머리글 오른쪽 위에 작은 메모 아이콘 */}
+      {note && (
+        <StickyNote
+          data-slot="note-indicator"
+          aria-hidden="true"
+          className="absolute top-1 right-1 size-3 text-muted-foreground sm:size-3.5"
+        />
+      )}
+    </button>
   );
 }
 
@@ -147,8 +169,13 @@ export function WeekGrid({
   selectedDate,
   nowIso,
   holidays,
+  notes,
+  notesFailed,
+  noteLabels,
   dict,
 }: Props) {
+  // 메모 팝업은 주 전체에서 하나만 둔다(머리글은 누른 날짜만 알려 준다).
+  const [noteDate, setNoteDate] = useState<CalendarDate | null>(null);
   // 낙관적 업데이트: 아직 서버에 반영 중인 새 위치를 덮어쓴 일정으로 배치를 계산한다.
   const { overrides, removed, reconcile } = useWeekEditor();
   const { timeline, eventsById } = useMemo(() => {
@@ -188,6 +215,20 @@ export function WeekGrid({
       // sm부터는 열 최소 6rem(가로 스크롤)·시간당 3.5rem·안쪽 세로 스크롤.
       className="isolate -mx-3 overflow-hidden rounded-none border-x-0 border-y bg-card shadow-xs [--day-min:0px] [--hour-h:max(1.75rem,calc((100dvh-23.375rem)*2/18))] [--time-col:2rem] max-sm:flex max-sm:min-h-0 max-sm:flex-1 max-sm:flex-col sm:mx-0 sm:rounded-xl sm:border-x sm:[--day-min:6rem] sm:[--hour-h:3.5rem] sm:[--time-col:4rem]"
     >
+      {noteDate && (
+        <DayNoteDialog
+          key={noteDate}
+          open
+          onOpenChange={(open) => {
+            if (!open) setNoteDate(null);
+          }}
+          date={noteDate}
+          note={notes[noteDate]}
+          lang={lang}
+          labels={noteLabels}
+          unavailable={notesFailed}
+        />
+      )}
       {/* 스크롤 영역 자체에 이름을 둔다. 안에 포커스 가능한 링크·버튼이 항상 있어 tabIndex는 두지 않는다.
           scroll-padding: 가로는 고정 눈금 열, 세로는 sticky 영역(상한 기준 폴백, 실제 높이는 ScrollToSelected가 갱신) */}
       <ScrollToSelected
@@ -224,6 +265,9 @@ export function WeekGrid({
                       isSelected={date === selectedDate}
                       selectedDayLabel={dict.selectedDay}
                       holiday={holidays[date]}
+                      note={notes[date]}
+                      noteLabels={noteLabels}
+                      onOpenNote={setNoteDate}
                     />
                   </div>
                 );

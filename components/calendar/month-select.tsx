@@ -240,6 +240,9 @@ export function MonthSelect({ events, children }: { events: readonly EditableEve
       return;
     }
 
+    // 메모 아이콘: 눌러서 메모 팝업을 여는 버튼이라 기간 선택(끌기)을 시작하지 않는다.
+    if (target.closest('[data-slot="day-note-button"]')) return;
+
     // 날짜 칸: 끌어서 기간을 골라 새 일정 입력창을 연다.
     const cell = target.closest<HTMLElement>('[data-slot="day-cell"]');
     const date = cell?.dataset.date;

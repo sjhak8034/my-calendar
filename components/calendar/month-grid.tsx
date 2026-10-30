@@ -3,6 +3,8 @@ import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import type { WeekData } from "@/lib/events/month-layout";
 import type { HolidayMap } from "@/lib/holidays/ics";
+import type { NoteMap } from "@/lib/notes/input";
+import type { DayNoteLabels } from "./day-note";
 import { WeekRow } from "./week-row";
 
 type Props = {
@@ -12,10 +14,12 @@ type Props = {
   today: CalendarDate;
   dict: Dictionary["calendar"];
   holidays: HolidayMap;
+  notes: NoteMap;
+  noteLabels: DayNoteLabels;
 };
 
 // 요일 헤더 + 6주
-export function MonthGrid({ lang, grid, weeks, today, dict, holidays }: Props) {
+export function MonthGrid({ lang, grid, weeks, today, dict, holidays, notes, noteLabels }: Props) {
   const weekdays = getWeekdayNames(lang);
 
   return (
@@ -45,6 +49,8 @@ export function MonthGrid({ lang, grid, weeks, today, dict, holidays }: Props) {
           data={weeks[i]}
           dict={dict}
           holidays={holidays}
+          notes={notes}
+          noteLabels={noteLabels}
         />
       ))}
     </div>

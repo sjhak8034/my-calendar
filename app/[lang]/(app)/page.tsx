@@ -18,6 +18,7 @@ import {
 import type { EditableEvent } from "@/lib/events/input";
 import { getEventsForRange } from "@/lib/events/queries";
 import { getHolidaysForDates } from "@/lib/holidays";
+import { getNotesForRange } from "@/lib/notes/queries";
 import { buildMonthLayout } from "@/lib/events/month-layout";
 import { hasLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
@@ -60,9 +61,10 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
 
   // 월간에서도 일정을 눌러 수정하므로 설명까지 가져온다(수정 폼이 설명을 그대로 보여 주고 저장해야 해서 자르지 않는다).
   // 일정과 휴일을 함께 가져온다(휴일은 길게 캐시돼 있어 대부분 바로 돌아온다).
-  const [result, holidays] = await Promise.all([
+  const [result, holidays, notesResult] = await Promise.all([
     getEventsForRange(gridStart, gridEnd, { includeDescription: true }),
     getHolidaysForDates([gridStart, gridEnd], lang),
+    getNotesForRange(gridStart, gridEnd),
   ]);
   const monthEvents = result.ok ? result.events : [];
   const weeks = buildMonthLayout(grid, monthEvents);
@@ -108,6 +110,8 @@ async function MonthContent({ params, searchParams }: PageProps<"/[lang]">) {
           today={today}
           dict={dict.calendar}
           holidays={holidays}
+          notes={notesResult.notes}
+          noteLabels={dict.dayNote}
         />
       </MonthSelect>
       <WeatherCredit />

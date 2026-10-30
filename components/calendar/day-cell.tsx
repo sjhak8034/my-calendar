@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatFullDate, fillTemplate, isWeekend, type CalendarDate } from "@/lib/calendar";
 import type { Locale } from "@/lib/i18n/config";
 import { WeatherIcon } from "@/components/weather/weather-icon";
+import { DayNoteIcon, type DayNoteLabels } from "@/components/calendar/day-note";
 import type { Holiday } from "@/lib/holidays/ics";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,8 @@ type Props = {
   isToday: boolean;
   eventCount: number;
   eventCountTemplate: string;
+  note?: string; // 이 날짜의 메모(있으면 날짜 줄에 메모 아이콘)
+  noteLabels: DayNoteLabels;
   holiday?: Holiday; // 쉬는 날은 날짜 숫자를 붉게, 이름은 날짜 줄 오른쪽에 작게(휴대폰은 이름 숨김)
 };
 
@@ -25,6 +28,8 @@ export function DayCell({
   eventCount,
   eventCountTemplate,
   holiday,
+  note,
+  noteLabels,
 }: Props) {
   const full = formatFullDate(date, lang);
   const withHoliday = holiday ? `${full}, ${holiday.name}` : full;
@@ -77,6 +82,8 @@ export function DayCell({
             {holiday.name}
           </span>
         )}
+        {/* 메모 아이콘은 칸 전체 링크 위(z-10)에 올라와 눌러서 메모 팝업을 연다. */}
+        {note && <DayNoteIcon date={date} note={note} lang={lang} labels={noteLabels} />}
       </div>
     </div>
   );

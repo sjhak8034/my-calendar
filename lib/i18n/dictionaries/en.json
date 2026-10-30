@@ -80,7 +80,7 @@
     "title": "Privacy Policy",
     "backToLogin": "Back to sign in",
     "draftNotice": "This document is a draft that has not had legal review. It must be reviewed by a professional before the service is made public.",
-    "effective": "Effective date: October 30, 2026",
+    "effective": "Effective date: October 31, 2026",
     "intro": "my-calendar (the \"Service\") processes only the personal information it needs to manage your events and send reminders. This policy explains what we process and why, how long we keep it, and how you can delete it.",
     "contactLabel": "Privacy contact",
     "sections": [
@@ -91,6 +91,7 @@
           "Google sign-in: the email address and identifier of your Google account.",
           "Guest mode: a temporary account with no email. It is deleted as soon as you sign out.",
           "Events: title, description, location, link, start and end time, all-day flag, and color.",
+          "Day notes: the text of the notes you write for each date. They are not sent to the AI.",
           "AI chat: the questions you type and the AI's answers. The titles, descriptions, and times of events needed for the conversation are sent to the AI.",
           "AI usage records: when you ask a question and how many tokens it used (no question or answer content). Used for cost control and abuse prevention.",
           "Web push: this browser's push subscription (endpoint and encryption keys) and your language.",
@@ -112,7 +113,7 @@
       {
         "heading": "3. Retention",
         "items": [
-          "Account and events: until you delete your account. \"Delete account\" in Settings removes them right away.",
+          "Account, events, and day notes: until you delete your account. \"Delete account\" in Settings removes them right away.",
           "AI chat: 30 days after your last message. You can delete the whole history sooner from the chat window.",
           "AI usage records (token counts): 90 days. When you delete your account, only numbers no longer linked to you remain.",
           "Notification history: deleted after 30 days.",
@@ -128,7 +129,7 @@
           "The Service uses the companies below, and your information is stored on or sent to their servers. The database (Supabase) servers are located overseas (in the Asia region)."
         ],
         "items": [
-          "Supabase: sign-in, the database (accounts, events, AI chats, notification history), and authentication emails.",
+          "Supabase: sign-in, the database (accounts, events, day notes, AI chats, notification history), and authentication emails.",
           "Vercel: hosting and request handling.",
           "Google: Google sign-in and AI chat (Gemini). Your questions and event details are sent. The AI runs on a paid service, and Google states that it does not use this content to improve its products. It may still be retained for a limited time under Google's policies, for example to prevent abuse.",
           "Kakao: sending KakaoTalk \"Send to me\" reminders and disconnecting.",
@@ -221,6 +222,25 @@
     "selectedDay": "Selected day",
     "eventLabel": "{title}, {time}",
     "continuesToNext": "Continues later"
+  },
+  "dayNote": {
+    "title": "Note for {date}",
+    "placeholder": "Write a note for this day",
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "open": "Open note",
+    "hasNote": "Has a note",
+    "count": "{count}/{max}",
+    "errors": {
+      "invalid": "A note can't be saved for this date.",
+      "tooLong": "Notes can be up to 1,000 characters.",
+      "limit": "You can have up to 2,000 notes.",
+      "unauthorized": "You need to sign in. Please sign in again.",
+      "failed": "Couldn't save the note. Please try again in a moment.",
+      "loadFailed": "Notes couldn't be loaded, so they can't be edited right now. Refresh and try again."
+    }
   },
   "eventForm": {
     "newEvent": "New event",
@@ -461,7 +481,7 @@
     },
     "account": {
       "title": "Delete account",
-      "description": "Permanently deletes your account and all your data (events, AI chats, notification history, web push and KakaoTalk connections). This can't be undone.",
+      "description": "Permanently deletes your account and all your data (events, day notes, AI chats, notification history, web push and KakaoTalk connections). This can't be undone.",
       "button": "Delete account",
       "dialogTitle": "Delete your account?",
       "dialogDescription": "All your data, including events and AI chats, is deleted right away and can't be recovered. To continue, enter the email you signed up with.",
