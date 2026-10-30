@@ -64,7 +64,7 @@
 - `app/[lang]/` — 로케일 라우트. `(app)/`(사이드바 레이아웃: 월간 `page.tsx`, `day/[date]`, `settings`, `upgrade`), `login`, `forgot-password`, `reset-password`, `privacy`, `welcome`, `[...rest]`(404), `not-found.tsx`, `error.tsx`. `app/global-error.tsx`, `app/manifest.ts`·`robots.ts`·`sitemap.ts`, `app/api/ai`·`api/cron/notify`, `app/auth/callback`·`auth/kakao/connect|callback`.
 - `lib/` — `calendar/`(순수 날짜·배치·드래그 계산), `events/`(입력 검증·조회·액션), `ai/`(Gemini·도구·프롬프트), `notify/`(발송: `dispatch.ts`→`web-push.ts`·`kakao.ts`, 문구 `message.ts`, 기록 `history.ts`), `push/`(구독 검증·액션·브라우저 도우미 `client.ts`), `kakao/`(OAuth·토큰·암호화·클라이언트), `account/`(계정 삭제), `auth/password.ts`(비밀번호 규칙), `supabase/`(server/client/admin/proxy/require-user/current-user), `i18n/`, `rate-limit.ts`, `site.ts`.
 - `components/` — `calendar/`, `app-shell/`(사이드바, 로그아웃 폼, 푸시 자동 복원), `settings/`(푸시·카카오·삭제 카드, 발송 기록), `auth/`(로그인·비밀번호 폼, `captcha.tsx`), `ai/`, `ui/`(shadcn).
-- `supabase/migrations/`(12개, 마지막 `20261102000000_event_location_url.sql` — ⚠️ 운영 DB에 적용 전), `supabase/cron/schedule.sql`(배포 후 수동 실행), `public/sw.js`(서비스 워커), `public/icon-*.png`.
+- `supabase/migrations/`(16개, 마지막 `20261102000004_daily_logins.sql`. 모두 적용 확인함), `supabase/cron/schedule.sql`(배포 후 수동 실행), `public/sw.js`(서비스 워커), `public/icon-*.png`.
 
 ## 6. Task 013 단계별 현황
 
@@ -96,6 +96,7 @@
 - 푸시는 로그아웃 때 이 브라우저 구독을 해제하고, 같은 계정으로 다시 로그인하면(알림 권한이 이미 허용된 브라우저에서) **자동으로 다시 구독**한다(`user_metadata.push_enabled`). 설정에서 직접 끄면 복원되지 않는다.
 - 개인정보처리방침은 법률 자문이 아닌 **초안**으로 쓰고 화면에 그렇게 명시한다.
 - **날씨 표시(2026-10-30)**: 지역은 **브라우저 위치**(못 받으면 서울), 범위는 **오늘부터 약 2주 예보만**, 월간은 아이콘만(기온은 툴팁), 주간은 요일 앞 아이콘 + 머리글 한 줄 아래 작은 기온. 제3자 서비스는 Open-Meteo(결정 근거: 키 불필요·CORS 허용·16일 예보).
+- **관리자 영역 결정(2026-11-02)**: 역할(`role`)과 멤버십 등급(`membership`)을 **별개 컬럼·enum**으로, 경로는 `/admin` **별도 루트 레이아웃**, 관리자 확인은 proxy + 페이지·액션 이중, 접속 횟수는 **로그인 횟수**(`daily_logins`)로 대신, AI 단가는 **관리자 화면에서 입력해 DB에 저장**(코드에 값 없음), 통계는 DB 함수 없이 서버 코드로 집계(§18).
 - **DB 트리거는 사용자가 요청할 때만 만든다**(2026-11-02 결정). 가입 때 `profiles` 행 만들기 같은 자동 동작은 앱 서버 코드로 구현한다(`lib/profile/ensure-profile.ts`). 기존 트리거(알림 예약, 일정 수 상한, `set_updated_at` 등)는 그대로 둔다.
 - **DB 백업은 지금 설정하지 않는다**(2026-10-29 결정, 추후 개선사항). Supabase **Free 플랜에는 자동 백업이 없다**(Pro는 월 $25부터, 매일 백업 7일 보관, PITR은 월 $100 추가). 사용자 데이터를 본격적으로 받기 전에 다시 결정한다(§8의 "운영 개선").
 
@@ -264,3 +265,36 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 **모바일 주간 그리드 세로 2배(커밋 `f5de42e`, 사용자 요청)**: 휴대폰(640px 미만)의 `--hour-h`를 `max(1.75rem, calc((100dvh - 23.375rem) * 2 / 18))`로 바꿔 시간 눈금 본문 높이가 "한 화면에 딱 맞던 높이"의 정확히 2배(390×844에서 470→940px, 360×640에서 266→532px)가 되었다. 그리드 카드는 화면 높이 그대로이고 **그리드 안에서 세로 스크롤**하며 머리글·"6시 이전" 줄은 sticky. 페이지 자체는 스크롤 없음. `23.375rem`은 상단 바·툴바·머리글 높이 합(측정값 374px), `18`은 `HOURS`라 그 값들이 바뀌면 함께 고친다. **§16의 "스크롤 없이 한 화면에 맞춤" 서술은 이 변경으로 대체됐다(시간 높이만 2배, 카드·페이지는 한 화면 고정 그대로).** 후속 후보: 열 때 지금 시각 근처로 자동 스크롤(현재는 맨 위). 이전 한 화면 맞춤으로 되돌리려면 `--hour-h`를 `0.875rem`으로.
 
 **제한·후속**: 좌표를 저장하지 않아 열 때마다 검색 1회(첫 결과 사용), 주간 블록·월간 칩에는 장소 표시·`aria-label` 없음, AI 일정 생성은 장소·링크 미지원, CSP 도입 시 `dapi.kakao.com`·지도 타일 도메인을 열어야 함. 알려진 사소한 점: `javascript:1`처럼 포트 모양이면 `https://javascript:1`로 보정됨(안전하나 의미 없는 주소).
+
+## 18. 최근 작업: 관리자 영역(/admin)·프로필·통계 대시보드(2026-11-02, 커밋 완료·푸시 전)
+
+**요약**: `profiles` 테이블(역할·멤버십·이메일), 일반 앱과 분리된 `/admin` 영역(접근 제어, 개발 점검 페이지, tweakcn modern-minimal 테마), 통계 대시보드(`/admin/dashboard`), 일별 로그인 횟수 기록. **사용자 결정**: DB 트리거·함수는 요청할 때만 쓴다 → 프로필 행 만들기와 로그인 횟수 증가, 통계 집계는 모두 **앱 서버 코드(service role)**로 한다(§7, 메모리 `db-triggers-only-when-asked`).
+
+**DB(모두 적용·확인함, 2026-11-02 읽기 전용 조회)**
+- `20261102000001_profiles_role.sql`: `profiles(user_id PK → auth.users on delete cascade, email, role, membership, created_at)`. RLS는 **본인 행 읽기만**(쓰기 정책·권한 없음: 사용자가 자기 역할을 못 바꿈). 행이 없으면 일반 사용자(user/free)로 본다.
+- `20261102000002_profiles_enums.sql`: `role`을 enum `user_role('user','admin')`, `membership`을 enum `membership_tier('free')`로 변환(role과 membership은 **서로 독립**: 권한 vs 요금제). 등급 추가는 `alter type public.membership_tier add value 'pro';`(같은 실행 안에서 새 값을 바로 쓸 수 없어 따로 실행). 관리자 지정은 SQL 편집기에서 `insert into public.profiles (user_id, role) select id,'admin' from auth.users where email='…' on conflict (user_id) do update set role='admin'`(앱에서는 역할 변경 UI 없음).
+- `20261102000003_admin_stats.sql`: `app_settings(key, value jsonb, updated_at, updated_by)`(AI 요금 단가 `ai_pricing` 저장). 원래 있던 집계용 DB 함수 3개는 **사용자 요청으로 삭제**(적용된 적 없음).
+- `20261102000004_daily_logins.sql`: `daily_logins(user_id, day(서울), count)` PK `(user_id, day)`. 두 테이블 모두 RLS 켜고 정책 없음·권한 회수(서버 service role만).
+
+**프로필 행 만들기**: `lib/profile/ensure-profile.ts`의 `ensureProfile(user)`가 service role로 `user_id`·`email`만 upsert(role·membership은 덮어쓰지 않음). 호출: 이메일 가입(이미 가입된 이메일 걸러낸 뒤), 이메일 로그인, 게스트 시작, 게스트 이메일 전환, `/auth/callback`(Google·확인 링크). 실패해도 로그인·가입은 막지 않고 로그(`[profile]`)만 남긴다. **로그인할 때마다 한 번 더 채우는 것이 누락 안전망**. 신규 가입 자동 생성 트리거는 쓰지 않는다.
+
+**일별 로그인 횟수**: `lib/profile/record-login.ts`의 `recordLogin(userId)`. 서울 날짜 기준 (사용자, 날짜) 행의 `count`를 1 올린다. **락 없이 낙관적 갱신**(`update … where count = 읽은 값`, 갱신된 행이 0이면 다시 읽고 재시도, 최대 5번; 첫 로그인 동시 insert의 `23505`도 같은 경로). 서로 다른 사용자는 다른 행이라 충돌 없음. 세는 것: 이메일 로그인, 바로 로그인되는 이메일 가입, 게스트 시작, `/auth/callback`(게스트의 계정 전환 `upgrade=1`은 제외). 세지 않는 것: 이미 로그인된 채의 재방문, 페이지 열기. **기록은 배포한 날부터만 쌓인다**(과거 소급 불가: Auth 감사 로그가 꺼져 있고 세션은 로그아웃하면 지워짐). 동시 로그인 시험은 하지 못함.
+
+**접근 제어(이중)**: ① `proxy.ts`가 `/admin`·`/admin/*`를 먼저 확인: 세션(`getClaims`) + `profiles.role='admin'`, 게스트 제외, **운영(`NODE_ENV=production`)에서는 관리자가 아니면 `/ko/404`로 rewrite**(경로 존재를 숨김), 개발 서버에서는 통과시켜 페이지가 원인을 보여 줌. 응답에 `cache-control: no-store`, `x-robots-tag: noindex`. ② 페이지·Server Action이 `lib/admin/require-admin.ts`의 `getAdmin()`으로 **다시 확인**(Auth 서버 `getUser` 기준, 사용자 권한으로 자기 `profiles` 행만 읽음). **관리자 Server Action은 반드시 `getAdmin()`을 직접 호출**해야 한다(layout만 막으면 우회됨). `lib/supabase/proxy.ts`의 `updateSession`이 `supabase` 클라이언트도 반환하도록 바뀜.
+
+**분리된 레이아웃**: `app/admin/layout.tsx`가 두 번째 루트 레이아웃(`app/layout.tsx` 없음, `app/[lang]/layout.tsx`와 별개). 언어 접두사·사이드바·환영 인트로 없음, 한국어만(사전 파일 미사용), `noindex`, 일반 앱과 오갈 때 전체 새로 불러오기. **테마**: tweakcn modern-minimal을 `npx shadcn add`로 `globals.css`에 쓰지 않고 `app/admin/admin-theme.css`에 `html.admin-theme`(라이트)·`html.admin-theme.dark`(다크, 앱에 `.dark`를 켜는 코드가 없어 현재 미사용) 범위로 옮김. 폰트는 Inter·JetBrains Mono를 관리자 레이아웃에서만 `next/font`로 불러오고, 앱의 `@theme inline`이 `--font-geist-*`를 값으로 참조하므로 `admin-theme.css`가 이 두 변수를 `--font-inter`·`--font-jetbrains-mono`로 연결. `app/globals.css`는 변경 없음(일반 앱은 베이지·주황 그대로, 헤드리스로 확인).
+
+**화면**
+- `/admin`(점검, `app/admin/page.tsx`): 관리자 확인 결과, 마스킹한 이메일, 사용자 ID 앞 8자리, 역할/멤버십, service role 연결(profiles 행 수), Supabase 호스트, 환경 변수 **설정 여부만**, 실행 모드, **"구현 예정 기능" 목록**(`PLANNED`의 `status`로 예정/완료 배지; **대시보드로 만든 3개(AI 사용량·비용, 가입·활동, 알림 발송)가 아직 "예정"으로 남아 있음** — 실제 화면 확인 후 `"done"`으로 바꿀 것).
+- `/admin/dashboard`: 기간 7·14·30일 선택(`?days=`). 오늘 요약 타일(오늘 로그인한 사용자·오늘 로그인 횟수·오늘 AI 질문·오늘 알림 성공), 가입·활동·AI·알림 섹션. **`StatCard`(`stat-card.tsx`)**: 라벨·큰 숫자·이전 기간 대비 증감·일별 곡선 그래프(SVG, 라이브러리 없음, 점 반지름 1.5, 점이 많으면 마지막 점만). 집계가 **선택 기간의 2배**를 읽어 앞 절반을 이전 기간으로 비교(`halves`). 사용자별 AI 상위 10명 표(이메일 마스킹, 게스트는 "게스트"), 알림 상태별 건수·사유 상위 10·10분 넘게 지연된 대기/발송 중 경고.
+- **AI 요금 단가**: 페이지에서 입력 단가($/100만 토큰)·출력 단가·환율(원/$)을 저장하면 `app_settings('ai_pricing')`에 저장되고 예상 비용에 반영(`lib/admin/pricing.ts`, `app/admin/actions.ts`의 `savePricing`: `getAdmin()` 확인·0~100000 범위 검증). 출력 토큰은 추론 토큰을 더해 계산. 단가는 사용자가 입력(코드에 값 없음).
+
+**집계(`lib/admin/stats.ts`, 서버 전용)**: 가입은 Auth Admin API `listUsers`(1000명씩, 최대 20쪽), 나머지는 `events`·`ai_usage`·`notifications`·`daily_logins`를 REST로 읽어 서버에서 센다(1000행씩 나눠 읽고 **최대 2만 행**, 서울 날짜 기준). 매우 커지면 느려질 수 있어 그때 DB 쪽 집계를 다시 검토. "오늘 로그인한 사용자"·"최근 7일 로그인 사용자"는 `last_sign_in_at` 기준(과거에도 정확).
+
+**확인한 것**: `tsc`·`lint`·`build`, DB 적용 상태(읽기 전용), 집계 쿼리 본문 3개를 실제 DB에 읽기로 실행해 결과 모양 확인(함수 도입 때), 서울 날짜 경계 계산, 카드 4개 헤드리스 렌더링(스크린샷), 테마 적용 범위(헤드리스), 운영 빌드에서 로그인 없는 `/admin`·`/admin/x`가 404. **확인하지 못한 것**: 관리자로 로그인한 실제 `/admin`·`/admin/dashboard` 화면과 숫자, 단가 저장 후 비용 계산(저장 행은 존재), 동시 로그인 횟수, 로그인 기록이 실제로 쌓이는지(배포 후 `daily_logins` 조회로 확인), 운영 배포에서 Inter 폰트, 휴대폰 화면.
+
+**조회 중 발견(원인 미확인)**: 대기 중 알림 16건 중 10건이 발송 시각이 10분 넘게 지났는데 `pending`(2026-10-30 기준). 알림 워커(pg_cron) 동작 여부 확인 필요. 대시보드가 이런 경우 경고를 띄움.
+
+**남은 구현 예정**(`PLANNED`): 사용자 목록과 상태, AI 사용 제한 조정, 정리 작업 현황, 오류 모음, 계정 정지·삭제(확인 단계·변경 기록 필요, DB 백업 없음), 다른 사용자 일정·AI 대화 열람(개인정보 방침 고지 필요라 보류 권장), 공지·점검 배너, 문의·신고 접수함, 기능 플래그, 시스템 설정 편집. 관리자 역할을 화면에서 바꾸는 기능은 없음(만들면 자기 자신·마지막 관리자 해제 방지와 변경 기록 필요).
+
+**알려둘 점**: 계정 삭제 시 `profiles`·`daily_logins` 행도 cascade로 사라져 과거 합계가 조금 줄어든다. 관리자 지정 이메일은 마이그레이션 주석의 SQL에서 직접 바꿔 실행. `.playwright-mcp/`는 `.gitignore`에 추가됨.
