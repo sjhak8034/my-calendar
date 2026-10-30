@@ -92,7 +92,7 @@
           "Guest mode: a temporary account with no email. It is deleted as soon as you sign out.",
           "Events: title, description, location, link, start and end time, all-day flag, and color.",
           "Day notes: the text of the notes you write for each date. They are not sent to the AI.",
-          "AI chat: the questions you type and the AI's answers. The titles, descriptions, and times of events needed for the conversation are sent to the AI.",
+          "AI chat: the questions you type and the AI's answers. The titles, descriptions, locations, and times of events needed for the conversation are sent to the AI (links are not).",
           "AI usage records: when you ask a question and how many tokens it used (no question or answer content). Used for cost control and abuse prevention.",
           "Web push: this browser's push subscription (endpoint and encryption keys) and your language.",
           "KakaoTalk reminders: if you connect, the access and refresh tokens issued by Kakao, stored encrypted. We don't receive your Kakao profile or friends.",
@@ -335,7 +335,7 @@
     "notices": {
       "cut": "The answer was long and got cut off."
     },
-    "disclaimer": "AI answers can be wrong. Events are only added, changed or deleted when you press the button on the card. Depending on your question, event titles and descriptions are sent to Google Gemini, and chats are stored for 30 days after the last message.",
+    "disclaimer": "AI answers can be wrong. Events are only added, changed or deleted when you press the button on the card. Depending on your question, event titles, descriptions and locations are sent to Google Gemini, and chats are stored for 30 days after the last message.",
     "errors": {
       "unauthorized": "You need to sign in. Please sign in again.",
       "forbidden": "The request could not be processed. Please refresh the page.",

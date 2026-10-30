@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, MessageCircle, Plus, Send, Square, Trash2, X } from "lucide-react";
+import { Check, MapPin, MessageCircle, Plus, Send, Square, Trash2, X } from "lucide-react";
 import { DOT_CLASS } from "@/components/calendar/event-colors";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -713,6 +713,12 @@ function EventSummary({ input, labels, muted }: { input: EventInput; labels: Lab
           {dateText(input)}
           {input.allDay && ` · ${labels.draft.allDay}`}
         </p>
+        {input.location && (
+          <p className="mt-0.5 flex items-center gap-1 text-xs break-words text-muted-foreground">
+            <MapPin aria-hidden="true" className="size-3 shrink-0" />
+            <span className="min-w-0">{input.location}</span>
+          </p>
+        )}
         {input.description && (
           <p className="mt-1 line-clamp-3 text-xs break-words whitespace-pre-wrap text-muted-foreground">
             {input.description}

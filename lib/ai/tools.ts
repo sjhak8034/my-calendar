@@ -38,7 +38,7 @@ export const AI_TOOLS = [
     function: {
       name: "search_events",
       description:
-        "Search the user's own calendar events that overlap a date range (inclusive, Asia/Seoul dates). Optionally filter by a keyword matched against title and description. Returns events sorted by start time.",
+        "Search the user's own calendar events that overlap a date range (inclusive, Asia/Seoul dates). Optionally filter by a keyword matched against title, description and location. Returns events sorted by start time.",
       parameters: {
         type: "object",
         properties: {
@@ -49,7 +49,7 @@ export const AI_TOOLS = [
           },
           keyword: {
             type: "string",
-            description: "Optional text to look for in the title or description.",
+            description: "Optional text to look for in the title, description or location.",
           },
         },
         required: ["start_date", "end_date"],
@@ -81,6 +81,10 @@ export const AI_TOOLS = [
           },
           all_day: { type: "boolean", description: "True for an all-day event. Defaults to false." },
           description: { type: "string", description: "Optional notes, at most 2000 characters." },
+          location: {
+            type: "string",
+            description: "Optional place as plain text (an address or a place name), at most 200 characters. Omit if the user gave no place.",
+          },
           color: {
             type: "string",
             enum: [...EVENT_COLORS],
@@ -108,6 +112,10 @@ export const AI_TOOLS = [
           end_time: { type: "string", description: "New end time, 24-hour HH:mm." },
           all_day: { type: "boolean", description: "Set true or false to switch between all-day and timed." },
           description: { type: "string", description: "New notes, at most 2000 characters. Empty string clears them." },
+          location: {
+            type: "string",
+            description: "New place as plain text, at most 200 characters. Empty string clears it. Omit to keep the current place.",
+          },
           color: { type: "string", enum: [...EVENT_COLORS], description: "New color." },
         },
         required: ["event_id"],
@@ -175,7 +183,7 @@ async function searchEvents(supabase: SupabaseClient, args: unknown): Promise<st
 
   const { data, error } = await supabase
     .from("events")
-    .select("id, title, start_at, end_at, all_day, description")
+    .select("id, title, start_at, end_at, all_day, description, location")
     .lt("start_at", `${addDays(end, 1)}T00:00:00${SEOUL_OFFSET}`)
     .gte("end_at", `${start}T00:00:00${SEOUL_OFFSET}`)
     .order("start_at", { ascending: true })
@@ -190,7 +198,8 @@ async function searchEvents(supabase: SupabaseClient, args: unknown): Promise<st
     ? rows.filter(
         (e) =>
           e.title.toLowerCase().includes(keyword) ||
-          (e.description ?? "").toLowerCase().includes(keyword),
+          (e.description ?? "").toLowerCase().includes(keyword) ||
+          (e.location ?? "").toLowerCase().includes(keyword),
       )
     : rows;
   const returned = matched.slice(0, AI_SEARCH_MAX_EVENTS).map(toPromptEvent);
@@ -254,10 +263,13 @@ function finishDraft(
   if (a.title !== undefined && typeof a.title !== "string") {
     return { content: toolError("title must be a string.") };
   }
+  if (a.location !== undefined && typeof a.location !== "string") {
+    return { content: toolError("location must be a string.") };
+  }
   const input: EventInput = {
     title: str(a.title) ?? "",
     description: str(a.description) ?? "",
-    location: "",
+    location: str(a.location) ?? "",
     url: "",
     allDay,
     startDate,
@@ -275,12 +287,18 @@ function finishDraft(
     content: safeJson({
       status: "draft_shown_to_user",
       note: "Nothing has been saved. The user must press the Add button on the card. Do not say the event was added.",
-      event: input,
+      event: forModel(input),
     }),
   };
 }
 
 export type ToolResult = { content: string; draft?: AiDraft };
+
+// 모델에게 돌려주는 일정에서 링크(url)는 뺀다. 링크는 AI에 보내지 않기로 했다(저장된 값은 화면 초안에서 그대로 유지된다).
+// JSON으로 바꿀 때 undefined 값은 빠진다.
+function forModel<T extends { url: string }>(event: T) {
+  return { ...event, url: undefined };
+}
 
 const EVENT_COLUMNS = "id, title, start_at, end_at, all_day, color, description, location, url";
 
@@ -312,7 +330,7 @@ async function updateEventDraft(supabase: SupabaseClient, args: unknown): Promis
   const { stored, id } = loaded;
   const before = fromEvent(stored);
 
-  for (const key of ["title", "description", "color", "start_date", "start_time", "end_date", "end_time"]) {
+  for (const key of ["title", "description", "location", "color", "start_date", "start_time", "end_date", "end_time"]) {
     if (a[key] !== undefined && typeof a[key] !== "string") {
       return { content: toolError(`${key} must be a string.`) };
     }
@@ -352,8 +370,8 @@ async function updateEventDraft(supabase: SupabaseClient, args: unknown): Promis
   const input: EventInput = {
     title: a.title !== undefined ? str(a.title) ?? "" : before.title,
     description: a.description !== undefined ? str(a.description) ?? "" : before.description,
-    // AI는 장소·링크를 다루지 않으므로 기존 값을 그대로 유지한다.
-    location: before.location,
+    location: a.location !== undefined ? str(a.location) ?? "" : before.location,
+    // 링크는 AI가 보지도 바꾸지도 않는다: 기존 값을 그대로 유지한다.
     url: before.url,
     allDay,
     startDate,
@@ -372,8 +390,8 @@ async function updateEventDraft(supabase: SupabaseClient, args: unknown): Promis
     content: safeJson({
       status: "draft_shown_to_user",
       note: "Nothing has been changed. The user must press the button on the card. Do not say the event was changed.",
-      before,
-      after: input,
+      before: forModel(before),
+      after: forModel(input),
     }),
   };
 }
@@ -388,7 +406,7 @@ async function deleteEventDraft(supabase: SupabaseClient, args: unknown): Promis
     content: safeJson({
       status: "draft_shown_to_user",
       note: "Nothing has been deleted. The user must press the button on the card. Do not say the event was deleted.",
-      event,
+      event: forModel(event),
     }),
   };
 }
