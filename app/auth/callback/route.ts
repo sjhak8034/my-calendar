@@ -1,4 +1,5 @@
 import { ensureProfile } from "@/lib/profile/ensure-profile";
+import { recordLogin } from "@/lib/profile/record-login";
 import { NextResponse, type NextRequest } from "next/server";
 import { defaultLocale, hasLocale } from "@/lib/i18n/config";
 import { createClient } from "@/lib/supabase/server";
@@ -35,6 +36,8 @@ export async function GET(request: NextRequest) {
     if (!error) {
       // Google 로그인·메일 확인 링크·게스트의 Google 연결이 모두 여기로 돌아온다. 프로필 행을 만들거나 이메일을 맞춘다.
       await ensureProfile(data.user);
+      // 게스트의 계정 전환(upgrade)은 이미 로그인한 상태라 새 로그인으로 세지 않는다.
+      if (!upgrade) await recordLogin(data.user?.id);
       const next = safeNextPath(searchParams.get("next"), origin);
       // 이미 로그인한 상태의 전환이라 인트로 없이 바로 보낸다.
       if (upgrade || recovery) return NextResponse.redirect(new URL(next ?? `/${lang}`, origin));

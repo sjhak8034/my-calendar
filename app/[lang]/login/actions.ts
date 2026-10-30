@@ -6,6 +6,7 @@ import { defaultLocale, hasLocale, type Locale } from "@/lib/i18n/config";
 import { checkPassword, type PasswordIssue } from "@/lib/auth/password";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { ensureProfile } from "@/lib/profile/ensure-profile";
+import { recordLogin } from "@/lib/profile/record-login";
 import { requireUser } from "@/lib/supabase/require-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -115,6 +116,7 @@ export async function signInWithPassword(
 
   // 가입 때 행을 못 만든 계정(오류·이전 가입자)도 로그인하면 채워 둔다.
   await ensureProfile(data.user);
+  await recordLogin(data.user?.id);
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
 
@@ -155,6 +157,7 @@ export async function signUp(
   await ensureProfile(data.user);
   // 세션이 없으면 이메일 확인이 켜져 있어 확인 메일을 보낸 상태다. 오류가 아니라 안내를 보여 준다.
   if (!data.session) return { notice: dict.login.checkEmail, email, needsConfirmation: true };
+  await recordLogin(data.user?.id); // 확인 없이 바로 로그인된 가입
 
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
@@ -198,6 +201,7 @@ export async function signInAsGuest(
   }
 
   await ensureProfile(data.user);
+  await recordLogin(data.user?.id);
   redirect(`/${lang}/welcome`); // 인트로를 보여 주는 동안 그 뒤에서 캘린더로 이동한다
 }
 
