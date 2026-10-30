@@ -208,7 +208,46 @@ erDiagram
 
 ---
 
-## 📌 6. 트러블슈팅
+## 📌 6. UI
+
+#### 로그인
+<img src="docs/screenshots/login.png" alt="로그인 화면" width="720">
+
+이메일·Google 로그인, 가입 없이 쓰는 **게스트 시작**, Turnstile CAPTCHA.
+
+#### 월간 캘린더
+<img src="docs/screenshots/month.png" alt="월간 캘린더" width="720">
+
+여러 날 일정은 사선 무늬 막대로 표시하고, 날짜 옆에 날씨 아이콘이 붙습니다. 칸이 차면 "N개 더 보기"로 펼칩니다.
+
+#### AI 대화
+<img src="docs/screenshots/ai-chat.png" alt="AI 대화" width="720">
+
+"내일 3시에 과외일정을 추가해주세요" → AI가 **일정 초안 카드**를 만들고, 사용자가 `추가`를 눌러야 저장됩니다. 맨 위에는 오늘 AI 사용량(한도 대비 %)이 보입니다.
+
+#### 주간 일정
+<img src="docs/screenshots/week.png" alt="주간 일정" width="720">
+
+시간 단위 블록을 끌어 이동하고 가장자리를 끌어 길이를 조절합니다. 요일 머리글에 날씨와 기온이 표시됩니다.
+
+#### 일정 수정 (장소·지도)
+<img src="docs/screenshots/week-edit.png" alt="일정 수정 사이드바" width="720">
+
+제목·시간·색상·장소·링크·설명. 장소를 입력하면 카카오맵이 표시됩니다.
+
+#### 관리자 대시보드
+<img src="docs/screenshots/admin-dashboard.png" alt="관리자 대시보드" width="720">
+
+사용자당 하루 AI 사용 금액 한도(슬라이더)와 가입·로그인·AI·알림 통계.
+
+#### 관리자 사용자 목록
+<img src="docs/screenshots/admin-users.png" alt="관리자 사용자 목록" width="720">
+
+이메일은 일부만 가리고(마스킹) 일정은 개수만 보여 줍니다.
+
+---
+
+## 📌 7. 트러블슈팅
 
 ### 1) 1분 알림 스케줄러가 실제로는 돌지 않고 있었음
 - **증상:** 발송 시각이 지난 알림이 `pending`으로 남음. `curl`로 워커를 직접 부를 때만 발송됨.
@@ -244,7 +283,7 @@ erDiagram
 
 ---
 
-## 📌 7. 회고
+## 📌 8. 회고
 
 ### 배운 점
 - 보안은 앱 코드보다 **DB 정책(RLS)과 서버 재검증**에 두는 편이 단순하고 안전합니다.
