@@ -236,6 +236,7 @@
     "descriptionPlaceholder": "설명 (선택)",
     "location": "장소",
     "locationPlaceholder": "주소나 장소 이름",
+    "placeSuggestions": "장소 후보",
     "url": "링크",
     "urlPlaceholder": "https://",
     "openLink": "링크 열기",

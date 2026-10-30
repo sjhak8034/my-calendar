@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ExternalLink } from "lucide-react";
 import { DOT_CLASS } from "@/components/calendar/event-colors";
 import { EventMap } from "@/components/calendar/event-map";
+import type { PlaceCandidate } from "@/components/calendar/event-map";
+import { PlaceInput } from "@/components/calendar/place-input";
 import { EVENT_COLORS, type EventColor } from "@/lib/calendar";
 import {
   createEvent,
@@ -31,6 +33,9 @@ import {
 } from "@/lib/events/input";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import { cn } from "@/lib/utils";
+
+const pickedText = (c: PlaceCandidate) =>
+  (c.address ? `${c.label} (${c.address})` : c.label).trim();
 
 export type EventFormLabels = Dictionary["eventForm"];
 
@@ -70,6 +75,8 @@ export function EventForm({
     wasConfirming.current = confirmingDelete;
   }, [confirmingDelete]);
   const [pending, startTransition] = useTransition();
+  // 후보에서 고른 장소의 좌표. 입력칸 글자가 고른 그대로일 때만 지도에 쓰고, 고친 뒤에는 다시 검색한다.
+  const [picked, setPicked] = useState<{ text: string; x: number; y: number } | null>(null);
 
   const id = (name: string) => `${uid}-${name}`;
   const set = <K extends keyof EventInput>(key: K, value: EventInput[K]) =>
@@ -270,19 +277,24 @@ export function EventForm({
           error={err("location")}
           errorId={id("location-error")}
         >
-          <Input
+          <PlaceInput
             id={id("location")}
             value={values.location}
             maxLength={LOCATION_INPUT_LIMIT}
             placeholder={labels.locationPlaceholder}
-            autoComplete="off"
-            aria-invalid={!!errors.location}
-            aria-describedby={errors.location ? id("location-error") : undefined}
-            onChange={(e) => set("location", e.target.value)}
+            listLabel={labels.placeSuggestions}
+            invalid={!!errors.location}
+            describedBy={errors.location ? id("location-error") : undefined}
+            onChange={(value) => set("location", value)}
+            onPick={(c) => setPicked({ text: pickedText(c), x: c.x, y: c.y })}
           />
         </Field>
         {values.location.trim() && (
-          <EventMap query={values.location.trim()} labels={labels} />
+          <EventMap
+            query={values.location.trim()}
+            coords={picked && picked.text === values.location.trim() ? picked : undefined}
+            labels={labels}
+          />
         )}
 
         <Field

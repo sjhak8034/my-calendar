@@ -254,4 +254,6 @@ curl -s -X POST http://localhost:3000/api/cron/notify -H "Authorization: Bearer 
 
 **확인한 것/못 한 것**: `tsc`·`lint`·`build` 통과, `normalizeUrl`·`toPayload` 임시 스크립트(`example.com`→`https://example.com/`, `javascript:`·`data:`·`ftp:` 거절, 200자 초과 거절, 빈 값→null). **못 한 것**: 실제 카카오 키로 지도 표시와 한국 주소·가게 이름 검색 정확도, 입력 폼의 실제 화면(Playwright 시험 안 함), 휴대폰 하단 시트 안 지도 스크롤 간섭, 마이그레이션 SQL 실행(MCP 읽기 전용).
 
-**제한·후속**: 좌표를 저장하지 않아 열 때마다 검색 1회(첫 결과 사용), 장소 검색 결과 고르기 버튼 없음, 주간 블록·월간 칩에는 장소 표시·`aria-label` 없음, AI 일정 생성은 장소·링크 미지원, CSP 도입 시 `dapi.kakao.com`·지도 타일 도메인을 열어야 함. 알려진 사소한 점: `javascript:1`처럼 포트 모양이면 `https://javascript:1`로 보정됨(안전하나 의미 없는 주소).
+**장소 후보 드롭다운(같은 날 추가)**: `components/calendar/place-input.tsx`(combobox, 0.3초 지연, 키워드→주소 검색 최대 5개, ↑↓·Enter·Esc), `event-map.tsx`의 `searchCandidates`·`EventMap coords`(고른 후보의 좌표를 그대로 사용). 실제 카카오 키로는 아직 시험 못 함(휴대폰 시트에서 목록이 잘리는지 포함).
+
+**제한·후속**: 좌표를 저장하지 않아 열 때마다 검색 1회(첫 결과 사용), 주간 블록·월간 칩에는 장소 표시·`aria-label` 없음, AI 일정 생성은 장소·링크 미지원, CSP 도입 시 `dapi.kakao.com`·지도 타일 도메인을 열어야 함. 알려진 사소한 점: `javascript:1`처럼 포트 모양이면 `https://javascript:1`로 보정됨(안전하나 의미 없는 주소).

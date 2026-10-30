@@ -28,7 +28,13 @@ type KakaoMaps = {
     };
   };
 };
-type KakaoResult = { x: string; y: string };
+type KakaoResult = {
+  x: string;
+  y: string;
+  place_name?: string; // 키워드 검색 결과에만 있다.
+  address_name?: string;
+  road_address_name?: string;
+};
 declare global {
   interface Window {
     kakao?: { maps: KakaoMaps };
@@ -40,7 +46,7 @@ const SDK_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
 let sdkPromise: Promise<KakaoMaps> | null = null;
 
 // SDK는 지도가 처음 필요할 때 한 번만 내려받는다(일정을 열지 않는 화면에는 외부 요청이 없다).
-function loadKakao(): Promise<KakaoMaps> {
+export function loadKakao(): Promise<KakaoMaps> {
   if (sdkPromise) return sdkPromise;
   sdkPromise = new Promise<KakaoMaps>((resolve, reject) => {
     if (!SDK_KEY) {
@@ -64,7 +70,7 @@ function loadKakao(): Promise<KakaoMaps> {
   return sdkPromise;
 }
 
-function search(maps: KakaoMaps, query: string): Promise<KakaoResult | null> {
+export function search(maps: KakaoMaps, query: string): Promise<KakaoResult | null> {
   const { Status, Geocoder, Places } = maps.services;
   return new Promise((resolve) => {
     // 도로명·지번 주소로 먼저 찾고, 못 찾으면 가게·건물 이름으로 찾는다.
@@ -77,6 +83,26 @@ function search(maps: KakaoMaps, query: string): Promise<KakaoResult | null> {
   });
 }
 
+export type PlaceCandidate = { label: string; address: string; x: number; y: number };
+
+// 입력 중 보여 줄 후보. 가게·건물 이름 검색을 먼저 하고, 결과가 없으면 주소 검색으로 찾는다.
+export async function searchCandidates(query: string, max = 5): Promise<PlaceCandidate[]> {
+  const maps = await loadKakao();
+  const { Status, Geocoder, Places } = maps.services;
+  const toCandidate = (r: KakaoResult): PlaceCandidate => {
+    const address = r.road_address_name || r.address_name || "";
+    return { label: r.place_name || address, address: r.place_name ? address : "", x: Number(r.x), y: Number(r.y) };
+  };
+  const places = await new Promise<KakaoResult[]>((resolve) =>
+    new Places().keywordSearch(query, (r, status) => resolve(status === Status.OK ? r : [])),
+  );
+  if (places.length > 0) return places.slice(0, max).map(toCandidate);
+  const addresses = await new Promise<KakaoResult[]>((resolve) =>
+    new Geocoder().addressSearch(query, (r, status) => resolve(status === Status.OK ? r : [])),
+  );
+  return addresses.slice(0, max).map(toCandidate);
+}
+
 type State = "loading" | "ready" | "notFound" | "failed";
 
 export function kakaoMapLink(query: string) {
@@ -84,7 +110,15 @@ export function kakaoMapLink(query: string) {
 }
 
 // 일정 장소를 작은 지도로 보여 준다. 키가 없거나 SDK·검색이 실패해도 "카카오맵에서 보기" 링크는 항상 남긴다.
-export function EventMap({ query, labels }: { query: string; labels: EventMapLabels }) {
+export function EventMap({
+  query,
+  coords,
+  labels,
+}: {
+  query: string;
+  coords?: { x: number; y: number }; // 후보에서 고른 장소는 좌표를 알고 있어 다시 검색하지 않는다.
+  labels: EventMapLabels;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<State>("loading");
 
@@ -95,7 +129,7 @@ export function EventMap({ query, labels }: { query: string; labels: EventMapLab
       setState("loading");
       try {
         const maps = await loadKakao();
-        const found = await search(maps, query);
+        const found = coords ? { x: String(coords.x), y: String(coords.y) } : await search(maps, query);
         if (cancelled) return;
         if (!found || !box.current) {
           setState("notFound");
@@ -113,7 +147,7 @@ export function EventMap({ query, labels }: { query: string; labels: EventMapLab
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, coords]);
 
   return (
     <div className="flex flex-col gap-1.5">

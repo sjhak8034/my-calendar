@@ -236,6 +236,7 @@
     "descriptionPlaceholder": "Description (optional)",
     "location": "Location",
     "locationPlaceholder": "Address or place name",
+    "placeSuggestions": "Place suggestions",
     "url": "Link",
     "urlPlaceholder": "https://",
     "openLink": "Open link",
