@@ -7,7 +7,7 @@ import { Check, MessageCircle, Plus, Send, Square, Trash2, X } from "lucide-reac
 import { DOT_CLASS } from "@/components/calendar/event-colors";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { deleteAllConversations, loadLatestConversation } from "@/lib/ai/actions";
+import { deleteAllConversations, getUsageStatus, loadLatestConversation } from "@/lib/ai/actions";
 import { AI_MAX_QUESTION_CHARS } from "@/lib/ai/limits";
 import { normalizeEventColor } from "@/lib/calendar";
 import type { AiDraft } from "@/lib/ai/draft";
@@ -202,6 +202,8 @@ function ChatPanel({
   const [messages, setMessages] = useState<Msg[]>([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(true);
+  // 오늘 AI 사용량(관리자가 정한 하루 한도 대비 %). 한도가 없으면 null이라 표시하지 않는다.
+  const [usagePercent, setUsagePercent] = useState<number | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [working, setWorking] = useState<"search" | "draft" | null>(null);
   const [error, setError] = useState<ErrorKey | null>(null);
@@ -265,6 +267,12 @@ function ChatPanel({
     });
   }
 
+  const refreshUsage = () => {
+    getUsageStatus()
+      .then((result) => setUsagePercent(result.ok ? result.percent : null))
+      .catch(() => {});
+  };
+
   // 처음 열릴 때 가장 최근 대화를 불러와 이어서 보여 준다.
   useEffect(() => {
     let cancelled = false;
@@ -293,6 +301,14 @@ function ChatPanel({
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
+  }, [open]);
+
+  // 팝업을 열 때마다 오늘 사용량을 다시 확인한다.
+  useEffect(() => {
+    if (!open) return;
+    getUsageStatus()
+      .then((result) => setUsagePercent(result.ok ? result.percent : null))
+      .catch(() => {});
   }, [open]);
 
   useEffect(
@@ -452,6 +468,7 @@ function ChatPanel({
       setStreaming(false);
       setWorking(null);
       if (abortRef.current === controller) abortRef.current = null;
+      refreshUsage(); // 질문이 끝나면(성공·거절 모두) 사용량 표시를 새로 읽는다.
     }
   }
 
@@ -486,6 +503,30 @@ function ChatPanel({
         open ? "visible scale-100" : "invisible scale-0",
       )}
     >
+      {/* 맨 위: 오늘 AI 사용량(관리자가 정한 하루 한도 대비). 한도가 없으면 보이지 않는다. */}
+      {usagePercent !== null && (
+        <div className="border-b bg-muted/40 px-4 py-2">
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="text-muted-foreground">{labels.usageLabel}</span>
+            <span className={cn("font-medium tabular-nums", usagePercent >= 90 && "text-destructive")}>
+              {usagePercent >= 100 ? labels.usageFull : `${usagePercent}%`}
+            </span>
+          </div>
+          <div
+            role="progressbar"
+            aria-label={labels.usageLabel}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={usagePercent}
+            className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"
+          >
+            <div
+              className={cn("h-full rounded-full transition-[width] duration-300", usagePercent >= 90 ? "bg-destructive" : "bg-primary")}
+              style={{ width: `${Math.max(usagePercent > 0 ? 3 : 0, usagePercent)}%` }}
+            />
+          </div>
+        </div>
+      )}
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <h2 className="text-sm font-semibold">{labels.title}</h2>
         <div className="flex items-center gap-1">

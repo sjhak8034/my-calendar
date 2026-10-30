@@ -290,6 +290,8 @@
   },
   "ai": {
     "title": "AI chat",
+    "usageLabel": "Today's AI usage",
+    "usageFull": "Limit reached",
     "open": "Open AI chat",
     "close": "Close AI chat",
     "emptyTitle": "How can I help?",

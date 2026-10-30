@@ -25,19 +25,20 @@ export async function getDailyCostLimit(): Promise<{ limit: number | null; updat
   return { limit: parseCostLimit(data?.value), updatedAt: data?.updated_at ?? null };
 }
 
-// 질문을 받기 전에 확인한다. 한도가 없거나, 단가가 저장돼 있지 않거나, 조회에 실패하면 통과(서비스 가용성 우선, 실패는 로그만).
-export async function isOverDailyCostLimit(userId: string): Promise<boolean> {
+// 오늘(서울 0시부터) 이 사용자가 쓴 예상 금액과 한도. 한도가 없거나, 단가가 저장돼 있지 않거나, 조회에 실패하면 null(적용하지 않음).
+// 한도가 없거나 계산할 수 없을 때 막지 않는 것은 서비스 가용성을 우선하기 위해서다(실패는 로그만 남긴다).
+export async function getTodayCostStatus(userId: string): Promise<{ limit: number; costKrw: number } | null> {
   const { limit, error } = await getDailyCostLimit();
   if (error) console.error("[ai] cost limit lookup failed:", error);
-  if (limit === null) return false;
+  if (limit === null) return null;
 
   const { pricing, error: pricingError } = await getPricing();
   if (pricingError) console.error("[ai] pricing lookup failed:", pricingError);
   // 단가가 없으면 금액을 계산할 수 없어 한도를 적용하지 못한다(대시보드 바에 안내가 뜬다).
-  if (!pricing) return false;
+  if (!pricing) return null;
 
   const admin = createAdminClient();
-  if (!admin) return false;
+  if (!admin) return null;
   const since = `${toSeoulDateTime(new Date().toISOString()).date}T00:00:00+09:00`;
   const { data, error: usageError } = await admin
     .from("ai_usage")
@@ -47,12 +48,18 @@ export async function isOverDailyCostLimit(userId: string): Promise<boolean> {
     .limit(2000);
   if (usageError) {
     console.error("[ai] usage lookup failed:", usageError.message);
-    return false;
+    return null;
   }
   const total = data.reduce(
     (a, r) => ({ prompt: a.prompt + r.prompt_tokens, completion: a.completion + r.completion_tokens, reasoning: a.reasoning + r.reasoning_tokens }),
     { prompt: 0, completion: 0, reasoning: 0 },
   );
   const cost = estimateCost(total, pricing);
-  return cost !== null && cost.krw >= limit;
+  return cost ? { limit, costKrw: cost.krw } : null;
+}
+
+// 질문을 받기 전에 확인한다.
+export async function isOverDailyCostLimit(userId: string): Promise<boolean> {
+  const status = await getTodayCostStatus(userId);
+  return status !== null && status.costKrw >= status.limit;
 }

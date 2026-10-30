@@ -1,5 +1,6 @@
 "use server";
 
+import { getTodayCostStatus } from "@/lib/ai/cost-limit";
 import { requireUser } from "@/lib/supabase/require-user";
 
 export type StoredMessage = {
@@ -63,4 +64,16 @@ export async function deleteAllConversations(): Promise<DeleteResult> {
     return { ok: false, code: "failed" };
   }
   return { ok: true };
+}
+
+export type UsageStatus = { ok: true; percent: number | null } | { ok: false };
+
+// 채팅창 맨 위에 보여 줄 오늘 AI 사용량(관리자가 정한 하루 한도 대비 %). 금액은 사용자에게 알리지 않고 비율만 돌려준다.
+// 한도가 없거나 계산할 수 없으면 percent가 null이라 화면에 표시하지 않는다.
+export async function getUsageStatus(): Promise<UsageStatus> {
+  const session = await requireUser();
+  if (!session) return { ok: false };
+  const status = await getTodayCostStatus(session.user.id);
+  if (!status) return { ok: true, percent: null };
+  return { ok: true, percent: Math.min(100, Math.round((status.costKrw / status.limit) * 100)) };
 }

@@ -290,6 +290,8 @@
   },
   "ai": {
     "title": "AI 대화",
+    "usageLabel": "오늘 AI 사용량",
+    "usageFull": "한도에 도달했어요",
     "open": "AI 대화 열기",
     "close": "AI 대화 닫기",
     "emptyTitle": "무엇을 도와드릴까요?",
